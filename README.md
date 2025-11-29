@@ -699,12 +699,12 @@ plexaddons/
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GNU Affero General Public License v3.0 - see [LICENSE](LICENSE) file for details.
 
 ---
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/plexdev/plexaddons/issues)
-- **Discord:** [PlexDev Discord](https://discord.gg/plexdev)
-- **Email:** support@plexdev.live
+- **Issues:** [GitHub Issues](https://github.com/Bali0531-RC/Plexdev-Addons/issues)
+- **Discord:** [PlexDevelopment Discord](https://discord.gg/plexdev)
+- **Email:** bali0531@plexdev.live
