@@ -112,20 +112,103 @@
   justify-content: center;
 }
 
-/* Payment buttons container */
-.payment-buttons {
+/* Payment Modal */
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.payment-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.payment-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.2s;
+}
+
+.payment-modal-close:hover {
+  color: var(--text);
+}
+
+.payment-modal-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.payment-modal h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.payment-modal > p {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.payment-modal-buttons {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+.payment-modal-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+}
+
+/* Payment buttons */
 .btn-stripe {
-  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  background: linear-gradient(135deg, #635bff, #4f46e5);
   color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn-stripe:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, var(--accent));
+  background: linear-gradient(135deg, #4f46e5, #635bff);
   transform: translateY(-1px);
 }
 
@@ -133,6 +216,10 @@
   background: linear-gradient(135deg, #ffc439, #f5ba1d);
   color: #003087;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn-paypal:hover:not(:disabled) {
@@ -145,6 +232,17 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+.payment-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.paypal-logo {
+  width: 22px;
+  height: 22px;
 }
 
 /* FAQ Section */
