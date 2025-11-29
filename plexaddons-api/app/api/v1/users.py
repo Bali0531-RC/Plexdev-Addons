@@ -42,15 +42,18 @@ async def get_my_storage(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
 ):
-    """Get current user's storage usage."""
+    """Get current user's storage usage (calculated live from database content)."""
     stats = await UserService.get_user_stats(db, user.id)
+    
+    # Calculate storage live from actual data
+    storage_used = stats["storage_used_bytes"]
     
     storage_used_percent = 0.0
     if user.storage_quota_bytes > 0:
-        storage_used_percent = (user.storage_used_bytes / user.storage_quota_bytes) * 100
+        storage_used_percent = (storage_used / user.storage_quota_bytes) * 100
     
     return UserStorageResponse(
-        storage_used_bytes=user.storage_used_bytes,
+        storage_used_bytes=storage_used,
         storage_quota_bytes=user.storage_quota_bytes,
         storage_used_percent=round(storage_used_percent, 2),
         addon_count=stats["addon_count"],

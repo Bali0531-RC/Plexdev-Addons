@@ -1,10 +1,18 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from app.models import User, Addon, Version, SubscriptionTier
 from app.config import get_settings
 
 settings = get_settings()
+
+
+def _calculate_string_size(s: Optional[str]) -> int:
+    """Calculate byte size of a string."""
+    if not s:
+        return 0
+    return len(s.encode('utf-8'))
 
 
 class UserService:
@@ -34,14 +42,39 @@ class UserService:
     
     @staticmethod
     async def calculate_storage_used(db: AsyncSession, user_id: int) -> int:
-        """Calculate total storage used by a user."""
+        """
+        Calculate total storage used by a user from actual database content.
+        
+        Counts bytes from:
+        - Addon: name, slug, description, homepage
+        - Version: version, download_url, changelog_url, description, changelog_content
+        """
+        total_bytes = 0
+        
+        # Fetch all addons with their versions for this user
         result = await db.execute(
-            select(func.coalesce(func.sum(Version.storage_size_bytes), 0))
-            .select_from(Version)
-            .join(Addon, Version.addon_id == Addon.id)
+            select(Addon)
+            .options(selectinload(Addon.versions))
             .where(Addon.owner_id == user_id)
         )
-        return result.scalar() or 0
+        addons = result.scalars().all()
+        
+        for addon in addons:
+            # Addon data
+            total_bytes += _calculate_string_size(addon.name)
+            total_bytes += _calculate_string_size(addon.slug)
+            total_bytes += _calculate_string_size(addon.description)
+            total_bytes += _calculate_string_size(addon.homepage)
+            
+            # Version data
+            for version in addon.versions:
+                total_bytes += _calculate_string_size(version.version)
+                total_bytes += _calculate_string_size(version.download_url)
+                total_bytes += _calculate_string_size(version.changelog_url)
+                total_bytes += _calculate_string_size(version.description)
+                total_bytes += _calculate_string_size(version.changelog_content)
+        
+        return total_bytes
     
     @staticmethod
     async def update_storage_used(db: AsyncSession, user: User) -> User:
