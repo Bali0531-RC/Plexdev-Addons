@@ -54,7 +54,7 @@ export default function Layout() {
                 </div>
               </div>
             ) : (
-              <button onClick={login} className="btn btn-primary">
+              <button onClick={() => login()} className="btn btn-primary">
                 Login with Discord
               </button>
             )}
