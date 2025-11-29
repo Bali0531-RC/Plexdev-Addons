@@ -112,6 +112,41 @@
   justify-content: center;
 }
 
+/* Payment buttons container */
+.payment-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-stripe {
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  color: white;
+}
+
+.btn-stripe:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, var(--accent));
+  transform: translateY(-1px);
+}
+
+.btn-paypal {
+  background: linear-gradient(135deg, #ffc439, #f5ba1d);
+  color: #003087;
+  font-weight: 600;
+}
+
+.btn-paypal:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f5ba1d, #e5aa0d);
+  transform: translateY(-1px);
+}
+
+.btn-stripe:disabled,
+.btn-paypal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* FAQ Section */
 .pricing-faq {
   background: var(--surface);

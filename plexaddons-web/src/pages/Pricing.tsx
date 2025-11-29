@@ -9,6 +9,7 @@ export default function Pricing() {
   const { isAuthenticated, user } = useAuth();
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -62,18 +63,29 @@ export default function Pricing() {
     return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
   };
 
-  const handleSubscribe = async (tier: 'pro' | 'premium') => {
+  const handleSubscribe = async (tier: 'pro' | 'premium', provider: 'stripe' | 'paypal') => {
     if (!isAuthenticated) {
       window.location.href = '/login';
       return;
     }
 
+    setCheckoutLoading(`${tier}-${provider}`);
+
     try {
-      const { checkout_url } = await api.createStripeCheckout(tier);
-      window.location.href = checkout_url;
+      if (provider === 'stripe') {
+        const { checkout_url } = await api.createStripeCheckout(tier);
+        window.location.href = checkout_url;
+      } else {
+        // PayPal - get subscription details and redirect
+        const { plan_id, custom_id } = await api.getPayPalSubscriptionDetails(tier);
+        // Open PayPal subscription page
+        const paypalUrl = `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${plan_id}&custom_id=${custom_id}`;
+        window.location.href = paypalUrl;
+      }
     } catch (err) {
       console.error('Failed to create checkout:', err);
       alert('Failed to start checkout. Please try again.');
+      setCheckoutLoading(null);
     }
   };
 
@@ -154,12 +166,22 @@ export default function Pricing() {
                     </Link>
                   )
                 ) : (
-                  <button 
-                    onClick={() => handleSubscribe(plan.tier as 'pro' | 'premium')}
-                    className="btn btn-primary btn-full"
-                  >
-                    {isAuthenticated ? 'Subscribe' : 'Sign Up & Subscribe'}
-                  </button>
+                  <div className="payment-buttons">
+                    <button 
+                      onClick={() => handleSubscribe(plan.tier as 'pro' | 'premium', 'stripe')}
+                      className="btn btn-primary btn-full"
+                      disabled={checkoutLoading !== null}
+                    >
+                      {checkoutLoading === `${plan.tier}-stripe` ? 'Loading...' : '💳 Pay with Card'}
+                    </button>
+                    <button 
+                      onClick={() => handleSubscribe(plan.tier as 'pro' | 'premium', 'paypal')}
+                      className="btn btn-paypal btn-full"
+                      disabled={checkoutLoading !== null}
+                    >
+                      {checkoutLoading === `${plan.tier}-paypal` ? 'Loading...' : '🅿️ Pay with PayPal'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
