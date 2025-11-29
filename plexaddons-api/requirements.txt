@@ -21,7 +21,7 @@ httpx==0.26.0
 
 # Payments
 stripe==7.12.0
-paypalserversdk==0.6.0
+# PayPal integration uses httpx directly (no SDK needed)
 
 # Scheduling
 apscheduler==3.10.4
