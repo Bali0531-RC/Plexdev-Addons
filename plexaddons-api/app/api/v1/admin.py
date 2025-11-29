@@ -105,14 +105,32 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
 ):
-    """List all users."""
+    """List all users with live storage calculation."""
     skip = (page - 1) * per_page
     users, total = await UserService.list_users(
         db, skip=skip, limit=per_page, search=search, tier=tier, is_admin=is_admin
     )
     
+    # Calculate live storage for each user
+    user_responses = []
+    for u in users:
+        storage_used = await UserService.calculate_storage_used(db, u.id)
+        user_responses.append(UserResponse(
+            id=u.id,
+            discord_id=u.discord_id,
+            discord_username=u.discord_username,
+            discord_avatar=u.discord_avatar,
+            email=u.email,
+            subscription_tier=u.subscription_tier,
+            storage_used_bytes=storage_used,
+            storage_quota_bytes=u.storage_quota_bytes,
+            is_admin=u.is_admin,
+            created_at=u.created_at,
+            last_login_at=u.last_login_at,
+        ))
+    
     return {
-        "users": [UserResponse.model_validate(u) for u in users],
+        "users": user_responses,
         "total": total,
         "page": page,
         "per_page": per_page,
@@ -126,11 +144,27 @@ async def get_user(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
 ):
-    """Get user details."""
+    """Get user details with live storage calculation."""
     user = await UserService.get_user_by_id(db, user_id)
     if not user:
         raise NotFoundError("User not found")
-    return user
+    
+    # Calculate live storage
+    storage_used = await UserService.calculate_storage_used(db, user.id)
+    
+    return UserResponse(
+        id=user.id,
+        discord_id=user.discord_id,
+        discord_username=user.discord_username,
+        discord_avatar=user.discord_avatar,
+        email=user.email,
+        subscription_tier=user.subscription_tier,
+        storage_used_bytes=storage_used,
+        storage_quota_bytes=user.storage_quota_bytes,
+        is_admin=user.is_admin,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+    )
 
 
 @router.patch("/users/{user_id}", response_model=UserResponse)
