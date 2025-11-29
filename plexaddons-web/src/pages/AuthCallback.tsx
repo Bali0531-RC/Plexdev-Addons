@@ -7,7 +7,7 @@ import './AuthCallback.css';
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, setToken, setUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,6 +15,7 @@ export default function AuthCallback() {
   }, []);
 
   const handleCallback = async () => {
+    const token = searchParams.get('token');
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const errorParam = searchParams.get('error');
@@ -24,19 +25,34 @@ export default function AuthCallback() {
       return;
     }
 
-    if (!code) {
-      setError('No authorization code received');
+    // If we have a token directly (from API redirect), use it
+    if (token) {
+      try {
+        setToken(token);
+        const user = await api.getMe();
+        setUser(user);
+        navigate('/dashboard', { replace: true });
+      } catch (err) {
+        console.error('Token validation error:', err);
+        setError('Failed to validate authentication token. Please try again.');
+      }
       return;
     }
 
-    try {
-      const response = await api.handleCallback(code, state || undefined);
-      login(response.access_token, response.user);
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      console.error('Auth callback error:', err);
-      setError('Failed to complete authentication. Please try again.');
+    // If we have a code, exchange it for a token
+    if (code) {
+      try {
+        const response = await api.handleCallback(code, state || undefined);
+        login(response.access_token, response.user);
+        navigate('/dashboard', { replace: true });
+      } catch (err) {
+        console.error('Auth callback error:', err);
+        setError('Failed to complete authentication. Please try again.');
+      }
+      return;
     }
+
+    setError('No authorization code or token received');
   };
 
   if (error) {
