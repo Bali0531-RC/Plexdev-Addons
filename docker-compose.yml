@@ -8,7 +8,7 @@ services:
     container_name: plexaddons-api
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "3311:8000"
     environment:
       - DATABASE_URL=postgresql://plexaddons:${DB_PASSWORD}@db:5432/plexaddons
       - REDIS_URL=redis://redis:6379/0
@@ -45,7 +45,7 @@ services:
     container_name: plexaddons-web
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3310:80"
     environment:
       - VITE_API_URL=${API_URL:-https://addons.plexdev.live/api}
       - VITE_DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
