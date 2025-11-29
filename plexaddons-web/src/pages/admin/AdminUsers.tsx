@@ -78,6 +78,14 @@ export default function AdminUsers() {
     return `${(bytes / 1024).toFixed(2)} KB`;
   };
 
+  const formatStorage = (user: User) => {
+    const used = formatBytes(user.storage_used_bytes);
+    if (user.is_admin) {
+      return `${used} / ∞`;
+    }
+    return `${used} / ${formatBytes(user.storage_quota_bytes)}`;
+  };
+
   return (
     <div className="admin-users">
       <h1>Manage Users</h1>
@@ -134,7 +142,7 @@ export default function AdminUsers() {
                   </select>
                 </span>
                 <span className="storage-info">
-                  {formatBytes(user.storage_used_bytes)} / {formatBytes(user.storage_quota_bytes)}
+                  {formatStorage(user)}
                 </span>
                 <span>
                   {user.is_admin ? (

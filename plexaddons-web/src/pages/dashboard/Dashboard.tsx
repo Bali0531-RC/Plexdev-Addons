@@ -43,12 +43,18 @@ export default function Dashboard() {
     return `${bytes} B`;
   };
 
-  const getTierBadgeClass = (tier: string) => {
+  const getTierBadgeClass = (tier: string, isAdmin?: boolean) => {
+    if (isAdmin) return 'badge-admin';
     switch (tier) {
       case 'premium': return 'badge-premium';
       case 'pro': return 'badge-pro';
       default: return 'badge-free';
     }
+  };
+
+  const getTierLabel = (tier: string, isAdmin?: boolean) => {
+    if (isAdmin) return 'ADMIN';
+    return tier?.toUpperCase() || 'FREE';
   };
 
   if (loading) {
@@ -64,8 +70,8 @@ export default function Dashboard() {
       <div className="dashboard-header">
         <div className="welcome">
           <h1>Welcome, {user?.discord_username || 'User'}</h1>
-          <span className={`badge ${getTierBadgeClass(user?.subscription_tier || 'free')}`}>
-            {user?.subscription_tier?.toUpperCase() || 'FREE'}
+          <span className={`badge ${getTierBadgeClass(user?.subscription_tier || 'free', user?.is_admin)}`}>
+            {getTierLabel(user?.subscription_tier || 'free', user?.is_admin)}
           </span>
         </div>
         <Link to="/dashboard/addons/new" className="btn btn-primary">
@@ -82,12 +88,14 @@ export default function Dashboard() {
               <div className="storage-bar">
                 <div 
                   className="storage-bar-fill" 
-                  style={{ width: `${Math.min(storage.storage_used_percent, 100)}%` }}
+                  style={{ width: user?.is_admin ? '0%' : `${Math.min(storage.storage_used_percent, 100)}%` }}
                 />
               </div>
               <div className="storage-info">
-                <span>{formatBytes(storage.storage_used_bytes)} / {formatBytes(storage.storage_quota_bytes)}</span>
-                <span>{storage.storage_used_percent.toFixed(1)}%</span>
+                <span>
+                  {formatBytes(storage.storage_used_bytes)} / {user?.is_admin ? '∞' : formatBytes(storage.storage_quota_bytes)}
+                </span>
+                <span>{user?.is_admin ? 'Unlimited' : `${storage.storage_used_percent.toFixed(1)}%`}</span>
               </div>
               <div className="storage-stats">
                 <div className="stat">
@@ -101,7 +109,7 @@ export default function Dashboard() {
               </div>
             </>
           )}
-          {user?.subscription_tier === 'free' && (
+          {!user?.is_admin && user?.subscription_tier === 'free' && (
             <Link to="/pricing" className="upgrade-link">
               Upgrade for more storage →
             </Link>

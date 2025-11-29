@@ -69,8 +69,8 @@ export default function Subscription() {
         <div className="subscription-header">
           <div className="subscription-tier">
             <span className="tier-label">Current Plan</span>
-            <span className={`tier-name tier-${user?.subscription_tier}`}>
-              {user?.subscription_tier?.toUpperCase()}
+            <span className={`tier-name ${user?.is_admin ? 'tier-admin' : `tier-${user?.subscription_tier}`}`}>
+              {user?.is_admin ? 'ADMIN' : user?.subscription_tier?.toUpperCase()}
             </span>
           </div>
           {subscription && (
@@ -80,7 +80,11 @@ export default function Subscription() {
           )}
         </div>
 
-        {subscription ? (
+        {user?.is_admin ? (
+          <p className="no-subscription">
+            As an admin, you have unlimited storage and no restrictions.
+          </p>
+        ) : subscription ? (
           <div className="subscription-details">
             <div className="detail-item">
               <label>Provider</label>

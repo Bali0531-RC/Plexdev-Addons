@@ -26,7 +26,8 @@
 
 .badge-premium {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
 }
 
 .badge-pro {
@@ -38,6 +39,12 @@
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
+}
+
+.badge-admin {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
 }
 
 .dashboard-grid {

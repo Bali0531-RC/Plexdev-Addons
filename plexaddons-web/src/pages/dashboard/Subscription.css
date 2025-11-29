@@ -49,10 +49,13 @@
 }
 
 .tier-premium {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #f59e0b;
+}
+.tier-admin {
+  color: #8b5cf6;
+}
+.tier-admin {
+  color: #8b5cf6;
 }
 
 .status-badge {
