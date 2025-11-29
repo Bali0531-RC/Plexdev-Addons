@@ -1,0 +1,154 @@
+.pricing-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.pricing-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pricing-header p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.pricing-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-featured {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.pricing-popular {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--bg);
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pricing-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.pricing-price {
+  margin-bottom: 1.5rem;
+}
+
+.price-amount {
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.price-period {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  flex: 1;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.feature-icon {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.pricing-action {
+  margin-top: auto;
+}
+
+.current-plan {
+  display: block;
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+/* FAQ Section */
+.pricing-faq {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 3rem;
+}
+
+.pricing-faq h2 {
+  text-align: center;
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.faq-item h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.faq-item p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pricing-featured {
+    transform: none;
+  }
+  
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}

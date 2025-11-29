@@ -1,0 +1,35 @@
+.callback-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+}
+
+.callback-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3rem;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.callback-card h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.callback-card p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.callback-error {
+  border-color: #ef4444;
+}
+
+.callback-error h1 {
+  color: #ef4444;
+}

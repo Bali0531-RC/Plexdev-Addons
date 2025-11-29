@@ -1,0 +1,134 @@
+.admin-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.admin-dashboard h1 {
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.admin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.admin-card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.tier-breakdown {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tier-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tier-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: calc(var(--radius) / 2);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tier-free {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.tier-pro {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.tier-premium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.tier-count {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.admin-nav {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.admin-nav h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: calc(var(--radius) / 2);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.2s;
+}
+
+.admin-nav-item:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+}
+
+.nav-label {
+  font-weight: 500;
+}

@@ -1,0 +1,105 @@
+.admin-audit-log {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.audit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.audit-header h1 {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.audit-note {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.audit-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.admin-audit-log .table-header,
+.admin-audit-log .table-row {
+  display: grid;
+  grid-template-columns: 180px 150px 150px 150px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  align-items: center;
+  min-width: 800px;
+}
+
+.admin-audit-log .table-header {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-audit-log .table-row {
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.admin-audit-log .table-row:last-child {
+  border-bottom: none;
+}
+
+.entry-time {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.entry-admin {
+  color: var(--accent);
+}
+
+.entry-action {
+  font-weight: 500;
+}
+
+.entry-target {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.entry-details {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.page-info {
+  color: var(--text-secondary);
+}

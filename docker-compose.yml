@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./plexaddons-api
+      dockerfile: Dockerfile
+    container_name: plexaddons-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://plexaddons:${DB_PASSWORD}@db:5432/plexaddons
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRO_PRICE_ID=${STRIPE_PRO_PRICE_ID}
+      - STRIPE_PREMIUM_PRICE_ID=${STRIPE_PREMIUM_PRICE_ID}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - PAYPAL_WEBHOOK_ID=${PAYPAL_WEBHOOK_ID}
+      - PAYPAL_PRO_PLAN_ID=${PAYPAL_PRO_PLAN_ID}
+      - PAYPAL_PREMIUM_PLAN_ID=${PAYPAL_PREMIUM_PLAN_ID}
+      - INITIAL_ADMIN_DISCORD_ID=${INITIAL_ADMIN_DISCORD_ID}
+      - FRONTEND_URL=${FRONTEND_URL:-https://addons.plexdev.live}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./plexaddons-api:/app
+    networks:
+      - plexaddons-network
+
+  web:
+    build:
+      context: ./plexaddons-web
+      dockerfile: Dockerfile
+    container_name: plexaddons-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=${API_URL:-https://addons.plexdev.live/api}
+      - VITE_DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - VITE_PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+    depends_on:
+      - api
+    networks:
+      - plexaddons-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: plexaddons-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=plexaddons
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=plexaddons
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plexaddons"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - plexaddons-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: plexaddons-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - plexaddons-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  plexaddons-network:
+    driver: bridge

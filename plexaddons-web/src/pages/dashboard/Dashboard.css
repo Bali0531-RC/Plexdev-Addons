@@ -1,0 +1,236 @@
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.welcome {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.welcome h1 {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.badge-premium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.badge-pro {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.badge-free {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.dashboard-card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+}
+
+/* Storage Card */
+.storage-card {
+  grid-column: span 1;
+}
+
+.storage-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.storage-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.storage-stats {
+  display: flex;
+  gap: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.upgrade-link {
+  display: block;
+  margin-top: 1rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.upgrade-link:hover {
+  text-decoration: underline;
+}
+
+/* Addons Card */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-header h2 {
+  margin-bottom: 0;
+}
+
+.view-all {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.view-all:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.empty-state p {
+  margin-bottom: 1rem;
+}
+
+.addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.addon-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: calc(var(--radius) / 2);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.2s;
+}
+
+.addon-list-item:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.addon-list-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.addon-list-name {
+  font-weight: 500;
+}
+
+.addon-list-version {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.addon-list-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Actions Card */
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: calc(var(--radius) / 2);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.2s;
+}
+
+.action-item:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.action-icon {
+  font-size: 1.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,31 @@
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3rem;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-card h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.login-card p {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.login-card .spinner {
+  margin: 0 auto;
+}
