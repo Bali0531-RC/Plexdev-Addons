@@ -74,7 +74,7 @@ export default function Layout() {
             <span>Unofficial project for Plex Development</span>
           </div>
           <div className="footer-right">
-            <a href="https://github.com/Bali0531-RC/PlexAddons" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Bali0531-RC/Plexdev-Addons" target="_blank" rel="noopener noreferrer">
               GitHub
             </a>
             <a href="https://discord.gg/plexdev" target="_blank" rel="noopener noreferrer">

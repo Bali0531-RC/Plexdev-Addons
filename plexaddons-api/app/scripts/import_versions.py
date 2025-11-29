@@ -18,7 +18,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import async_session_maker
+from app.database import AsyncSessionLocal
 from app.models import User, Addon, Version
 from app.utils import slugify
 
@@ -36,7 +36,7 @@ async def import_versions(json_path: str, admin_discord_id: str | None = None):
         with open(json_path, 'r') as f:
             data = json.load(f)
     
-    async with async_session_maker() as db:
+    async with AsyncSessionLocal() as db:
         # Find or verify admin user
         if admin_discord_id:
             result = await db.execute(
@@ -54,12 +54,25 @@ async def import_versions(json_path: str, admin_discord_id: str | None = None):
             admin = result.scalar_one_or_none()
             if not admin:
                 print("No admin user found. Please create an admin user first.")
+                print("Login via Discord first to create your user account.")
                 return
         
         print(f"Importing as user: {admin.discord_username} (ID: {admin.id})")
         
+        # Handle the PlexAddons format: {"addons": {"AddonName": {...}, ...}}
+        addons_data = data.get("addons", {})
+        
+        # If addons is a dict (PlexAddons format), convert to list
+        if isinstance(addons_data, dict):
+            addon_list = []
+            for addon_name, addon_info in addons_data.items():
+                addon_info["name"] = addon_name
+                addon_list.append(addon_info)
+        else:
+            addon_list = addons_data
+        
         # Import each addon
-        for addon_data in data.get("addons", []):
+        for addon_data in addon_list:
             addon_name = addon_data.get("name")
             if not addon_name:
                 continue
@@ -73,7 +86,7 @@ async def import_versions(json_path: str, admin_discord_id: str | None = None):
             existing = result.scalar_one_or_none()
             
             if existing:
-                print(f"Addon '{addon_name}' already exists, skipping...")
+                print(f"Addon '{addon_name}' already exists, updating...")
                 addon = existing
             else:
                 # Create addon
@@ -91,8 +104,17 @@ async def import_versions(json_path: str, admin_discord_id: str | None = None):
                 await db.flush()
                 print(f"Created addon: {addon_name}")
             
+            # Check if this addon data has version info at root level (PlexAddons format)
+            # vs nested versions array
+            if "version" in addon_data:
+                # Single version at root level (PlexAddons format)
+                versions_list = [addon_data]
+            else:
+                # Nested versions array
+                versions_list = addon_data.get("versions", [])
+            
             # Import versions
-            for version_data in addon_data.get("versions", []):
+            for version_data in versions_list:
                 version_str = version_data.get("version")
                 if not version_str:
                     continue

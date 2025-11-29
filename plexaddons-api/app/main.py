@@ -151,7 +151,7 @@ async def add_rate_limit_headers(request: Request, call_next):
 # Include routers
 app.include_router(v1_router, prefix="/api")
 app.include_router(public_router)  # Public API at root level
-app.include_router(webhooks_router)
+app.include_router(webhooks_router, prefix="/api")  # Webhooks at /api/webhooks
 
 
 # Health check endpoint
