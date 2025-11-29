@@ -10,7 +10,7 @@ services:
     ports:
       - "3311:8000"
     environment:
-      - DATABASE_URL=postgresql://plexaddons:${DB_PASSWORD}@db:5432/plexaddons
+      - DATABASE_URL=postgresql+asyncpg://plexaddons:${DB_PASSWORD}@db:5432/plexaddons
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
