@@ -96,6 +96,7 @@ class AuthService:
     ) -> User:
         """Get existing user or create new one from Discord OAuth response."""
         from app.services.email_service import email_service
+        from app.services.user_service import UserService
         
         # Get Discord user info
         discord_user = await cls.get_discord_user(tokens["access_token"])
@@ -143,6 +144,9 @@ class AuthService:
         
         await db.commit()
         await db.refresh(user)
+        
+        # Sync automatic badges (early_adopter, beta_tester, addon_creator, etc.)
+        await UserService.sync_automatic_badges(db, user)
         
         # Send welcome email and admin notification for new users
         if is_new_user and user.email and background_tasks:

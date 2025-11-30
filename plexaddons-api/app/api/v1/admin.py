@@ -460,6 +460,40 @@ async def remove_user_badge(
     return {"status": "removed", "user_id": user_id, "badge": badge, "badges": badges}
 
 
+@router.post("/badges/sync-all")
+async def sync_all_user_badges(
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Sync automatic badges for ALL users.
+    This assigns:
+    - early_adopter & beta_tester: Users registered before 2025-12-20
+    - addon_creator: Users with at least one public addon
+    - supporter/premium: Based on subscription tier
+    """
+    # Get all users
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+    
+    synced_count = 0
+    for user in users:
+        await UserService.sync_automatic_badges(db, user, commit=False)
+        synced_count += 1
+    
+    await db.commit()
+    
+    await log_admin_action(
+        db, admin, "sync_all_badges",
+        target_type="system",
+        target_id=0,
+        details={"users_synced": synced_count},
+    )
+    
+    return {"status": "success", "users_synced": synced_count}
+
+
 @router.get("/addons")
 async def list_all_addons(
     page: int = Query(1, ge=1),

@@ -1,5 +1,6 @@
 from typing import Optional, List
 import json
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -12,11 +13,15 @@ settings = get_settings()
 AVAILABLE_BADGES = {
     "supporter": "💎 Supporter",  # Pro or Premium subscriber
     "premium": "👑 Premium",  # Premium subscriber
-    "early_adopter": "🌟 Early Adopter",  # Users who joined before launch
+    "early_adopter": "🌟 Early Adopter",  # Users who joined during alpha/beta
+    "beta_tester": "🧪 Beta Tester",  # Users who joined during beta phase
     "addon_creator": "🔧 Addon Creator",  # Has published an addon
     "contributor": "🤝 Contributor",  # Community contributor
     "staff": "🛡️ Staff",  # PlexAddons team member
 }
+
+# Cutoff date for early adopter/beta tester badges
+EARLY_ADOPTER_CUTOFF = datetime(2025, 12, 20)
 
 
 def _calculate_string_size(s: Optional[str]) -> int:
@@ -248,6 +253,72 @@ class UserService:
                 UserService._save_badges(user, badges)
                 await db.commit()
                 await db.refresh(user)
+        return user
+    
+    @staticmethod
+    async def sync_automatic_badges(db: AsyncSession, user: User, commit: bool = True) -> User:
+        """
+        Sync all automatic badges for a user:
+        - early_adopter & beta_tester: Users who registered before 2025-12-20
+        - addon_creator: Users who have at least one public addon
+        - supporter/premium: Based on subscription tier
+        """
+        badges = UserService._parse_badges(user)
+        changed = False
+        
+        # Check early adopter / beta tester (users before cutoff date)
+        if user.created_at and user.created_at < EARLY_ADOPTER_CUTOFF:
+            if "early_adopter" not in badges:
+                badges.append("early_adopter")
+                changed = True
+            if "beta_tester" not in badges:
+                badges.append("beta_tester")
+                changed = True
+        
+        # Check addon creator
+        if "addon_creator" not in badges:
+            addon_count = await db.execute(
+                select(func.count(Addon.id))
+                .where(Addon.owner_id == user.id)
+                .where(Addon.is_public == True)
+            )
+            count = addon_count.scalar() or 0
+            if count > 0:
+                badges.append("addon_creator")
+                changed = True
+        
+        # Sync subscription badges
+        has_supporter = "supporter" in badges
+        has_premium = "premium" in badges
+        
+        if user.subscription_tier == SubscriptionTier.PRO:
+            if not has_supporter:
+                badges.append("supporter")
+                changed = True
+            if has_premium:
+                badges.remove("premium")
+                changed = True
+        elif user.subscription_tier == SubscriptionTier.PREMIUM:
+            if not has_supporter:
+                badges.append("supporter")
+                changed = True
+            if not has_premium:
+                badges.append("premium")
+                changed = True
+        else:  # FREE tier
+            if has_supporter:
+                badges.remove("supporter")
+                changed = True
+            if has_premium:
+                badges.remove("premium")
+                changed = True
+        
+        if changed:
+            UserService._save_badges(user, badges)
+            if commit:
+                await db.commit()
+                await db.refresh(user)
+        
         return user
     
     @staticmethod

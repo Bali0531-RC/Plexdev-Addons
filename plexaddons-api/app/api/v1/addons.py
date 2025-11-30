@@ -80,7 +80,13 @@ async def create_addon(
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """Create a new addon."""
+    from app.services.user_service import UserService
+    
     addon = await AddonService.create_addon(db, user, data, background_tasks)
+    
+    # Add addon_creator badge if this is user's first public addon
+    if addon.is_public:
+        await UserService.check_and_add_creator_badge(db, user)
     
     return AddonResponse(
         id=addon.id,
