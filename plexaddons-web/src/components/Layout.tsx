@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Layout.css';
@@ -5,6 +6,24 @@ import './Layout.css';
 export default function Layout() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setDropdownOpen(false);
+  }, [location.pathname]);
 
   const getDiscordAvatar = () => {
     if (!user?.discord_avatar) {
@@ -46,10 +65,16 @@ export default function Layout() {
 
           <div className="header-actions">
             {isAuthenticated ? (
-              <div className="user-menu">
-                <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
-                <span className="username">{user?.discord_username}</span>
-                <div className="dropdown">
+              <div className="user-menu" ref={dropdownRef}>
+                <button 
+                  className="user-menu-trigger"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
+                  <span className="username">{user?.discord_username}</span>
+                  <span className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`}>▼</span>
+                </button>
+                <div className={`dropdown ${dropdownOpen ? 'open' : ''}`}>
                   <Link to="/dashboard">Dashboard</Link>
                   <Link to="/dashboard/support">Support</Link>
                   <Link to="/dashboard/settings">Settings</Link>

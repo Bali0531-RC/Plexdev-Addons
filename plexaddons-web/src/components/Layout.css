@@ -65,18 +65,24 @@
 }
 
 .user-menu {
-  position: static;
+  position: relative;
+}
+
+.user-menu-trigger {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   cursor: pointer;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-s);
+  background: transparent;
+  border: none;
+  color: var(--text);
   transition: background var(--transition);
 }
 
-.user-menu:hover {
-  background: transparent;
+.user-menu-trigger:hover {
+  background: var(--bg-hover);
 }
 
 .avatar {
@@ -89,10 +95,20 @@
   font-weight: 500;
 }
 
+.dropdown-arrow {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  transition: transform var(--transition);
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
 .dropdown {
-  position: fixed;
-  top: 72px;
-  right: 16px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -100,16 +116,16 @@
   min-width: 180px;
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--transition), visibility var(--transition);
+  transform: translateY(-8px);
+  transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.user-menu:hover .dropdown {
+.dropdown.open {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .dropdown a,
