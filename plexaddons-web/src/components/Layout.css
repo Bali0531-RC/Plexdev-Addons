@@ -81,7 +81,7 @@
   font-family: inherit;
   font-size: inherit;
   transition: background var(--transition);
-  width: auto;
+  width: auto !important;
 }
 
 .user-menu-trigger:hover {
