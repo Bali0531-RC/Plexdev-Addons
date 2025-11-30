@@ -5,11 +5,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models import User, Addon, Version
 from app.schemas import UserPublicProfile, AddonResponse
 
 router = APIRouter(prefix="/u", tags=["Profiles"])
+
+
+def get_effective_tier(user: User):
+    """Get effective tier considering temp_tier if active."""
+    if user.temp_tier and user.temp_tier_expires_at:
+        # Check if temp tier is still valid
+        now = datetime.now(timezone.utc)
+        expires = user.temp_tier_expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if now < expires:
+            return user.temp_tier
+    return user.subscription_tier
 
 
 @router.get("", response_model=dict)
@@ -64,11 +78,14 @@ async def list_public_users(
             except:
                 badges = []
         
+        # Get effective tier (temp_tier if active)
+        effective_tier = get_effective_tier(user)
+        
         users_list.append({
             "discord_id": user.discord_id,
             "discord_username": user.discord_username,
             "discord_avatar": user.discord_avatar,
-            "subscription_tier": user.subscription_tier.value,
+            "subscription_tier": effective_tier.value,
             "profile_slug": user.profile_slug,
             "badges": badges,
             "bio": user.bio,
@@ -162,11 +179,14 @@ async def get_public_profile(
     # Parse badges JSON if stored as string
     badges = user.badges if user.badges else []
     
+    # Get effective tier (temp_tier if active)
+    effective_tier = get_effective_tier(user)
+    
     return UserPublicProfile(
         discord_id=user.discord_id,
         discord_username=user.discord_username,
         discord_avatar=user.discord_avatar,
-        subscription_tier=user.subscription_tier,
+        subscription_tier=effective_tier,
         bio=user.bio,
         website=user.website,
         github_username=user.github_username,

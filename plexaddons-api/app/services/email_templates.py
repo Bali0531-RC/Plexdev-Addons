@@ -693,3 +693,88 @@ class EmailTemplates:
         </div>
         """
         return cls._base_template(content)
+
+    @classmethod
+    def temp_tier_granted(
+        cls,
+        username: str,
+        tier_name: str,
+        days: int,
+        expires_at: datetime,
+        reason: Optional[str] = None
+    ) -> str:
+        """Temporary tier grant notification email"""
+        reason_text = ""
+        if reason:
+            reason_text = f"""
+            <div class="info-box">
+                <strong>Reason:</strong> {reason}
+            </div>
+            """
+        
+        tier_features = {
+            "pro": [
+                "📦 10 addon slots (up from 3)",
+                "💾 500MB storage quota",
+                "📊 30-day analytics history",
+                "🔗 Custom profile URL",
+                "🎨 Profile customization",
+                "📧 Priority email support",
+            ],
+            "premium": [
+                "📦 Unlimited addon slots",
+                "💾 2GB storage quota", 
+                "📊 90-day analytics history",
+                "🔔 Webhook notifications",
+                "⭐ Priority support",
+                "🚀 Early access to new features",
+                "🎨 Full profile customization",
+            ],
+        }
+        
+        features = tier_features.get(tier_name.lower(), [])
+        features_html = "".join([f"<li>{f}</li>" for f in features])
+        
+        content = f"""
+        <h1>🎉 You've Been Upgraded!</h1>
+        
+        <p>Hi {username},</p>
+        
+        <p>Great news! You've been granted temporary access to <strong>{tier_name}</strong> features on PlexAddons!</p>
+        
+        <div class="highlight">
+            <div class="highlight-text">{tier_name.upper()}</div>
+            <div>for {days} days</div>
+        </div>
+        
+        {reason_text}
+        
+        <table>
+            <tr>
+                <td>Tier</td>
+                <td><strong style="color: #e9a426;">{tier_name}</strong></td>
+            </tr>
+            <tr>
+                <td>Duration</td>
+                <td><strong>{days} days</strong></td>
+            </tr>
+            <tr>
+                <td>Expires</td>
+                <td><strong>{expires_at.strftime('%B %d, %Y at %H:%M UTC')}</strong></td>
+            </tr>
+        </table>
+        
+        <h2>What You Can Do Now:</h2>
+        <ul>
+            {features_html}
+        </ul>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://addons.plexdev.live/dashboard" class="button">Explore Your New Features</a>
+        </div>
+        
+        <p style="font-size: 12px; color: #888;">
+            After your temporary access expires, you can subscribe to continue enjoying these features.
+        </p>
+        """
+        return cls._base_template(content)

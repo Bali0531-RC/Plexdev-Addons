@@ -295,6 +295,7 @@ async def demote_from_admin(
 async def grant_temp_tier(
     user_id: int,
     request: GrantTempTierRequest,
+    background_tasks: BackgroundTasks,
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
@@ -336,6 +337,17 @@ async def grant_temp_tier(
             "reason": request.reason,
         },
     )
+    
+    # Send email notification to user
+    if user.email:
+        background_tasks.add_task(
+            email_service.send_temp_tier_granted,
+            user,
+            request.tier.value.capitalize(),
+            request.days,
+            expires_at,
+            request.reason
+        )
     
     return {
         "status": "granted",

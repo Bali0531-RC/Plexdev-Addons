@@ -157,6 +157,32 @@ class EmailService:
         
         return await self.send_email(user.email, subject, html_content, plain_content)
     
+    async def send_temp_tier_granted(
+        self,
+        user: User,
+        tier_name: str,
+        days: int,
+        expires_at: datetime,
+        reason: Optional[str] = None
+    ) -> bool:
+        """Send notification when user is granted temporary tier access"""
+        if not user.email:
+            return False
+        
+        from app.services.email_templates import EmailTemplates
+        
+        subject = f"🎉 You've Been Upgraded to {tier_name}!"
+        html_content = EmailTemplates.temp_tier_granted(
+            username=user.discord_username,
+            tier_name=tier_name,
+            days=days,
+            expires_at=expires_at,
+            reason=reason
+        )
+        plain_content = f"You've been granted {days} days of {tier_name} access on PlexAddons! Expires: {expires_at.strftime('%B %d, %Y')}"
+        
+        return await self.send_email(user.email, subject, html_content, plain_content)
+    
     # Admin Notifications
     
     async def send_admin_new_user(self, user: User) -> bool:
