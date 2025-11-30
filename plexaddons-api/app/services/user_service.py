@@ -1,6 +1,6 @@
 from typing import Optional, List
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -20,8 +20,8 @@ AVAILABLE_BADGES = {
     "staff": "🛡️ Staff",  # PlexAddons team member
 }
 
-# Cutoff date for early adopter/beta tester badges
-EARLY_ADOPTER_CUTOFF = datetime(2025, 12, 20)
+# Cutoff date for early adopter/beta tester badges (timezone-aware)
+EARLY_ADOPTER_CUTOFF = datetime(2025, 12, 20, tzinfo=timezone.utc)
 
 
 def _calculate_string_size(s: Optional[str]) -> int:
