@@ -1,4 +1,5 @@
 from typing import Optional, List
+import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -6,6 +7,16 @@ from app.models import User, Addon, Version, SubscriptionTier, Ticket, TicketMes
 from app.config import get_settings
 
 settings = get_settings()
+
+# Available badges in the system
+AVAILABLE_BADGES = {
+    "supporter": "💎 Supporter",  # Pro or Premium subscriber
+    "premium": "👑 Premium",  # Premium subscriber
+    "early_adopter": "🌟 Early Adopter",  # Users who joined before launch
+    "addon_creator": "🔧 Addon Creator",  # Has published an addon
+    "contributor": "🤝 Contributor",  # Community contributor
+    "staff": "🛡️ Staff",  # PlexAddons team member
+}
 
 
 def _calculate_string_size(s: Optional[str]) -> int:
@@ -148,10 +159,90 @@ class UserService:
     @staticmethod
     async def update_user_tier(db: AsyncSession, user: User, tier: SubscriptionTier) -> User:
         """Update user's subscription tier and quota."""
+        old_tier = user.subscription_tier
         user.subscription_tier = tier
         user.storage_quota_bytes = UserService.get_storage_quota_for_tier(tier)
+        
+        # Update badges based on tier
+        await UserService.update_subscription_badges(db, user, tier)
+        
         await db.commit()
         await db.refresh(user)
+        return user
+    
+    @staticmethod
+    def _parse_badges(user: User) -> List[str]:
+        """Parse badges from JSON string to list."""
+        if not user.badges:
+            return []
+        try:
+            badges = json.loads(user.badges)
+            return badges if isinstance(badges, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    @staticmethod
+    def _save_badges(user: User, badges: List[str]) -> None:
+        """Save badges list as JSON string."""
+        user.badges = json.dumps(list(set(badges)))  # Remove duplicates
+    
+    @staticmethod
+    async def add_badge(db: AsyncSession, user: User, badge: str) -> User:
+        """Add a badge to a user."""
+        badges = UserService._parse_badges(user)
+        if badge not in badges:
+            badges.append(badge)
+            UserService._save_badges(user, badges)
+            await db.commit()
+            await db.refresh(user)
+        return user
+    
+    @staticmethod
+    async def remove_badge(db: AsyncSession, user: User, badge: str) -> User:
+        """Remove a badge from a user."""
+        badges = UserService._parse_badges(user)
+        if badge in badges:
+            badges.remove(badge)
+            UserService._save_badges(user, badges)
+            await db.commit()
+            await db.refresh(user)
+        return user
+    
+    @staticmethod
+    async def update_subscription_badges(db: AsyncSession, user: User, tier: SubscriptionTier) -> User:
+        """Update badges based on subscription tier."""
+        badges = UserService._parse_badges(user)
+        
+        # Remove subscription-related badges first
+        badges = [b for b in badges if b not in ["supporter", "premium"]]
+        
+        # Add appropriate badges based on tier
+        if tier == SubscriptionTier.PRO:
+            badges.append("supporter")
+        elif tier == SubscriptionTier.PREMIUM:
+            badges.append("supporter")
+            badges.append("premium")
+        
+        UserService._save_badges(user, badges)
+        return user
+    
+    @staticmethod
+    async def check_and_add_creator_badge(db: AsyncSession, user: User) -> User:
+        """Add addon_creator badge if user has published addons."""
+        badges = UserService._parse_badges(user)
+        if "addon_creator" not in badges:
+            # Check if user has any public addons
+            addon_count = await db.execute(
+                select(func.count(Addon.id))
+                .where(Addon.owner_id == user.id)
+                .where(Addon.is_public == True)
+            )
+            count = addon_count.scalar() or 0
+            if count > 0:
+                badges.append("addon_creator")
+                UserService._save_badges(user, badges)
+                await db.commit()
+                await db.refresh(user)
         return user
     
     @staticmethod

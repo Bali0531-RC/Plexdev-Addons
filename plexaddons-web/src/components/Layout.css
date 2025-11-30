@@ -64,8 +64,11 @@
   gap: var(--space-md);
 }
 
-.user-menu {
+.user-menu-container {
   position: relative;
+}
+
+.user-menu {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -76,7 +79,7 @@
 }
 
 .user-menu:hover {
-  background: transparent;
+  background: var(--bg-hover);
 }
 
 .avatar {
@@ -93,7 +96,7 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: var(--space-xs);
+  margin-top: 4px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -107,8 +110,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.user-menu:hover + .dropdown,
-.dropdown:hover {
+.user-menu-container:hover .dropdown {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;

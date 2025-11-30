@@ -134,6 +134,35 @@ class ApiKeyResponse(BaseModel):
     masked_key: Optional[str] = None
 
 
+# ============ Webhook Schemas ============
+
+class WebhookConfigUpdate(BaseModel):
+    """Update webhook configuration - Premium only"""
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    webhook_enabled: Optional[bool] = None
+
+
+class WebhookConfigResponse(BaseModel):
+    """Webhook configuration status"""
+    webhook_url: Optional[str] = None
+    webhook_enabled: bool = False
+    has_secret: bool = False
+    # Masked secret like wh_xxxx...xxxx
+    masked_secret: Optional[str] = None
+
+
+class WebhookSecretResponse(BaseModel):
+    """Response when generating a new webhook secret"""
+    webhook_secret: str  # Full secret, only shown once
+
+
+class WebhookTestResponse(BaseModel):
+    """Response from webhook test"""
+    success: bool
+    error: Optional[str] = None
+    status_code: Optional[int] = None
+
+
 # ============== Subscription Schemas ==============
 
 class SubscriptionResponse(BaseModel):

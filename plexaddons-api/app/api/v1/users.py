@@ -16,8 +16,12 @@ from app.schemas import (
     ApiKeyCreate,
     ApiKeyResponse,
     AddonResponse,
+    WebhookConfigUpdate,
+    WebhookConfigResponse,
+    WebhookSecretResponse,
+    WebhookTestResponse,
 )
-from app.services import UserService, StripeService, PayPalService
+from app.services import UserService, StripeService, PayPalService, WebhookService, webhook_service
 from app.api.deps import get_current_user, rate_limit_check_authenticated
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -321,6 +325,157 @@ async def revoke_my_api_key(
     
     user.api_key = None
     user.api_key_created_at = None
+    
+    await db.commit()
+    
+    return None
+
+
+# ============== Webhook Endpoints ==============
+
+@router.get("/me/webhook", response_model=WebhookConfigResponse)
+async def get_my_webhook_config(
+    user: User = Depends(get_current_user),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Get current user's webhook configuration."""
+    masked_secret = None
+    if user.webhook_secret:
+        # Show first 6 and last 4 characters: wh_xxxx...xxxx
+        masked_secret = f"wh_{user.webhook_secret[:4]}...{user.webhook_secret[-4:]}"
+    
+    return WebhookConfigResponse(
+        webhook_url=user.webhook_url,
+        webhook_enabled=user.webhook_enabled or False,
+        has_secret=user.webhook_secret is not None,
+        masked_secret=masked_secret,
+    )
+
+
+@router.patch("/me/webhook", response_model=WebhookConfigResponse)
+async def update_my_webhook_config(
+    data: WebhookConfigUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Update webhook configuration.
+    
+    Requirements:
+    - Premium subscription required
+    """
+    if user.subscription_tier != SubscriptionTier.PREMIUM:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Webhook notifications require Premium subscription"
+        )
+    
+    update_data = data.model_dump(exclude_unset=True)
+    
+    # Validate URL if provided
+    if "webhook_url" in update_data and update_data["webhook_url"]:
+        url = update_data["webhook_url"]
+        if not url.startswith(("http://", "https://")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Webhook URL must start with http:// or https://"
+            )
+    
+    # Apply updates
+    for key, value in update_data.items():
+        setattr(user, key, value)
+    
+    await db.commit()
+    await db.refresh(user)
+    
+    masked_secret = None
+    if user.webhook_secret:
+        masked_secret = f"wh_{user.webhook_secret[:4]}...{user.webhook_secret[-4:]}"
+    
+    return WebhookConfigResponse(
+        webhook_url=user.webhook_url,
+        webhook_enabled=user.webhook_enabled or False,
+        has_secret=user.webhook_secret is not None,
+        masked_secret=masked_secret,
+    )
+
+
+@router.post("/me/webhook/secret", response_model=WebhookSecretResponse)
+async def regenerate_webhook_secret(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Generate a new webhook secret.
+    
+    Requirements:
+    - Premium subscription required
+    - Replaces any existing secret
+    
+    The full secret is only shown once!
+    """
+    if user.subscription_tier != SubscriptionTier.PREMIUM:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Webhook notifications require Premium subscription"
+        )
+    
+    # Generate new secret
+    new_secret = WebhookService.generate_webhook_secret()
+    user.webhook_secret = new_secret
+    
+    await db.commit()
+    
+    return WebhookSecretResponse(webhook_secret=new_secret)
+
+
+@router.post("/me/webhook/test", response_model=WebhookTestResponse)
+async def test_my_webhook(
+    user: User = Depends(get_current_user),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Send a test webhook to verify configuration.
+    
+    Requirements:
+    - Premium subscription required
+    - Webhook URL and secret must be configured
+    """
+    if user.subscription_tier != SubscriptionTier.PREMIUM:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Webhook notifications require Premium subscription"
+        )
+    
+    if not user.webhook_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Webhook URL not configured"
+        )
+    
+    if not user.webhook_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Webhook secret not configured. Generate one first."
+        )
+    
+    result = await webhook_service.test_webhook(user)
+    
+    return WebhookTestResponse(**result)
+
+
+@router.delete("/me/webhook", status_code=status.HTTP_204_NO_CONTENT)
+async def disable_my_webhook(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Disable and clear webhook configuration."""
+    user.webhook_url = None
+    user.webhook_secret = None
+    user.webhook_enabled = False
     
     await db.commit()
     

@@ -114,6 +114,11 @@ class User(Base):
     api_key = Column(String(67), unique=True, nullable=True, index=True)  # pa_ + 64 hex chars
     api_key_created_at = Column(DateTime(timezone=True), nullable=True)
     
+    # ============== WEBHOOK NOTIFICATIONS (Premium only) ==============
+    webhook_url = Column(String(500), nullable=True)  # URL to send notifications to
+    webhook_secret = Column(String(64), nullable=True)  # Secret for signing webhook payloads
+    webhook_enabled = Column(Boolean, default=False)  # Whether webhooks are active
+    
     # ============== TEMPORARY TIER (Admin-granted) ==============
     # When set, this overrides subscription_tier until expiration
     temp_tier = Column(SQLEnum(SubscriptionTier), nullable=True)

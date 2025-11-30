@@ -6,6 +6,7 @@ from app.models import Addon, Version, User
 from app.schemas import AddonCreate, AddonUpdate
 from app.utils import slugify
 from app.core.exceptions import NotFoundError, ConflictError, ForbiddenError
+from app.services.user_service import UserService
 
 
 class AddonService:
@@ -62,6 +63,10 @@ class AddonService:
                 email_service.send_admin_new_addon,
                 owner, addon.name, addon.description or ""
             )
+        
+        # Check and add addon_creator badge if this is user's first public addon
+        if addon.is_public:
+            await UserService.check_and_add_creator_badge(db, owner)
         
         return addon
     

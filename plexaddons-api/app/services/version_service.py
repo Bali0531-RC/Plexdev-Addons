@@ -5,6 +5,7 @@ from sqlalchemy import select, func, delete
 from app.models import Version, Addon, User, SubscriptionTier
 from app.schemas import VersionCreate, VersionUpdate
 from app.services.user_service import UserService
+from app.services.webhook_service import webhook_service
 from app.core.exceptions import (
     NotFoundError,
     ForbiddenError,
@@ -182,6 +183,9 @@ class VersionService:
         
         # Update user storage
         await UserService.update_storage_used(db, user)
+        
+        # Send webhook notification (Premium users only)
+        await webhook_service.notify_version_released(db, addon, version, user)
         
         return version
     
