@@ -1,6 +1,7 @@
 import httpx
 from datetime import datetime, timedelta
 from typing import Optional
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.config import get_settings
@@ -87,8 +88,15 @@ class AuthService:
             return response.json()
     
     @classmethod
-    async def get_or_create_user(cls, db: AsyncSession, tokens: dict) -> User:
+    async def get_or_create_user(
+        cls, 
+        db: AsyncSession, 
+        tokens: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> User:
         """Get existing user or create new one from Discord OAuth response."""
+        from app.services.email_service import email_service
+        
         # Get Discord user info
         discord_user = await cls.get_discord_user(tokens["access_token"])
         
@@ -99,6 +107,7 @@ class AuthService:
         user = result.scalar_one_or_none()
         
         token_expires_at = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 604800))
+        is_new_user = False
         
         if user:
             # Update existing user
@@ -130,9 +139,16 @@ class AuthService:
                 last_login_at=datetime.utcnow(),
             )
             db.add(user)
+            is_new_user = True
         
         await db.commit()
         await db.refresh(user)
+        
+        # Send welcome email and admin notification for new users
+        if is_new_user and user.email and background_tasks:
+            background_tasks.add_task(email_service.send_welcome_email, user)
+            background_tasks.add_task(email_service.send_admin_new_user, user)
+        
         return user
     
     @classmethod

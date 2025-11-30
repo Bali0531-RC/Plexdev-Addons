@@ -1,5 +1,6 @@
 import stripe
 from typing import Optional
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
@@ -111,7 +112,12 @@ class StripeService:
             raise PaymentError(f"Failed to create customer: {str(e)}")
     
     @staticmethod
-    async def handle_webhook_event(db: AsyncSession, payload: bytes, sig_header: str) -> dict:
+    async def handle_webhook_event(
+        db: AsyncSession, 
+        payload: bytes, 
+        sig_header: str,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> dict:
         """Handle Stripe webhook events."""
         try:
             event = stripe.Webhook.construct_event(
@@ -139,13 +145,19 @@ class StripeService:
         
         handler = handlers.get(event_type)
         if handler:
-            await handler(db, event_data)
+            await handler(db, event_data, background_tasks)
         
         return {"status": "success", "event_type": event_type}
     
     @staticmethod
-    async def _handle_subscription_created(db: AsyncSession, subscription_data: dict):
+    async def _handle_subscription_created(
+        db: AsyncSession, 
+        subscription_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription creation."""
+        from app.services.email_service import email_service
+        
         customer_id = subscription_data["customer"]
         subscription_id = subscription_data["id"]
         
@@ -176,9 +188,29 @@ class StripeService:
             await UserService.update_user_tier(db, user, tier)
         
         await db.commit()
+        
+        # Send subscription confirmation emails
+        if background_tasks and status == SubscriptionStatus.ACTIVE:
+            # Map tier to price (you may want to make this configurable)
+            amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
+            plan_name = tier.value.capitalize()
+            next_billing = datetime.fromtimestamp(subscription_data["current_period_end"])
+            
+            background_tasks.add_task(
+                email_service.send_subscription_confirmation,
+                user, plan_name, amount, next_billing
+            )
+            background_tasks.add_task(
+                email_service.send_admin_new_payment,
+                user, amount, plan_name, "Stripe"
+            )
     
     @staticmethod
-    async def _handle_subscription_updated(db: AsyncSession, subscription_data: dict):
+    async def _handle_subscription_updated(
+        db: AsyncSession, 
+        subscription_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription updates."""
         subscription_id = subscription_data["id"]
         
@@ -212,8 +244,14 @@ class StripeService:
         await db.commit()
     
     @staticmethod
-    async def _handle_subscription_deleted(db: AsyncSession, subscription_data: dict):
+    async def _handle_subscription_deleted(
+        db: AsyncSession, 
+        subscription_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription cancellation/deletion."""
+        from app.services.email_service import email_service
+        
         subscription_id = subscription_data["id"]
         
         result = await db.execute(
@@ -225,6 +263,7 @@ class StripeService:
         if not sub:
             return
         
+        old_tier = sub.tier
         sub.status = SubscriptionStatus.CANCELED
         sub.canceled_at = datetime.utcnow()
         
@@ -233,17 +272,58 @@ class StripeService:
         user = result.scalar_one_or_none()
         if user:
             await UserService.update_user_tier(db, user, SubscriptionTier.FREE)
+            
+            # Send cancellation email
+            if background_tasks:
+                plan_name = old_tier.value.capitalize()
+                background_tasks.add_task(
+                    email_service.send_subscription_cancelled,
+                    user, plan_name, sub.current_period_end
+                )
         
         await db.commit()
     
     @staticmethod
-    async def _handle_invoice_paid(db: AsyncSession, invoice_data: dict):
+    async def _handle_invoice_paid(
+        db: AsyncSession, 
+        invoice_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle successful invoice payment."""
-        # This is mainly for logging/analytics
-        pass
+        from app.services.email_service import email_service
+        
+        # Send payment receipt
+        customer_id = invoice_data.get("customer")
+        if customer_id and background_tasks:
+            user = await StripeService._get_user_by_customer(db, customer_id)
+            if user:
+                amount = invoice_data.get("amount_paid", 0) / 100  # Convert cents to dollars
+                
+                # Get plan name from subscription
+                subscription_id = invoice_data.get("subscription")
+                plan_name = "Subscription"
+                if subscription_id:
+                    result = await db.execute(
+                        select(Subscription)
+                        .where(Subscription.provider == PaymentProvider.STRIPE)
+                        .where(Subscription.provider_subscription_id == subscription_id)
+                    )
+                    sub = result.scalar_one_or_none()
+                    if sub:
+                        plan_name = sub.tier.value.capitalize()
+                
+                transaction_id = invoice_data.get("id", "N/A")
+                background_tasks.add_task(
+                    email_service.send_payment_received,
+                    user, amount, plan_name, transaction_id
+                )
     
     @staticmethod
-    async def _handle_payment_failed(db: AsyncSession, invoice_data: dict):
+    async def _handle_payment_failed(
+        db: AsyncSession, 
+        invoice_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle failed payment."""
         subscription_id = invoice_data.get("subscription")
         if not subscription_id:

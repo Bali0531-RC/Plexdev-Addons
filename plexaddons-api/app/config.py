@@ -65,6 +65,17 @@ class Settings(BaseSettings):
     # Audit Log
     audit_log_retention_days: int = 90
     
+    # Email (SMTP)
+    email_enabled: bool = True
+    smtp_host: str = "mail-eu.smtp2go.com"
+    smtp_port: int = 587
+    smtp_username: str = "no-reply@m.plexdev.live"
+    smtp_password: Optional[str] = None
+    smtp_use_tls: bool = True
+    email_from_address: str = "no-reply@m.plexdev.live"
+    email_from_name: str = "PlexAddons"
+    admin_notification_email: Optional[str] = None
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

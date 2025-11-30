@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -32,6 +32,7 @@ async def discord_login(
 @router.get("/discord/callback")
 async def discord_callback(
     code: str,
+    background_tasks: BackgroundTasks,
     state: str = None,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check),
@@ -44,8 +45,8 @@ async def discord_callback(
     # Exchange code for tokens
     tokens = await AuthService.exchange_code(code)
     
-    # Get or create user
-    user = await AuthService.get_or_create_user(db, tokens)
+    # Get or create user (sends welcome email for new users)
+    user = await AuthService.get_or_create_user(db, tokens, background_tasks)
     
     # Create JWT
     jwt_token = AuthService.create_jwt_token(user)
@@ -58,6 +59,7 @@ async def discord_callback(
 @router.get("/discord/callback/api", response_model=AuthResponse)
 async def discord_callback_api(
     code: str,
+    background_tasks: BackgroundTasks,
     state: str = None,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check),
@@ -67,7 +69,7 @@ async def discord_callback_api(
         del _oauth_states[state]
     
     tokens = await AuthService.exchange_code(code)
-    user = await AuthService.get_or_create_user(db, tokens)
+    user = await AuthService.get_or_create_user(db, tokens, background_tasks)
     jwt_token = AuthService.create_jwt_token(user)
     
     return AuthResponse(

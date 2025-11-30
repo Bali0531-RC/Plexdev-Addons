@@ -206,3 +206,30 @@ class SubscriptionEvent(Base):
         Index("idx_subscription_events_user_id", "user_id"),
         Index("idx_subscription_events_created_at", "created_at"),
     )
+
+
+class ApiRequestLog(Base):
+    """Track API requests for analytics and weekly summaries"""
+    __tablename__ = "api_request_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Request info
+    endpoint = Column(String(255), nullable=False)
+    method = Column(String(10), nullable=False)
+    status_code = Column(Integer, nullable=True)
+    
+    # Optional user tracking
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Request metadata
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    
+    # Timestamp
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    __table_args__ = (
+        Index("idx_api_request_logs_timestamp", "timestamp"),
+        Index("idx_api_request_logs_endpoint", "endpoint"),
+    )

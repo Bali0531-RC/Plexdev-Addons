@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from app.database import get_db
@@ -74,12 +74,13 @@ async def list_my_addons(
 @router.post("", response_model=AddonResponse)
 async def create_addon(
     data: AddonCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """Create a new addon."""
-    addon = await AddonService.create_addon(db, user, data)
+    addon = await AddonService.create_addon(db, user, data, background_tasks)
     
     return AddonResponse(
         id=addon.id,

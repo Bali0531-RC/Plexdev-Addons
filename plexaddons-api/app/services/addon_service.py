@@ -1,4 +1,5 @@
 from typing import Optional, List
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.models import Addon, Version, User
@@ -23,8 +24,15 @@ class AddonService:
         return result.scalar_one_or_none()
     
     @staticmethod
-    async def create_addon(db: AsyncSession, owner: User, data: AddonCreate) -> Addon:
+    async def create_addon(
+        db: AsyncSession, 
+        owner: User, 
+        data: AddonCreate,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> Addon:
         """Create a new addon."""
+        from app.services.email_service import email_service
+        
         slug = slugify(data.name)
         
         # Check if slug already exists
@@ -47,6 +55,14 @@ class AddonService:
         db.add(addon)
         await db.commit()
         await db.refresh(addon)
+        
+        # Send admin notification for new addon
+        if background_tasks:
+            background_tasks.add_task(
+                email_service.send_admin_new_addon,
+                owner, addon.name, addon.description or ""
+            )
+        
         return addon
     
     @staticmethod

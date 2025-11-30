@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import engine, Base, AsyncSessionLocal
 from app.api.v1 import router as v1_router
 from app.api.public import router as public_router
 from app.webhooks import router as webhooks_router
@@ -22,7 +22,6 @@ scheduler = AsyncIOScheduler()
 
 async def cleanup_audit_logs():
     """Scheduled task to clean up old audit logs."""
-    from app.database import AsyncSessionLocal
     from app.models import AdminAuditLog
     from sqlalchemy import delete
     
@@ -35,12 +34,37 @@ async def cleanup_audit_logs():
         print(f"[Scheduler] Cleaned up audit logs older than {cutoff}")
 
 
+async def cleanup_api_request_logs():
+    """Scheduled task to clean up old API request logs (keep 30 days)."""
+    from app.models import ApiRequestLog
+    from sqlalchemy import delete
+    
+    async with AsyncSessionLocal() as db:
+        cutoff = datetime.utcnow() - timedelta(days=30)
+        await db.execute(
+            delete(ApiRequestLog).where(ApiRequestLog.timestamp < cutoff)
+        )
+        await db.commit()
+        print(f"[Scheduler] Cleaned up API request logs older than {cutoff}")
+
+
+async def send_weekly_summary():
+    """Send weekly summary email to admin."""
+    from app.services.email_service import email_service
+    
+    async with AsyncSessionLocal() as db:
+        result = await email_service.send_admin_weekly_summary(db)
+        if result:
+            print("[Scheduler] Weekly summary email sent")
+        else:
+            print("[Scheduler] Weekly summary email skipped (no admin email configured)")
+
+
 async def bootstrap_initial_admin():
     """Create initial admin user if configured."""
     if not settings.initial_admin_discord_id:
         return
     
-    from app.database import AsyncSessionLocal
     from app.models import User
     from sqlalchemy import select
     
@@ -87,6 +111,19 @@ async def lifespan(app: FastAPI):
         cleanup_audit_logs,
         "cron",
         hour=3,  # Run at 3 AM daily
+        minute=0,
+    )
+    scheduler.add_job(
+        cleanup_api_request_logs,
+        "cron",
+        hour=3,  # Run at 3 AM daily
+        minute=30,
+    )
+    scheduler.add_job(
+        send_weekly_summary,
+        "cron",
+        day_of_week="mon",  # Run every Monday
+        hour=8,  # at 8 AM UTC
         minute=0,
     )
     scheduler.start()

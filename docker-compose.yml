@@ -28,6 +28,16 @@ services:
       - INITIAL_ADMIN_DISCORD_ID=${INITIAL_ADMIN_DISCORD_ID}
       - FRONTEND_URL=${FRONTEND_URL:-https://addons.plexdev.live}
       - ENVIRONMENT=${ENVIRONMENT:-production}
+      # Email (SMTP)
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
+      - SMTP_HOST=${SMTP_HOST:-mail-eu.smtp2go.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-no-reply@m.plexdev.live}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-PlexAddons}
+      - ADMIN_NOTIFICATION_EMAIL=${ADMIN_NOTIFICATION_EMAIL}
     depends_on:
       db:
         condition: service_healthy

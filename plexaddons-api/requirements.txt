@@ -26,6 +26,9 @@ stripe==7.12.0
 # Scheduling
 apscheduler==3.10.4
 
+# Email
+aiosmtplib==3.0.1
+
 # Utilities
 python-multipart==0.0.6
 python-dotenv==1.0.0

@@ -2,6 +2,7 @@ import httpx
 import base64
 import json
 from typing import Optional
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
@@ -173,7 +174,13 @@ class PayPalService:
             return response.status_code == 204
     
     @classmethod
-    async def handle_webhook_event(cls, db: AsyncSession, payload: dict, headers: dict) -> dict:
+    async def handle_webhook_event(
+        cls, 
+        db: AsyncSession, 
+        payload: dict, 
+        headers: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> dict:
         """Handle PayPal webhook events."""
         event_type = payload.get("event_type")
         resource = payload.get("resource", {})
@@ -192,13 +199,20 @@ class PayPalService:
         
         handler = handlers.get(event_type)
         if handler:
-            await handler(db, resource)
+            await handler(db, resource, background_tasks)
         
         return {"status": "success", "event_type": event_type}
     
     @classmethod
-    async def _handle_subscription_activated(cls, db: AsyncSession, resource: dict):
+    async def _handle_subscription_activated(
+        cls, 
+        db: AsyncSession, 
+        resource: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription activation."""
+        from app.services.email_service import email_service
+        
         subscription_id = resource.get("id")
         custom_id = resource.get("custom_id", "")
         
@@ -241,10 +255,31 @@ class PayPalService:
         
         await UserService.update_user_tier(db, user, tier)
         await db.commit()
+        
+        # Send subscription confirmation emails
+        if background_tasks:
+            amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
+            plan_name = tier.value.capitalize()
+            
+            background_tasks.add_task(
+                email_service.send_subscription_confirmation,
+                user, plan_name, amount, None
+            )
+            background_tasks.add_task(
+                email_service.send_admin_new_payment,
+                user, amount, plan_name, "PayPal"
+            )
     
     @classmethod
-    async def _handle_subscription_cancelled(cls, db: AsyncSession, resource: dict):
+    async def _handle_subscription_cancelled(
+        cls, 
+        db: AsyncSession, 
+        resource: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription cancellation."""
+        from app.services.email_service import email_service
+        
         subscription_id = resource.get("id")
         
         result = await db.execute(
@@ -256,6 +291,7 @@ class PayPalService:
         if not sub:
             return
         
+        old_tier = sub.tier
         sub.status = SubscriptionStatus.CANCELED
         sub.canceled_at = datetime.utcnow()
         
@@ -264,11 +300,24 @@ class PayPalService:
         user = result.scalar_one_or_none()
         if user:
             await UserService.update_user_tier(db, user, SubscriptionTier.FREE)
+            
+            # Send cancellation email
+            if background_tasks:
+                plan_name = old_tier.value.capitalize()
+                background_tasks.add_task(
+                    email_service.send_subscription_cancelled,
+                    user, plan_name, sub.current_period_end
+                )
         
         await db.commit()
     
     @classmethod
-    async def _handle_subscription_suspended(cls, db: AsyncSession, resource: dict):
+    async def _handle_subscription_suspended(
+        cls, 
+        db: AsyncSession, 
+        resource: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription suspension (payment failure)."""
         subscription_id = resource.get("id")
         
@@ -283,7 +332,12 @@ class PayPalService:
             await db.commit()
     
     @classmethod
-    async def _handle_subscription_updated(cls, db: AsyncSession, resource: dict):
+    async def _handle_subscription_updated(
+        cls, 
+        db: AsyncSession, 
+        resource: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle subscription updates."""
         subscription_id = resource.get("id")
         
@@ -310,10 +364,37 @@ class PayPalService:
         await db.commit()
     
     @classmethod
-    async def _handle_payment_completed(cls, db: AsyncSession, resource: dict):
+    async def _handle_payment_completed(
+        cls, 
+        db: AsyncSession, 
+        resource: dict,
+        background_tasks: Optional[BackgroundTasks] = None
+    ):
         """Handle successful payment."""
-        # Mainly for logging, subscription status is handled by other events
-        pass
+        from app.services.email_service import email_service
+        
+        # Try to send payment receipt
+        billing_agreement_id = resource.get("billing_agreement_id")
+        if billing_agreement_id and background_tasks:
+            result = await db.execute(
+                select(Subscription)
+                .where(Subscription.provider == PaymentProvider.PAYPAL)
+                .where(Subscription.provider_subscription_id == billing_agreement_id)
+            )
+            sub = result.scalar_one_or_none()
+            if sub:
+                result = await db.execute(select(User).where(User.id == sub.user_id))
+                user = result.scalar_one_or_none()
+                if user:
+                    amount_data = resource.get("amount", {})
+                    amount = float(amount_data.get("total", 0))
+                    plan_name = sub.tier.value.capitalize()
+                    transaction_id = resource.get("id", "N/A")
+                    
+                    background_tasks.add_task(
+                        email_service.send_payment_received,
+                        user, amount, plan_name, transaction_id
+                    )
     
     @classmethod
     async def _log_event(
