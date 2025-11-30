@@ -80,7 +80,13 @@ export default function AddonDetail() {
       )}
 
       <div className="addon-detail-meta">
-        <span>by {addon.owner_username || 'Unknown'}</span>
+        <span 
+          className="addon-author-link"
+          onClick={() => addon.owner_discord_id && (window.location.href = `/u/${addon.owner_discord_id}`)}
+          style={{ cursor: addon.owner_discord_id ? 'pointer' : 'default' }}
+        >
+          by {addon.owner_username || 'Unknown'}
+        </span>
         {addon.homepage && (
           <>
             <span className="meta-separator">•</span>

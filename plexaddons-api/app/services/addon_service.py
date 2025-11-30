@@ -182,6 +182,7 @@ class AddonService:
                 "is_public": addon.is_public,
                 "owner_id": addon.owner_id,
                 "owner_username": owner.discord_username if owner else None,
+                "owner_discord_id": owner.discord_id if owner else None,
                 "latest_version": latest_version.version if latest_version else None,
                 "latest_release_date": latest_version.release_date if latest_version else None,
                 "version_count": version_count,

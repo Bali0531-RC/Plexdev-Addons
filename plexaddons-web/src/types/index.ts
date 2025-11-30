@@ -41,6 +41,7 @@ export interface Addon {
   is_public: boolean;
   owner_id: number;
   owner_username: string | null;
+  owner_discord_id: string | null;
   latest_version: string | null;
   latest_release_date: string | null;
   version_count: number;

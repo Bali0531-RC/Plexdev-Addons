@@ -46,6 +46,15 @@
   margin-bottom: 2rem;
 }
 
+.addon-detail-meta .addon-author-link {
+  transition: color 0.2s;
+}
+
+.addon-detail-meta .addon-author-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .addon-detail-meta a {
   color: var(--accent);
   text-decoration: none;

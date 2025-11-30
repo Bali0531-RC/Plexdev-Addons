@@ -249,6 +249,7 @@ class AddonResponse(BaseModel):
     
     # Denormalized for convenience
     owner_username: Optional[str] = None
+    owner_discord_id: Optional[str] = None
     latest_version: Optional[str] = None
     latest_release_date: Optional[date] = None
     version_count: int = 0

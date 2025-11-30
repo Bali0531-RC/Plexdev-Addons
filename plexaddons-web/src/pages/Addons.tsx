@@ -98,8 +98,8 @@ export default function Addons() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (addon.owner_id) {
-                      window.location.href = `/u/${addon.owner_id}`;
+                    if (addon.owner_discord_id) {
+                      window.location.href = `/u/${addon.owner_discord_id}`;
                     }
                   }}
                 >

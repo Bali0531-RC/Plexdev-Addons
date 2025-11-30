@@ -152,6 +152,7 @@ async def get_public_profile(
                     created_at=addon.created_at,
                     updated_at=addon.updated_at,
                     owner_username=user.discord_username,
+                    owner_discord_id=user.discord_id,
                     latest_version=latest.version if latest else None,
                     latest_release_date=latest.release_date if latest else None,
                     version_count=len(versions),
