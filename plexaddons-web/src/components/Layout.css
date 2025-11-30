@@ -93,11 +93,19 @@
   color: var(--text);
 }
 
+.dropdown-arrow {
+  color: var(--text-muted);
+  transition: transform var(--transition);
+}
+
+.user-menu-container:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
 .dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   right: 0;
-  margin-top: 4px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -106,7 +114,8 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity var(--transition), visibility var(--transition);
+  transform: translateY(-8px);
+  transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
@@ -115,6 +124,7 @@
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
 .dropdown a,
@@ -213,6 +223,10 @@
   }
 
   .username {
+    display: none;
+  }
+
+  .dropdown-arrow {
     display: none;
   }
 

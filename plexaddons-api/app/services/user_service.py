@@ -187,6 +187,11 @@ class UserService:
         user.badges = json.dumps(list(set(badges)))  # Remove duplicates
     
     @staticmethod
+    async def get_badges(db: AsyncSession, user: User) -> List[str]:
+        """Get user's badges as a list."""
+        return UserService._parse_badges(user)
+    
+    @staticmethod
     async def add_badge(db: AsyncSession, user: User, badge: str) -> User:
         """Add a badge to a user."""
         badges = UserService._parse_badges(user)
