@@ -74,9 +74,14 @@ export default function Layout() {
           <div className="footer-left">
             <span>© 2025 PlexAddons</span>
             <span className="separator">•</span>
-            <span>Unofficial project for Plex Development</span>
+            <span className="version-badge alpha">Alpha</span>
+            <span className="separator">•</span>
+            <span className="build-info">v0.1.0 · Build {__BUILD_TIME__}</span>
           </div>
           <div className="footer-right">
+            <a href="/redocs" target="_blank" rel="noopener noreferrer">
+              API Docs
+            </a>
             <a href="https://github.com/Bali0531-RC/Plexdev-Addons" target="_blank" rel="noopener noreferrer">
               GitHub
             </a>

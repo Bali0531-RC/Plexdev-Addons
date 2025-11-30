@@ -4,6 +4,9 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().split('T')[0]),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

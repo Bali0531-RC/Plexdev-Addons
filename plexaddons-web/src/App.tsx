@@ -5,6 +5,7 @@ import Addons from './pages/Addons'
 import AddonDetail from './pages/AddonDetail'
 import Pricing from './pages/Pricing'
 import Docs from './pages/Docs'
+import ApiDocs from './pages/ApiDocs'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Dashboard from './pages/dashboard/Dashboard'
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="addons/:slug" element={<AddonDetail />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="docs" element={<Docs />} />
+        <Route path="redocs" element={<ApiDocs />} />
         <Route path="login" element={<Login />} />
         <Route path="auth/callback" element={<AuthCallback />} />
 
