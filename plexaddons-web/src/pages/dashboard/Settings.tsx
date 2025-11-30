@@ -23,6 +23,7 @@ export default function Settings() {
     profile_public: user?.profile_public ?? true,
     show_addons: user?.show_addons ?? true,
     accent_color: user?.accent_color || '#5865f2',
+    banner_url: user?.banner_url || '',
   });
   const [savingProfile, setSavingProfile] = useState(false);
   
@@ -88,6 +89,7 @@ export default function Settings() {
         github_username: profileData.github_username || null,
         twitter_username: profileData.twitter_username || null,
         profile_slug: profileData.profile_slug || null,
+        banner_url: profileData.banner_url || null,
       });
       setUser(updatedUser);
       toast.success('Profile updated successfully!');
@@ -407,6 +409,42 @@ export default function Settings() {
                 />
               </div>
               {!isPro && <small>Upgrade to Pro to customize your accent color</small>}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="banner_url">
+                Profile Banner
+                {!isPro && <span className="pro-badge">Pro</span>}
+              </label>
+              <input
+                type="url"
+                id="banner_url"
+                value={profileData.banner_url || ''}
+                onChange={(e) => setProfileData({ ...profileData, banner_url: e.target.value })}
+                placeholder="https://example.com/your-banner.jpg"
+                disabled={!isPro}
+              />
+              {!isPro ? (
+                <small>Upgrade to Pro to set a custom profile banner</small>
+              ) : (
+                <small>Enter an image URL (recommended: 1200x300px). Leave empty for default gradient.</small>
+              )}
+              {isPro && profileData.banner_url && (
+                <div className="banner-preview">
+                  <img 
+                    src={profileData.banner_url} 
+                    alt="Banner preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                    onLoad={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'block';
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

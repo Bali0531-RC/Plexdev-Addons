@@ -1100,7 +1100,18 @@ async def admin_add_message(
         details={"message_id": message.id},
     )
     
-    # TODO: Send email notification to user about staff reply
+    # Send email notification to user about staff reply
+    # Get ticket with user loaded
+    ticket_with_user = await ticket_service.get_ticket_by_id(db, ticket_id, include_messages=False)
+    if ticket_with_user and ticket_with_user.user:
+        background_tasks.add_task(
+            email_service.send_user_ticket_reply,
+            ticket_with_user.user,
+            ticket_with_user.id,
+            ticket_with_user.subject,
+            admin.discord_username or "Support Staff",
+            data.content[:500]  # Preview first 500 chars
+        )
     
     return _message_to_response(message)
 
@@ -1109,6 +1120,7 @@ async def admin_add_message(
 async def update_ticket_status(
     ticket_id: int,
     data: TicketStatusUpdate,
+    background_tasks: BackgroundTasks,
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
@@ -1134,6 +1146,17 @@ async def update_ticket_status(
         target_id=ticket_id,
         details={"old_status": old_status.value, "new_status": data.status.value},
     )
+    
+    # Send email notification to user about status change
+    if ticket.user:
+        background_tasks.add_task(
+            email_service.send_ticket_status_changed,
+            ticket.user,
+            ticket.id,
+            ticket.subject,
+            old_status.value,
+            data.status.value
+        )
     
     return _ticket_to_response(ticket)
 
