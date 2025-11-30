@@ -73,11 +73,7 @@ const checker = new VersionChecker('AddonName', '1.0.0', {
   
   // Send current version to API for analytics (default: true)
   // This helps addon owners see which versions users are running
-  trackAnalytics: true,
-  
-  // API key for authenticated requests (Premium only)
-  // Required for accessing analytics endpoints
-  apiKey: 'pa_your_api_key_here'
+  trackAnalytics: true
 });
 ```
 
@@ -110,30 +106,6 @@ Get detailed update information box.
 
 #### `getPlainSummary(result): string`
 Get plain text summary without colors.
-
-### Analytics (Premium API Key Required)
-
-Addon owners with Premium subscription can access usage analytics:
-
-```javascript
-const checker = new VersionChecker('MyAddon', '1.0.0', {
-  apiKey: 'pa_your_api_key_here'
-});
-
-// Validate your API key
-const validation = await checker.validateApiKey();
-console.log(`Tier: ${validation.user.effectiveTier}`);
-
-// Get your addon list
-const myAddons = await checker.getMyAddons();
-
-// Get analytics summary for all addons
-const summary = await checker.getAnalyticsSummary();
-console.log(checker.formatAnalytics(summary));
-
-// Get detailed analytics for specific addon
-const analytics = await checker.getAddonAnalytics(addonId);
-```
 
 ## VersionCheckResult
 

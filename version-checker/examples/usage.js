@@ -13,7 +13,7 @@ const VersionChecker = require('./VersionChecker');
 
 async function basicExample() {
     // Create a version checker for your addon
-    // By default, analytics tracking is enabled (sends version to API)
+    // Analytics tracking is enabled by default (sends version to API)
     const checker = new VersionChecker('AiModeration', '1.3.0');
     
     // Check for updates
@@ -29,69 +29,23 @@ async function basicExample() {
 }
 
 // =============================================================================
-// WITH ANALYTICS TRACKING (default behavior)
+// ANALYTICS TRACKING (enabled by default)
 // =============================================================================
 
-async function analyticsTrackingExample() {
+async function analyticsExample() {
     // Analytics tracking is ON by default
-    // This sends your current version to the API when checking
-    // Addon owners with Pro/Premium can see version distribution
-    const checker = new VersionChecker('MyAddon', '1.0.0', {
-        trackAnalytics: true  // Default: true
-    });
+    // When your users check for updates, their current version is sent to the API
+    // You (the addon owner) can view version distribution in your dashboard
+    // at addons.plexdev.live - no API key needed in the VersionChecker!
     
+    const checker = new VersionChecker('MyAddon', '1.0.0');
     const result = await checker.checkForUpdates();
     console.log(checker.formatVersionMessage(result));
     
-    // To disable analytics tracking:
+    // To disable analytics tracking (not recommended):
     const privateChecker = new VersionChecker('MyAddon', '1.0.0', {
         trackAnalytics: false
     });
-}
-
-// =============================================================================
-// ADDON OWNER: VIEW ANALYTICS (Premium only)
-// =============================================================================
-
-async function addonOwnerAnalyticsExample() {
-    // If you're an addon owner with Premium subscription,
-    // you can use your API key to view usage analytics
-    const checker = new VersionChecker('MyAddon', '1.0.0', {
-        apiKey: 'pa_your_api_key_here'  // Get from Settings > API Key
-    });
-    
-    // Validate your API key first
-    const validation = await checker.validateApiKey();
-    if (!validation.valid) {
-        console.log('API key invalid:', validation.error);
-        return;
-    }
-    console.log(`Logged in as: ${validation.user.username} (${validation.user.effectiveTier})`);
-    
-    // Get your addons list
-    const myAddons = await checker.getMyAddons();
-    if (myAddons.success) {
-        console.log('Your addons:');
-        myAddons.addons.forEach(addon => {
-            console.log(`  - ${addon.name} (ID: ${addon.id})`);
-        });
-    }
-    
-    // Get analytics summary for all your addons
-    const summary = await checker.getAnalyticsSummary();
-    if (summary.success) {
-        console.log(checker.formatAnalytics(summary));
-    }
-    
-    // Get detailed analytics for a specific addon
-    if (myAddons.success && myAddons.addons.length > 0) {
-        const addonId = myAddons.addons[0].id;
-        const analytics = await checker.getAddonAnalytics(addonId);
-        if (analytics.success) {
-            console.log(`\nDetailed analytics for ${myAddons.addons[0].name}:`);
-            console.log(checker.formatAnalytics(analytics));
-        }
-    }
 }
 
 // =============================================================================

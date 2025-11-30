@@ -66,62 +66,14 @@ declare module 'plexaddons-version-checker' {
 
     /**
      * Send current version to API for analytics tracking
-     * Allows addon owners to see version distribution
+     * Allows addon owners to see version distribution in their dashboard
      * @default true
      */
     trackAnalytics?: boolean;
-
-    /**
-     * API key for authenticated requests (Premium only)
-     * Required for accessing analytics endpoints
-     * Format: pa_<64_hex_chars>
-     */
-    apiKey?: string;
   }
 
   export interface VersionsJson {
     [addonName: string]: VersionInfo;
-  }
-
-  export interface AnalyticsResult {
-    success: boolean;
-    error?: string;
-    total_version_checks?: number;
-    total_unique_users?: number;
-    addons?: Array<{
-      addon_id: number;
-      addon_name: string;
-      version_checks: number;
-      unique_users: number;
-    }>;
-    version_breakdown?: Record<string, number>;
-  }
-
-  export interface UserValidation {
-    success: boolean;
-    valid: boolean;
-    error?: string;
-    user?: {
-      id: number;
-      username: string;
-      tier: 'free' | 'pro' | 'premium';
-      effectiveTier: 'free' | 'pro' | 'premium';
-      tempTier?: 'free' | 'pro' | 'premium' | null;
-      tempTierExpiresAt?: string | null;
-      hasApiKey: boolean;
-    };
-  }
-
-  export interface AddonsResult {
-    success: boolean;
-    error?: string;
-    addons: Array<{
-      id: number;
-      name: string;
-      slug: string;
-      description?: string;
-    }>;
-    total?: number;
   }
 
   export class VersionChecker {
@@ -181,38 +133,6 @@ declare module 'plexaddons-version-checker' {
      * Convenience method to check and log results
      */
     checkAndLog(): Promise<VersionCheckResult>;
-
-    // ============== Analytics Methods (requires API key - Premium only) ==============
-
-    /**
-     * Get analytics summary for all your addons
-     * Requires Premium subscription and API key
-     */
-    getAnalyticsSummary(): Promise<AnalyticsResult>;
-
-    /**
-     * Get detailed analytics for a specific addon
-     * Requires Premium subscription and API key
-     * @param addonId - The addon ID (from your addon list)
-     */
-    getAddonAnalytics(addonId: number): Promise<AnalyticsResult>;
-
-    /**
-     * Get your addon list (requires API key)
-     * Useful for getting addon IDs for analytics
-     */
-    getMyAddons(): Promise<AddonsResult>;
-
-    /**
-     * Validate API key and get user info
-     */
-    validateApiKey(): Promise<UserValidation>;
-
-    /**
-     * Format analytics data for console output
-     * @param analytics - Analytics data from getAddonAnalytics or getAnalyticsSummary
-     */
-    formatAnalytics(analytics: AnalyticsResult): string;
 
     /**
      * Compare two semantic version strings
