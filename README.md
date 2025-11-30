@@ -475,18 +475,28 @@ The import script will:
 
 Once the API is running, interactive documentation is available at:
 
-- **Swagger UI:** http://localhost:3311/docs
-- **ReDoc:** http://localhost:3311/redoc
+- **Swagger UI:** http://localhost:3311/docs (dev only)
+- **ReDoc:** http://localhost:3311/redoc (dev only)
+- **ReDoc (production):** https://addons.plexdev.live/redocs
 
 ### Key Endpoints
+
+#### Public API (no authentication required)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/versions.json` | GET | Backward-compatible versions endpoint |
+| `/api/addons` | GET | List all public addons with basic info |
+| `/api/addons/{name}/latest` | GET | Get latest version for a specific addon |
+
+#### Authenticated API (requires Bearer token)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/api/v1/auth/discord` | GET | Start Discord OAuth flow |
 | `/api/v1/auth/callback` | GET | OAuth callback handler |
 | `/api/v1/users/me` | GET | Get current user |
-| `/api/v1/addons` | GET | List all public addons |
+| `/api/v1/addons` | GET | List all public addons (detailed) |
 | `/api/v1/addons` | POST | Create new addon |
 | `/api/v1/addons/{slug}` | GET | Get addon by slug |
 | `/api/v1/addons/{slug}/versions` | GET | List addon versions |
@@ -494,7 +504,8 @@ Once the API is running, interactive documentation is available at:
 | `/api/v1/payments/stripe/checkout` | POST | Create Stripe checkout |
 | `/api/v1/payments/paypal/checkout` | POST | Create PayPal subscription |
 | `/api/v1/admin/users` | GET | List all users (admin) |
-| `/api/v1/admin/audit-logs` | GET | View audit logs (admin) |
+| `/api/v1/admin/addons` | GET | List all addons (admin) |
+| `/api/v1/admin/audit-log` | GET | View audit logs (admin) |
 
 ---
 

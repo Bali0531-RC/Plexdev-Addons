@@ -86,6 +86,9 @@ export default function AdminAddons() {
                   </span>
                 </span>
                 <span className="addon-actions">
+                  <Link to={`/admin/addons/${addon.id}`} className="btn btn-sm btn-primary">
+                    Edit
+                  </Link>
                   <Link to={`/addons/${addon.slug}`} className="btn btn-sm btn-secondary" target="_blank">
                     View
                   </Link>

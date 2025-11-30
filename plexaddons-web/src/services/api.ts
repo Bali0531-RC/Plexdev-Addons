@@ -223,8 +223,30 @@ class ApiClient {
     return this.fetch(`/v1/admin/addons?${params}`);
   }
 
+  async adminGetAddon(addonId: number): Promise<{ addon: Addon; versions: Version[] }> {
+    return this.fetch(`/v1/admin/addons/${addonId}`);
+  }
+
+  async adminUpdateAddon(addonId: number, data: AddonUpdate): Promise<Addon> {
+    return this.fetch(`/v1/admin/addons/${addonId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   async adminDeleteAddon(addonId: number): Promise<{ status: string }> {
     return this.fetch(`/v1/admin/addons/${addonId}`, { method: 'DELETE' });
+  }
+
+  async adminUpdateVersion(addonId: number, versionId: number, data: VersionUpdate): Promise<Version> {
+    return this.fetch(`/v1/admin/addons/${addonId}/versions/${versionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminDeleteVersion(addonId: number, versionId: number): Promise<{ status: string }> {
+    return this.fetch(`/v1/admin/addons/${addonId}/versions/${versionId}`, { method: 'DELETE' });
   }
 
   async getAuditLog(page = 1, perPage = 50): Promise<{

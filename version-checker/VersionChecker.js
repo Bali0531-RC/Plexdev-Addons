@@ -134,17 +134,20 @@ class VersionChecker {
      * @returns {Promise<Object>} Addon and version data
      */
     async fetchFromApi() {
-        const addonUrl = `${this.options.apiUrl}/api/v1/addons/${this.addonSlug}`;
-        const versionUrl = `${this.options.apiUrl}/api/v1/addons/${this.addonSlug}/versions/latest`;
+        // Public API endpoints (no v1 prefix)
+        const latestUrl = `${this.options.apiUrl}/api/addons/${this.addonName}/latest`;
         
-        // Fetch addon info and latest version in parallel
-        const [addonData, latestVersion] = await Promise.all([
-            this.fetchWithRetry(addonUrl),
-            this.fetchWithRetry(versionUrl).catch(() => null)
-        ]);
+        // Try to get addon info from the latest endpoint
+        const latestVersion = await this.fetchWithRetry(latestUrl);
         
         return {
-            addon: addonData,
+            addon: {
+                name: latestVersion.name || this.addonName,
+                slug: latestVersion.slug || this.addonSlug,
+                external: latestVersion.external || false,
+                homepage: latestVersion.homepage || null,
+                description: latestVersion.description || null,
+            },
             latestVersion: latestVersion
         };
     }
@@ -269,13 +272,21 @@ class VersionChecker {
                 };
             }
             
-            const url = `${this.options.apiUrl}/api/v1/addons/${this.addonSlug}/versions?limit=${limit}`;
-            const data = await this.fetchWithRetry(url);
-            
+            // Use v1 API for authenticated version listing (requires auth)
+            // For public use, fall back to legacy which only has latest
+            const result = await this.checkForUpdates();
             return {
-                success: true,
-                versions: data.versions || data,
-                total: data.total || (data.versions || data).length
+                success: result.success,
+                versions: result.success ? [{
+                    version: result.latest,
+                    releaseDate: result.releaseDate,
+                    description: result.description,
+                    downloadUrl: result.downloadUrl,
+                    urgent: result.urgent,
+                    breaking: result.breaking
+                }] : [],
+                error: result.error,
+                note: 'Public API only returns latest version. Use versions.json for all versions.'
             };
         } catch (error) {
             return {

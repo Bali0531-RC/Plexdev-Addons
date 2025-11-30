@@ -45,7 +45,7 @@ if (result?.updateAvailable) {
 | `addonName` | `string` | **required** | Your addon's slug on addons.plexdev.live |
 | `currentVersion` | `string` | **required** | Your current addon version |
 | `repositoryUrl` | `string` | `https://addons.plexdev.live/versions.json` | URL to versions.json |
-| `apiBaseUrl` | `string` | `https://addons.plexdev.live/api/v1` | Base URL for API |
+| `apiBaseUrl` | `string` | `https://addons.plexdev.live` | Base URL for API |
 | `checkInterval` | `number` | `3600000` (1 hour) | Auto-check interval in ms |
 | `logUpdates` | `boolean` | `true` | Log updates to console |
 | `logger` | `function` | `console.log` | Custom logger function |

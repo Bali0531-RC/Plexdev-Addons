@@ -57,22 +57,18 @@ import VersionChecker from './version-checker/VersionChecker.mjs';`}</code></pre
             <p>Basic usage example:</p>
             <pre><code>{`const VersionChecker = require('./version-checker/VersionChecker');
 
-const checker = new VersionChecker({
-  // Use the addons.plexdev.live API
-  versionsUrl: 'https://addons.plexdev.live/api/v1/public/addons/{slug}/versions',
-  currentVersion: '1.0.0',
-  addonSlug: 'my-addon',
-  checkInterval: 3600000, // 1 hour
-});
+// Simple instantiation
+const checker = new VersionChecker('MyAddon', '1.0.0');
 
-// Listen for updates
-checker.on('updateAvailable', (info) => {
-  console.log(\`Update available: v\${info.latestVersion}\`);
-  console.log(\`Changelog: \${info.changelog}\`);
-});
+// Check for updates
+const result = await checker.checkForUpdates();
+if (result.isOutdated) {
+  console.log(\`Update available: v\${result.current} → v\${result.latest}\`);
+  console.log(checker.getUpdateDetails(result));
+}
 
-// Start checking
-checker.startAutoCheck();`}</code></pre>
+// Or use the convenience method to check and log
+await checker.checkAndLog();`}</code></pre>
           </section>
 
           <section id="version-checker">
@@ -91,29 +87,34 @@ checker.startAutoCheck();`}</code></pre>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><code>versionsUrl</code></td>
+                    <td><code>apiUrl</code></td>
                     <td>string</td>
-                    <td>URL to fetch version info from. Use <code>{'{slug}'}</code> as placeholder.</td>
+                    <td>Base API URL (default: https://addons.plexdev.live)</td>
                   </tr>
                   <tr>
-                    <td><code>currentVersion</code></td>
+                    <td><code>repositoryUrl</code></td>
                     <td>string</td>
-                    <td>Current version of your addon (semver format)</td>
+                    <td>Legacy versions.json URL for fallback</td>
                   </tr>
                   <tr>
-                    <td><code>addonSlug</code></td>
-                    <td>string</td>
-                    <td>Your addon's unique slug on PlexDev Addons</td>
-                  </tr>
-                  <tr>
-                    <td><code>checkInterval</code></td>
-                    <td>number</td>
-                    <td>Interval between checks in milliseconds (default: 1 hour)</td>
-                  </tr>
-                  <tr>
-                    <td><code>autoCheck</code></td>
+                    <td><code>checkOnStartup</code></td>
                     <td>boolean</td>
-                    <td>Start checking automatically (default: false)</td>
+                    <td>Check for updates on startup (default: true)</td>
+                  </tr>
+                  <tr>
+                    <td><code>timeout</code></td>
+                    <td>number</td>
+                    <td>Request timeout in ms (default: 10000)</td>
+                  </tr>
+                  <tr>
+                    <td><code>retries</code></td>
+                    <td>number</td>
+                    <td>Number of retry attempts (default: 2)</td>
+                  </tr>
+                  <tr>
+                    <td><code>useLegacyApi</code></td>
+                    <td>boolean</td>
+                    <td>Force use of versions.json instead of API (default: false)</td>
                   </tr>
                 </tbody>
               </table>
@@ -237,36 +238,46 @@ if (info.updateAvailable) {
             <h2>Public API Endpoints</h2>
             <p>These endpoints are available without authentication:</p>
             
-            <h3>Get Addon Versions</h3>
-            <pre><code>{`GET https://addons.plexdev.live/api/v1/public/addons/{slug}/versions
+            <h3>Get All Addon Versions (Legacy)</h3>
+            <pre><code>{`GET https://addons.plexdev.live/versions.json
 
 Response:
 {
-  "addon": {
-    "name": "My Addon",
-    "slug": "my-addon",
-    "description": "..."
-  },
-  "versions": [
-    {
+  "addons": {
+    "MyAddon": {
       "version": "1.2.0",
-      "changelog": "Added new features...",
-      "download_url": "https://...",
-      "published_at": "2025-01-15T..."
+      "releaseDate": "2025-01-15",
+      "downloadUrl": "https://...",
+      "description": "Added new features...",
+      "changelog": "..."
     }
-  ],
-  "latest": "1.2.0"
+  },
+  "lastUpdated": "2025-01-15T12:00:00Z",
+  "repository": "https://github.com/..."
 }`}</code></pre>
 
-            <h3>List All Addons</h3>
-            <pre><code>{`GET https://addons.plexdev.live/api/v1/public/addons
+            <h3>Get Latest Version for Addon</h3>
+            <pre><code>{`GET https://addons.plexdev.live/api/addons/{name}/latest
+
+Response:
+{
+  "name": "MyAddon",
+  "slug": "myaddon",
+  "version": "1.2.0",
+  "release_date": "2025-01-15",
+  "download_url": "https://...",
+  "description": "Added new features...",
+  "author": "username",
+  "external": false
+}`}</code></pre>
+
+            <h3>List All Public Addons</h3>
+            <pre><code>{`GET https://addons.plexdev.live/api/addons
 
 Response:
 {
   "addons": [...],
-  "total": 42,
-  "page": 1,
-  "per_page": 20
+  "count": 42
 }`}</code></pre>
           </section>
         </main>

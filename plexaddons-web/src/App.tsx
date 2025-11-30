@@ -17,6 +17,7 @@ import Subscription from './pages/dashboard/Subscription'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAddons from './pages/admin/AdminAddons'
+import AdminAddonDetail from './pages/admin/AdminAddonDetail'
 import AdminAuditLog from './pages/admin/AdminAuditLog'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
@@ -52,6 +53,7 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="addons" element={<AdminAddons />} />
+          <Route path="addons/:addonId" element={<AdminAddonDetail />} />
           <Route path="audit-log" element={<AdminAuditLog />} />
         </Route>
       </Route>

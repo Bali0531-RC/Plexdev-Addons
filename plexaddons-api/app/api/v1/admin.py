@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
+from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from datetime import datetime, timedelta
 import json
@@ -13,8 +14,11 @@ from app.schemas import (
     AuditLogEntry,
     AuditLogListResponse,
     AddonResponse,
+    AddonUpdate,
+    VersionResponse,
+    VersionUpdate,
 )
-from app.services import UserService, AddonService
+from app.services import UserService, AddonService, VersionService
 from app.api.deps import get_admin_user, rate_limit_check_authenticated
 from app.core.exceptions import NotFoundError, BadRequestError
 
@@ -290,6 +294,107 @@ async def list_all_addons(
     }
 
 
+@router.get("/addons/{addon_id}")
+async def admin_get_addon(
+    addon_id: int,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Get addon details with all versions (admin)."""
+    result = await db.execute(
+        select(Addon)
+        .options(selectinload(Addon.versions))
+        .where(Addon.id == addon_id)
+    )
+    addon = result.scalar_one_or_none()
+    if not addon:
+        raise NotFoundError("Addon not found")
+    
+    # Get owner info
+    owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
+    owner = owner_result.scalar_one_or_none()
+    
+    # Sort versions by release_date descending
+    versions = sorted(addon.versions, key=lambda v: v.release_date, reverse=True)
+    
+    return {
+        "addon": {
+            "id": addon.id,
+            "slug": addon.slug,
+            "name": addon.name,
+            "description": addon.description,
+            "homepage": addon.homepage,
+            "external": addon.external,
+            "is_active": addon.is_active,
+            "is_public": addon.is_public,
+            "owner_id": addon.owner_id,
+            "owner_username": owner.discord_username if owner else None,
+            "created_at": addon.created_at,
+        },
+        "versions": [VersionResponse.model_validate(v) for v in versions],
+    }
+
+
+@router.patch("/addons/{addon_id}", response_model=AddonResponse)
+async def admin_update_addon(
+    addon_id: int,
+    data: AddonUpdate,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Update an addon (admin override)."""
+    result = await db.execute(select(Addon).where(Addon.id == addon_id))
+    addon = result.scalar_one_or_none()
+    if not addon:
+        raise NotFoundError("Addon not found")
+    
+    old_values = {
+        "name": addon.name,
+        "description": addon.description,
+        "homepage": addon.homepage,
+        "external": addon.external,
+        "is_active": addon.is_active,
+        "is_public": addon.is_public,
+    }
+    
+    update_dict = data.model_dump(exclude_unset=True)
+    for key, value in update_dict.items():
+        setattr(addon, key, value)
+    
+    await db.commit()
+    await db.refresh(addon)
+    
+    await log_admin_action(
+        db, admin,
+        action="update_addon",
+        target_type="addon",
+        target_id=addon_id,
+        details={"changes": update_dict, "old_values": old_values},
+    )
+    
+    # Get owner for response
+    owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
+    owner = owner_result.scalar_one_or_none()
+    
+    return AddonResponse(
+        id=addon.id,
+        slug=addon.slug,
+        name=addon.name,
+        description=addon.description,
+        homepage=addon.homepage,
+        external=addon.external,
+        is_active=addon.is_active,
+        is_public=addon.is_public,
+        owner_id=addon.owner_id,
+        owner_username=owner.discord_username if owner else None,
+        latest_version=None,
+        version_count=0,
+        created_at=addon.created_at,
+    )
+
+
 @router.delete("/addons/{addon_id}")
 async def admin_delete_addon(
     addon_id: int,
@@ -313,6 +418,105 @@ async def admin_delete_addon(
         target_type="addon",
         target_id=addon_id,
         details={"addon_name": addon_name},
+    )
+    
+    return {"status": "deleted"}
+
+
+@router.patch("/addons/{addon_id}/versions/{version_id}", response_model=VersionResponse)
+async def admin_update_version(
+    addon_id: int,
+    version_id: int,
+    data: VersionUpdate,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Update a version (admin override)."""
+    # Get addon
+    addon_result = await db.execute(select(Addon).where(Addon.id == addon_id))
+    addon = addon_result.scalar_one_or_none()
+    if not addon:
+        raise NotFoundError("Addon not found")
+    
+    # Get version
+    version_result = await db.execute(
+        select(Version).where(Version.id == version_id, Version.addon_id == addon_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if not version:
+        raise NotFoundError("Version not found")
+    
+    old_values = {
+        "download_url": version.download_url,
+        "description": version.description,
+        "changelog_url": version.changelog_url,
+        "changelog_content": version.changelog_content,
+        "breaking": version.breaking,
+        "urgent": version.urgent,
+    }
+    
+    update_dict = data.model_dump(exclude_unset=True)
+    for key, value in update_dict.items():
+        setattr(version, key, value)
+    
+    await db.commit()
+    await db.refresh(version)
+    
+    await log_admin_action(
+        db, admin,
+        action="update_version",
+        target_type="version",
+        target_id=version_id,
+        details={
+            "addon_id": addon_id,
+            "addon_name": addon.name,
+            "version": version.version,
+            "changes": update_dict,
+            "old_values": old_values,
+        },
+    )
+    
+    return version
+
+
+@router.delete("/addons/{addon_id}/versions/{version_id}")
+async def admin_delete_version(
+    addon_id: int,
+    version_id: int,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Delete a version (admin override)."""
+    # Get addon
+    addon_result = await db.execute(select(Addon).where(Addon.id == addon_id))
+    addon = addon_result.scalar_one_or_none()
+    if not addon:
+        raise NotFoundError("Addon not found")
+    
+    # Get version
+    version_result = await db.execute(
+        select(Version).where(Version.id == version_id, Version.addon_id == addon_id)
+    )
+    version = version_result.scalar_one_or_none()
+    if not version:
+        raise NotFoundError("Version not found")
+    
+    version_str = version.version
+    await db.delete(version)
+    await db.commit()
+    
+    await log_admin_action(
+        db, admin,
+        action="delete_version",
+        target_type="version",
+        target_id=version_id,
+        details={
+            "addon_id": addon_id,
+            "addon_name": addon.name,
+            "version": version_str,
+        },
     )
     
     return {"status": "deleted"}
