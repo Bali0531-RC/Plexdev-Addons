@@ -77,7 +77,9 @@
   border-radius: var(--radius-s);
   background: transparent;
   border: none;
-  color: var(--text);
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
   transition: background var(--transition);
 }
 
@@ -93,6 +95,7 @@
 
 .username {
   font-weight: 500;
+  color: var(--text);
 }
 
 .dropdown-arrow {
