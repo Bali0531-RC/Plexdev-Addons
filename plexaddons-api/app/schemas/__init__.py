@@ -530,3 +530,4 @@ class TicketStatsResponse(BaseModel):
 
 # Forward reference resolution
 AuthResponse.model_rebuild()
+UserPublicProfile.model_rebuild()

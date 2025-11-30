@@ -15,107 +15,147 @@ Or copy `VersionChecker.js` directly into your project.
 ```javascript
 const VersionChecker = require('plexaddons-version-checker');
 
-const checker = new VersionChecker({
-  addonName: 'your-addon-slug',    // Your addon's slug on addons.plexdev.live
-  currentVersion: '1.0.0'          // Your current version
-});
+// Basic usage - automatically tracks analytics
+const checker = new VersionChecker('MyAddon', '1.0.0');
 
 // Check for updates
-const result = await checker.check();
-if (result?.updateAvailable) {
-  console.log(`Update available: v${result.latestVersion}`);
-  console.log(`Changelog: ${result.changelog}`);
-}
+const result = await checker.checkForUpdates();
+console.log(checker.formatVersionMessage(result));
+
+// Or use the convenience method that logs automatically
+await checker.checkAndLog();
 ```
 
 ## Features
 
-- 🔄 Automatic update checking with configurable intervals
+- 🔄 Automatic update checking with formatted console output
+- 📊 Analytics tracking (helps addon owners see version distribution)
+- 🔑 API key support for addon owners (Premium feature)
 - 📝 TypeScript support with included type definitions
-- 🌐 Works with both versions.json and API endpoints
-- ⚡ Lightweight with minimal dependencies
+- 🌐 Works with both API and legacy versions.json endpoints
+- ⚡ Lightweight with automatic retries and timeout handling
 - 🎯 Semantic version comparison
 
-## API
-
-### Constructor Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `addonName` | `string` | **required** | Your addon's slug on addons.plexdev.live |
-| `currentVersion` | `string` | **required** | Your current addon version |
-| `repositoryUrl` | `string` | `https://addons.plexdev.live/versions.json` | URL to versions.json |
-| `apiBaseUrl` | `string` | `https://addons.plexdev.live` | Base URL for API |
-| `checkInterval` | `number` | `3600000` (1 hour) | Auto-check interval in ms |
-| `logUpdates` | `boolean` | `true` | Log updates to console |
-| `logger` | `function` | `console.log` | Custom logger function |
-
-### Methods
-
-#### `check(): Promise<VersionCheckResult | null>`
-Check for updates using the public versions.json endpoint.
+## Basic Usage
 
 ```javascript
-const result = await checker.check();
+const VersionChecker = require('plexaddons-version-checker');
+
+const checker = new VersionChecker('MyAddon', '1.0.0');
+
+// Check for updates
+const result = await checker.checkForUpdates();
+
+if (result.isOutdated) {
+  console.log(`Update available: v${result.current} → v${result.latest}`);
+  console.log(checker.getUpdateDetails(result));
+}
 ```
 
-#### `checkFromApi(): Promise<VersionCheckResult | null>`
-Check for updates using the API endpoint directly (more detailed info).
+## Constructor Options
 
 ```javascript
-const result = await checker.checkFromApi();
+const checker = new VersionChecker('AddonName', '1.0.0', {
+  // Base URL for the PlexAddons API
+  apiUrl: 'https://addons.plexdev.live',
+  
+  // Legacy versions.json URL (fallback)
+  repositoryUrl: 'https://addons.plexdev.live/versions.json',
+  
+  // Request timeout in milliseconds
+  timeout: 10000,
+  
+  // Number of retry attempts
+  retries: 2,
+  
+  // Force use of legacy versions.json API
+  useLegacyApi: false,
+  
+  // Send current version to API for analytics (default: true)
+  // This helps addon owners see which versions users are running
+  trackAnalytics: true,
+  
+  // API key for authenticated requests (Premium only)
+  // Required for accessing analytics endpoints
+  apiKey: 'pa_your_api_key_here'
+});
 ```
 
-#### `startAutoCheck(): void`
-Start automatic periodic update checking.
+## Methods
+
+### Version Checking
+
+#### `checkForUpdates(): Promise<VersionCheckResult>`
+Check for updates and return detailed result.
 
 ```javascript
-checker.startAutoCheck();
+const result = await checker.checkForUpdates();
+// result.isOutdated, result.latest, result.urgent, etc.
 ```
 
-#### `stopAutoCheck(): void`
-Stop automatic periodic update checking.
+#### `checkAndLog(): Promise<VersionCheckResult>`
+Check for updates and log formatted message to console.
 
 ```javascript
-checker.stopAutoCheck();
+await checker.checkAndLog();
+// Outputs: [OK] Version Check: Up to date (v1.0.0)
+// Or: [UPDATE] Version Check: Outdated (v1.0.0 → v1.1.0)
 ```
 
-#### `getAllVersions(): Promise<VersionsJson>`
-Fetch all addon versions from versions.json.
+#### `formatVersionMessage(result): string`
+Get formatted console message with ANSI colors.
+
+#### `getUpdateDetails(result): string`
+Get detailed update information box.
+
+#### `getPlainSummary(result): string`
+Get plain text summary without colors.
+
+### Analytics (Premium API Key Required)
+
+Addon owners with Premium subscription can access usage analytics:
 
 ```javascript
-const versions = await checker.getAllVersions();
+const checker = new VersionChecker('MyAddon', '1.0.0', {
+  apiKey: 'pa_your_api_key_here'
+});
+
+// Validate your API key
+const validation = await checker.validateApiKey();
+console.log(`Tier: ${validation.user.effectiveTier}`);
+
+// Get your addon list
+const myAddons = await checker.getMyAddons();
+
+// Get analytics summary for all addons
+const summary = await checker.getAnalyticsSummary();
+console.log(checker.formatAnalytics(summary));
+
+// Get detailed analytics for specific addon
+const analytics = await checker.getAddonAnalytics(addonId);
 ```
 
-#### `VersionChecker.compareVersions(v1, v2): -1 | 0 | 1`
-Static method to compare two semantic version strings.
-
-```javascript
-VersionChecker.compareVersions('1.0.0', '2.0.0'); // -1
-VersionChecker.compareVersions('2.0.0', '2.0.0'); // 0
-VersionChecker.compareVersions('2.0.0', '1.0.0'); // 1
-```
-
-#### `VersionChecker.isValidVersion(version): boolean`
-Static method to validate a semantic version string.
-
-```javascript
-VersionChecker.isValidVersion('1.0.0');   // true
-VersionChecker.isValidVersion('invalid'); // false
-```
-
-### VersionCheckResult
+## VersionCheckResult
 
 ```typescript
 interface VersionCheckResult {
-  addon: string;           // Addon name/slug
-  currentVersion: string;  // Your current version
-  latestVersion: string;   // Latest available version
-  isOutdated: boolean;     // Whether current < latest
-  updateAvailable: boolean;// Alias for isOutdated
-  changelog?: string;      // Changelog for latest version
+  success: boolean;        // Whether the check succeeded
+  error?: string;          // Error message if failed
+  isOutdated: boolean;     // Current version < latest
+  isCurrent: boolean;      // Current version = latest
+  isNewer: boolean;        // Current version > latest (dev build)
+  current: string;         // Current version
+  latest: string;          // Latest version
   releaseDate?: string;    // Release date of latest version
   downloadUrl?: string;    // Download URL if available
+  description?: string;    // Version description
+  changelog?: string;      // Changelog content
+  changelogUrl?: string;   // URL to full changelog
+  urgent: boolean;         // Urgent update flag
+  breaking: boolean;       // Breaking changes flag
+  external: boolean;       // External addon flag
+  author?: string;         // Addon author
+  homepage?: string;       // Addon homepage
 }
 ```
 
@@ -126,31 +166,40 @@ const { Client } = require('discord.js');
 const VersionChecker = require('plexaddons-version-checker');
 
 const client = new Client({ intents: [...] });
-const checker = new VersionChecker({
-  addonName: 'my-discord-bot',
-  currentVersion: require('./package.json').version,
-  logUpdates: true,
-  logger: (msg) => console.log(`[UpdateChecker] ${msg}`)
-});
+const checker = new VersionChecker(
+  'my-discord-bot',
+  require('./package.json').version
+);
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   
   // Check on startup
-  checker.check();
+  const result = await checker.checkAndLog();
   
-  // Start hourly checks
-  checker.startAutoCheck();
-});
-
-// Cleanup on shutdown
-process.on('SIGINT', () => {
-  checker.stopAutoCheck();
-  client.destroy();
-  process.exit(0);
+  // Notify admin of urgent updates
+  if (result.isOutdated && result.urgent) {
+    console.warn('⚠️ URGENT UPDATE AVAILABLE!');
+  }
 });
 
 client.login(process.env.DISCORD_TOKEN);
+```
+
+## Analytics Tracking
+
+By default, the version checker sends your current version to the API when checking for updates. This allows addon owners (with Pro/Premium) to see:
+
+- Which versions of their addon are being used
+- Total unique users
+- Version distribution
+
+To disable analytics tracking:
+
+```javascript
+const checker = new VersionChecker('MyAddon', '1.0.0', {
+  trackAnalytics: false
+});
 ```
 
 ## Publishing Your Addon
@@ -159,7 +208,7 @@ client.login(process.env.DISCORD_TOKEN);
 2. Register your addon in the dashboard
 3. Add versions with changelogs
 4. Integrate this version checker in your addon
-5. Users will automatically be notified of updates!
+5. Upgrade to Pro/Premium to access analytics!
 
 ## License
 
@@ -169,4 +218,4 @@ AGPL-3.0 - See [LICENSE](LICENSE) for details.
 
 - 🌐 **Website**: [addons.plexdev.live](https://addons.plexdev.live)
 - 📚 **API Docs**: [addons.plexdev.live/api/docs](https://addons.plexdev.live/api/docs)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/Bali0531-RC/Plexdev-Addons/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/Bali0531-RC/PlexAddons/issues)

@@ -10,6 +10,9 @@
  * const result = await checker.checkForUpdates();
  * console.log(checker.formatVersionMessage(result));
  * 
+ * // Analytics are tracked automatically (version sent to API)
+ * // Addon owners can view analytics in their dashboard at addons.plexdev.live
+ * 
  * @author bali0531
  * @license AGPL-3.0
  */
@@ -28,6 +31,7 @@ class VersionChecker {
      * @param {number} [options.timeout] - Request timeout in ms (default: 10000)
      * @param {number} [options.retries] - Number of retry attempts (default: 2)
      * @param {boolean} [options.useLegacyApi] - Force use of legacy versions.json (default: false)
+     * @param {boolean} [options.trackAnalytics] - Send current version for analytics (default: true)
      */
     constructor(addonName, currentVersion, options = {}) {
         this.addonName = addonName;
@@ -39,6 +43,7 @@ class VersionChecker {
             timeout: options.timeout || 10000,
             retries: options.retries || 2,
             useLegacyApi: options.useLegacyApi || false,
+            trackAnalytics: options.trackAnalytics !== false,
             ...options
         };
         
@@ -95,20 +100,24 @@ class VersionChecker {
     /**
      * Make HTTP request with timeout and retries
      * @param {string} url - URL to fetch
+     * @param {Object} extraHeaders - Additional headers to include
      * @returns {Promise<Object>} Parsed JSON response
      */
-    async fetchWithRetry(url) {
+    async fetchWithRetry(url, extraHeaders = {}) {
         for (let attempt = 1; attempt <= this.options.retries; attempt++) {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), this.options.timeout);
                 
+                const headers = {
+                    'User-Agent': `PlexAddons-VersionChecker/${this.addonName}/2.1.0`,
+                    'Accept': 'application/json',
+                    ...extraHeaders
+                };
+                
                 const response = await fetch(url, {
                     signal: controller.signal,
-                    headers: {
-                        'User-Agent': `PlexAddons-VersionChecker/${this.addonName}/2.0.0`,
-                        'Accept': 'application/json'
-                    }
+                    headers
                 });
                 
                 clearTimeout(timeoutId);
@@ -137,8 +146,14 @@ class VersionChecker {
         // Public API endpoints (no v1 prefix)
         const latestUrl = `${this.options.apiUrl}/api/addons/${this.addonName}/latest`;
         
+        // Build headers - include current version for analytics if enabled
+        const headers = {};
+        if (this.options.trackAnalytics) {
+            headers['X-Current-Version'] = this.currentVersion;
+        }
+        
         // Try to get addon info from the latest endpoint
-        const latestVersion = await this.fetchWithRetry(latestUrl);
+        const latestVersion = await this.fetchWithRetry(latestUrl, headers);
         
         return {
             addon: {
