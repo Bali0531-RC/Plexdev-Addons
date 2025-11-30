@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from app.models import User, Addon, Version, SubscriptionTier
+from app.models import User, Addon, Version, SubscriptionTier, Ticket, TicketMessage, TicketAttachment
 from app.config import get_settings
 
 settings = get_settings()
@@ -48,6 +48,7 @@ class UserService:
         Counts bytes from:
         - Addon: name, slug, description, homepage
         - Version: version, download_url, changelog_url, description, changelog_content
+        - TicketAttachment: file_size (actual file storage)
         """
         total_bytes = 0
         
@@ -73,6 +74,18 @@ class UserService:
                 total_bytes += _calculate_string_size(version.changelog_url)
                 total_bytes += _calculate_string_size(version.description)
                 total_bytes += _calculate_string_size(version.changelog_content)
+        
+        # Calculate ticket attachment storage
+        # Sum file_size for all attachments on tickets owned by this user
+        attachment_size_result = await db.execute(
+            select(func.coalesce(func.sum(TicketAttachment.file_size), 0))
+            .select_from(TicketAttachment)
+            .join(TicketMessage, TicketAttachment.message_id == TicketMessage.id)
+            .join(Ticket, TicketMessage.ticket_id == Ticket.id)
+            .where(Ticket.user_id == user_id)
+        )
+        attachment_bytes = attachment_size_result.scalar() or 0
+        total_bytes += attachment_bytes
         
         return total_bytes
     

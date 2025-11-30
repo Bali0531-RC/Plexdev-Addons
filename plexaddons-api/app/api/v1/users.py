@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, func
 from typing import Optional
 from app.database import get_db
 from app.models import User, Subscription, SubscriptionStatus, PaymentProvider
@@ -132,6 +132,18 @@ async def delete_my_account(
     
     This action is IRREVERSIBLE.
     """
+    # Prevent last admin from deleting themselves
+    if user.is_admin:
+        admin_count_result = await db.execute(
+            select(func.count(User.id)).where(User.is_admin == True)
+        )
+        admin_count = admin_count_result.scalar() or 0
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot delete the last admin account. Promote another user to admin first."
+            )
+    
     # First, cancel any active subscriptions with payment providers
     result = await db.execute(
         select(Subscription)

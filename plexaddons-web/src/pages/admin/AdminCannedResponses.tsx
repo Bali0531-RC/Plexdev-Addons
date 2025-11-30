@@ -18,6 +18,8 @@ export default function AdminCannedResponses() {
   const [loading, setLoading] = useState(true);
   const [showInactive, setShowInactive] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -106,9 +108,12 @@ export default function AdminCannedResponses() {
     );
   };
 
-  const handleDelete = async (response: CannedResponse) => {
+  const handleDelete = async (id: number) => {
     toast.promise(
-      api.deleteCannedResponse(response.id).then(() => loadResponses()),
+      api.deleteCannedResponse(id).then(() => {
+        setDeleteConfirmId(null);
+        loadResponses();
+      }),
       {
         loading: 'Deleting response...',
         success: 'Response deleted',
@@ -118,10 +123,15 @@ export default function AdminCannedResponses() {
   };
 
   const filteredResponses = responses.filter((r) => {
-    if (categoryFilter === 'all') return true;
-    if (categoryFilter === 'none') return !r.category;
-    return r.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || 
+      (categoryFilter === 'none' ? !r.category : r.category === categoryFilter);
+    const matchesSearch = !searchQuery || 
+      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.content.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
+
+  const hasFiltersApplied = categoryFilter !== 'all' || searchQuery || showInactive;
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -155,6 +165,16 @@ export default function AdminCannedResponses() {
 
       <div className="filters-bar">
         <div className="filter-group">
+          <label>Search:</label>
+          <input
+            type="text"
+            placeholder="Search responses..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="filter-select"
+          />
+        </div>
+        <div className="filter-group">
           <label>Category:</label>
           <select
             value={categoryFilter}
@@ -180,7 +200,20 @@ export default function AdminCannedResponses() {
         </div>
       </div>
 
-      {filteredResponses.length === 0 ? (
+      {filteredResponses.length === 0 && hasFiltersApplied && responses.length > 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🔍</div>
+          <h2>No matching responses</h2>
+          <p>Try adjusting your filters or search query.</p>
+          <button className="btn btn-secondary" onClick={() => {
+            setCategoryFilter('all');
+            setSearchQuery('');
+            setShowInactive(false);
+          }}>
+            Clear Filters
+          </button>
+        </div>
+      ) : filteredResponses.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📝</div>
           <h2>No canned responses found</h2>
@@ -225,9 +258,20 @@ export default function AdminCannedResponses() {
                 >
                   {response.is_active ? 'Deactivate' : 'Activate'}
                 </button>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(response)}>
-                  Delete
-                </button>
+                {deleteConfirmId === response.id ? (
+                  <>
+                    <button className="btn btn-sm btn-secondary" onClick={() => setDeleteConfirmId(null)}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(response.id)}>
+                      Confirm
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-danger" onClick={() => setDeleteConfirmId(response.id)}>
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}

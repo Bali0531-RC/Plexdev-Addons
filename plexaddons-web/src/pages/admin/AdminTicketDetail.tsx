@@ -156,9 +156,15 @@ export default function AdminTicketDetail() {
     }
   };
 
-  const handleUseCannedResponse = (response: CannedResponse) => {
+  const handleUseCannedResponse = async (response: CannedResponse) => {
     setReply(response.content);
     setShowCannedResponses(false);
+    // Track usage count
+    try {
+      await api.useCannedResponse(response.id);
+    } catch (err) {
+      // Silent fail - usage tracking is not critical
+    }
   };
 
   const formatDate = (dateStr: string) => {

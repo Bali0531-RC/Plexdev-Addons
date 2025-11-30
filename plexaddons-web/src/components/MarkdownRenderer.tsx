@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeSanitize from 'rehype-sanitize';
 import 'highlight.js/styles/github-dark.css';
 import './MarkdownRenderer.css';
 
@@ -14,7 +15,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     <div className={`markdown-content ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={[rehypeSanitize, rehypeHighlight]}
       >
         {content}
       </ReactMarkdown>
