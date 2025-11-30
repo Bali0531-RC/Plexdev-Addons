@@ -126,3 +126,51 @@
   color: var(--text-secondary);
   margin-bottom: 1rem;
 }
+
+/* Delete Account Confirmation */
+.delete-confirm-container {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.delete-warning {
+  color: #ef4444;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.delete-confirm-input {
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.delete-confirm-input input {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.delete-confirm-input input:focus {
+  outline: none;
+  border-color: #ef4444;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 0.75rem;
+}

@@ -1,14 +1,20 @@
 import { useState, FormEvent } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { toast } from 'sonner';
 import './Settings.css';
 
 export default function Settings() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,6 +30,23 @@ export default function Settings() {
       setError(err.message || 'Failed to update settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    
+    setDeleting(true);
+    try {
+      await api.deleteMyAccount();
+      toast.success('Account deleted successfully. Goodbye!');
+      // Wait a moment for the user to see the message
+      setTimeout(() => {
+        logout();
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete account');
+      setDeleting(false);
     }
   };
 
@@ -90,9 +113,51 @@ export default function Settings() {
       <div className="settings-card danger-zone">
         <h2>Danger Zone</h2>
         <p>These actions are irreversible. Please be careful.</p>
-        <button className="btn btn-danger" disabled>
-          Delete Account (Coming Soon)
-        </button>
+        
+        {!showDeleteConfirm ? (
+          <button 
+            className="btn btn-danger" 
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Delete Account
+          </button>
+        ) : (
+          <div className="delete-confirm-container">
+            <p className="delete-warning">
+              ⚠️ This will permanently delete your account, all your addons, versions, 
+              tickets, and cancel any active subscriptions. This action cannot be undone.
+            </p>
+            <div className="delete-confirm-input">
+              <label>Type <strong>DELETE</strong> to confirm:</label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                disabled={deleting}
+              />
+            </div>
+            <div className="delete-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmText('');
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete My Account'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

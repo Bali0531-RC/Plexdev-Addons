@@ -89,6 +89,12 @@ class ApiClient {
     });
   }
 
+  async deleteMyAccount(): Promise<void> {
+    return this.fetch('/v1/users/me', {
+      method: 'DELETE',
+    });
+  }
+
   async getMyStorage(): Promise<StorageInfo> {
     return this.fetch('/v1/users/me/storage');
   }

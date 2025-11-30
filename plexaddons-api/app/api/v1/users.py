@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 from typing import Optional
 from app.database import get_db
-from app.models import User
+from app.models import User, Subscription, SubscriptionStatus, PaymentProvider
 from app.schemas import (
     UserResponse,
     UserStorageResponse,
     UserUpdate,
     SubscriptionResponse,
 )
-from app.services import UserService
+from app.services import UserService, StripeService, PayPalService
 from app.api.deps import get_current_user, rate_limit_check_authenticated
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -113,3 +114,57 @@ async def get_user_public(
         created_at=user.created_at,
         last_login_at=None,
     )
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_account(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Delete current user's account permanently.
+    
+    This will:
+    1. Cancel any active subscriptions (Stripe/PayPal)
+    2. Delete all user data (addons, versions, tickets, etc.)
+    3. Remove the user account
+    
+    This action is IRREVERSIBLE.
+    """
+    # First, cancel any active subscriptions with payment providers
+    result = await db.execute(
+        select(Subscription)
+        .where(Subscription.user_id == user.id)
+        .where(Subscription.status.in_([
+            SubscriptionStatus.ACTIVE,
+            SubscriptionStatus.TRIALING,
+            SubscriptionStatus.PAST_DUE
+        ]))
+    )
+    active_subscriptions = result.scalars().all()
+    
+    for subscription in active_subscriptions:
+        try:
+            if subscription.provider == PaymentProvider.STRIPE:
+                # Cancel Stripe subscription
+                import stripe
+                from app.config import get_settings
+                settings = get_settings()
+                stripe.api_key = settings.stripe_secret_key
+                stripe.Subscription.cancel(subscription.provider_subscription_id)
+            elif subscription.provider == PaymentProvider.PAYPAL:
+                # Cancel PayPal subscription
+                await PayPalService.cancel_subscription(
+                    subscription.provider_subscription_id,
+                    reason="Account deleted by user"
+                )
+        except Exception as e:
+            # Log but don't fail - subscription might already be canceled
+            print(f"Warning: Failed to cancel subscription {subscription.id}: {e}")
+    
+    # Delete the user - CASCADE will handle related records
+    await db.delete(user)
+    await db.commit()
+    
+    return None
