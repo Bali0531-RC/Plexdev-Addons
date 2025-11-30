@@ -89,10 +89,10 @@ class EmailService:
         
         subject = "Welcome to PlexAddons!"
         html_content = EmailTemplates.welcome_email(
-            username=user.username,
+            username=user.discord_username,
             email=user.email
         )
-        plain_content = f"Welcome to PlexAddons, {user.username}! Your account has been created."
+        plain_content = f"Welcome to PlexAddons, {user.discord_username}! Your account has been created."
         
         return await self.send_email(user.email, subject, html_content, plain_content)
     
@@ -108,7 +108,7 @@ class EmailService:
         
         subject = f"Subscription Confirmed - {plan_name}"
         html_content = EmailTemplates.subscription_confirmation(
-            username=user.username,
+            username=user.discord_username,
             plan_name=plan_name,
             amount=amount,
             next_billing_date=next_billing_date
@@ -128,7 +128,7 @@ class EmailService:
         
         subject = f"Subscription Cancelled - {plan_name}"
         html_content = EmailTemplates.subscription_cancelled(
-            username=user.username,
+            username=user.discord_username,
             plan_name=plan_name,
             end_date=end_date
         )
@@ -148,7 +148,7 @@ class EmailService:
         
         subject = "Payment Received - PlexAddons"
         html_content = EmailTemplates.payment_received(
-            username=user.username,
+            username=user.discord_username,
             amount=amount,
             plan_name=plan_name,
             transaction_id=transaction_id
@@ -166,9 +166,9 @@ class EmailService:
         
         from app.services.email_templates import EmailTemplates
         
-        subject = f"[PlexAddons Admin] New User: {user.username}"
+        subject = f"[PlexAddons Admin] New User: {user.discord_username}"
         html_content = EmailTemplates.admin_new_user(
-            username=user.username,
+            username=user.discord_username,
             email=user.email,
             created_at=user.created_at
         )
@@ -188,9 +188,9 @@ class EmailService:
         
         from app.services.email_templates import EmailTemplates
         
-        subject = f"[PlexAddons Admin] Payment: ${amount:.2f} from {user.username}"
+        subject = f"[PlexAddons Admin] Payment: ${amount:.2f} from {user.discord_username}"
         html_content = EmailTemplates.admin_new_payment(
-            username=user.username,
+            username=user.discord_username,
             email=user.email,
             amount=amount,
             plan_name=plan_name,
@@ -213,7 +213,7 @@ class EmailService:
         
         subject = f"[PlexAddons Admin] New Addon: {addon_name}"
         html_content = EmailTemplates.admin_new_addon(
-            username=user.username,
+            username=user.discord_username,
             addon_name=addon_name,
             addon_description=addon_description
         )
