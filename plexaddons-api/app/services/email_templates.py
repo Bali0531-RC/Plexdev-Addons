@@ -534,3 +534,162 @@ class EmailTemplates:
         </p>
         """
         return cls._base_template(content)
+    
+    # Ticket Templates
+    
+    @classmethod
+    def admin_new_ticket(
+        cls,
+        username: str,
+        ticket_id: int,
+        subject: str,
+        category: str,
+        priority: str,
+        is_paid_user: bool
+    ) -> str:
+        """Admin notification for new support ticket"""
+        priority_colors = {
+            "low": "#28a745",
+            "normal": "#ffc107",
+            "high": "#fd7e14",
+            "urgent": "#dc3545"
+        }
+        priority_color = priority_colors.get(priority, "#6c757d")
+        
+        paid_badge = "💎 Premium User" if is_paid_user else ""
+        
+        content = f"""
+        <h1>🎫 New Support Ticket #{ticket_id}</h1>
+        
+        <p>A new support ticket has been submitted.</p>
+        
+        <div class="highlight" style="background: {priority_color};">
+            <div class="highlight-text">{subject}</div>
+            <div>Priority: {priority.upper()}</div>
+        </div>
+        
+        <table>
+            <tr>
+                <td><strong>Ticket ID:</strong></td>
+                <td>#{ticket_id}</td>
+            </tr>
+            <tr>
+                <td><strong>User:</strong></td>
+                <td>{username} {paid_badge}</td>
+            </tr>
+            <tr>
+                <td><strong>Category:</strong></td>
+                <td>{category.replace('_', ' ').title()}</td>
+            </tr>
+            <tr>
+                <td><strong>Priority:</strong></td>
+                <td style="color: {priority_color}; font-weight: bold;">{priority.upper()}</td>
+            </tr>
+            <tr>
+                <td><strong>Submitted:</strong></td>
+                <td>{datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')}</td>
+            </tr>
+        </table>
+        
+        {"<div class='info-box' style='border-color: #dc3545; background: #fff5f5;'><strong>⚠️ Priority Support</strong><p style='margin-bottom: 0;'>This ticket is from a paid subscriber and requires priority attention.</p></div>" if is_paid_user else ""}
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="https://addons.plexdev.live/admin/tickets/{ticket_id}" class="button">View Ticket</a>
+        </div>
+        """
+        return cls._base_template(content)
+    
+    @classmethod
+    def user_ticket_reply(
+        cls,
+        username: str,
+        ticket_id: int,
+        subject: str,
+        staff_name: str,
+        message_preview: str
+    ) -> str:
+        """User notification for staff reply on ticket"""
+        # Truncate message preview
+        if len(message_preview) > 300:
+            message_preview = message_preview[:297] + "..."
+        
+        content = f"""
+        <h1>💬 New Reply on Your Ticket</h1>
+        
+        <p>Hi {username},</p>
+        
+        <p>A support team member has replied to your ticket.</p>
+        
+        <div class="info-box">
+            <strong>Ticket #{ticket_id}: {subject}</strong>
+        </div>
+        
+        <table>
+            <tr>
+                <td><strong>Reply From:</strong></td>
+                <td>{staff_name} (Support Staff)</td>
+            </tr>
+        </table>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; color: #555;">{message_preview}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="https://addons.plexdev.live/support/tickets/{ticket_id}" class="button">View Full Reply</a>
+        </div>
+        
+        <p style="font-size: 12px; color: #888;">
+            You can reply directly on the ticket page. Do not reply to this email.
+        </p>
+        """
+        return cls._base_template(content)
+    
+    @classmethod
+    def ticket_status_changed(
+        cls,
+        username: str,
+        ticket_id: int,
+        subject: str,
+        old_status: str,
+        new_status: str
+    ) -> str:
+        """User notification for ticket status change"""
+        status_messages = {
+            "in_progress": "Our team is actively working on your issue.",
+            "resolved": "Your issue has been resolved! Please let us know if you need further assistance.",
+            "closed": "This ticket has been closed. You can reopen it if needed.",
+            "open": "Your ticket has been reopened and will be reviewed shortly."
+        }
+        
+        message = status_messages.get(new_status, "The status of your ticket has been updated.")
+        
+        content = f"""
+        <h1>📋 Ticket Status Updated</h1>
+        
+        <p>Hi {username},</p>
+        
+        <p>The status of your support ticket has been updated.</p>
+        
+        <div class="info-box">
+            <strong>Ticket #{ticket_id}: {subject}</strong>
+        </div>
+        
+        <table>
+            <tr>
+                <td><strong>Previous Status:</strong></td>
+                <td>{old_status.replace('_', ' ').title()}</td>
+            </tr>
+            <tr>
+                <td><strong>New Status:</strong></td>
+                <td><strong style="color: #e9a426;">{new_status.replace('_', ' ').title()}</strong></td>
+            </tr>
+        </table>
+        
+        <p>{message}</p>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="https://addons.plexdev.live/support/tickets/{ticket_id}" class="button">View Ticket</a>
+        </div>
+        """
+        return cls._base_template(content)

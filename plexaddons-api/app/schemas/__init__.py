@@ -1,7 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime, date
-from app.models import SubscriptionTier, SubscriptionStatus, PaymentProvider
+from app.models import (
+    SubscriptionTier, SubscriptionStatus, PaymentProvider,
+    TicketStatus, TicketPriority, TicketCategory
+)
 
 
 # ============== Auth Schemas ==============
@@ -265,6 +268,141 @@ class PaymentPlan(BaseModel):
 
 class PaymentPlansResponse(BaseModel):
     plans: List[PaymentPlan]
+
+
+# ============== Ticket Schemas ==============
+
+class TicketCreate(BaseModel):
+    subject: str = Field(..., min_length=5, max_length=255)
+    content: str = Field(..., min_length=10)
+    category: TicketCategory = TicketCategory.GENERAL
+
+
+class TicketMessageCreate(BaseModel):
+    content: str = Field(..., min_length=1)
+
+
+class TicketAttachmentResponse(BaseModel):
+    id: int
+    original_filename: str
+    file_size: int
+    compressed_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    is_compressed: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketMessageResponse(BaseModel):
+    id: int
+    ticket_id: int
+    author_id: Optional[int] = None
+    author_username: Optional[str] = None
+    content: str
+    is_staff_reply: bool
+    is_system_message: bool
+    created_at: datetime
+    edited_at: Optional[datetime] = None
+    attachments: List[TicketAttachmentResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketResponse(BaseModel):
+    id: int
+    user_id: int
+    user_username: Optional[str] = None
+    subject: str
+    category: TicketCategory
+    priority: TicketPriority
+    status: TicketStatus
+    assigned_admin_id: Optional[int] = None
+    assigned_admin_username: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketDetailResponse(TicketResponse):
+    messages: List[TicketMessageResponse] = []
+
+
+class TicketListResponse(BaseModel):
+    tickets: List[TicketResponse]
+    total: int
+    page: int
+    per_page: int
+
+
+class TicketStatusUpdate(BaseModel):
+    status: TicketStatus
+
+
+class TicketPriorityUpdate(BaseModel):
+    priority: TicketPriority
+
+
+class TicketAssignUpdate(BaseModel):
+    admin_id: int
+
+
+# ============== Canned Response Schemas ==============
+
+class CannedResponseCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100)
+    content: str = Field(..., min_length=1)
+    category: Optional[TicketCategory] = None
+
+
+class CannedResponseUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=100)
+    content: Optional[str] = None
+    category: Optional[TicketCategory] = None
+    is_active: Optional[bool] = None
+
+
+class CannedResponseResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    category: Optional[TicketCategory] = None
+    created_by: Optional[int] = None
+    creator_username: Optional[str] = None
+    usage_count: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class CannedResponseListResponse(BaseModel):
+    responses: List[CannedResponseResponse]
+    total: int
+
+
+# ============== Ticket Stats Schema ==============
+
+class TicketStatsResponse(BaseModel):
+    total_tickets: int
+    tickets_open: int
+    tickets_in_progress: int
+    tickets_resolved: int
+    tickets_closed: int
+    active_low_priority: int
+    active_normal_priority: int
+    active_high_priority: int
+    active_urgent_priority: int
+    unassigned_tickets: int
+    avg_resolution_hours: Optional[float] = None
 
 
 # Forward reference resolution

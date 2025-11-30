@@ -153,3 +153,96 @@ export interface VersionUpdate {
   breaking?: boolean;
   urgent?: boolean;
 }
+
+// Ticket Types
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TicketCategory = 'general' | 'billing' | 'technical' | 'feature_request' | 'bug_report';
+
+export interface TicketAttachment {
+  id: number;
+  original_filename: string;
+  file_size: number;
+  compressed_size: number | null;
+  mime_type: string | null;
+  is_compressed: boolean;
+  created_at: string;
+}
+
+export interface TicketMessage {
+  id: number;
+  ticket_id: number;
+  author_id: number | null;
+  author_username: string | null;
+  content: string;
+  is_staff_reply: boolean;
+  is_system_message: boolean;
+  created_at: string;
+  edited_at: string | null;
+  attachments: TicketAttachment[];
+}
+
+export interface Ticket {
+  id: number;
+  user_id: number;
+  user_username: string | null;
+  subject: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  assigned_admin_id: number | null;
+  assigned_admin_username: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+  closed_at: string | null;
+}
+
+export interface TicketDetail extends Ticket {
+  messages: TicketMessage[];
+}
+
+export interface TicketListResponse {
+  tickets: Ticket[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface TicketCreate {
+  subject: string;
+  content: string;
+  category: TicketCategory;
+}
+
+export interface TicketStats {
+  total_tickets: number;
+  tickets_open: number;
+  tickets_in_progress: number;
+  tickets_resolved: number;
+  tickets_closed: number;
+  active_low_priority: number;
+  active_normal_priority: number;
+  active_high_priority: number;
+  active_urgent_priority: number;
+  unassigned_tickets: number;
+  avg_resolution_hours: number | null;
+}
+
+export interface CannedResponse {
+  id: number;
+  title: string;
+  content: string;
+  category: TicketCategory | null;
+  created_by: number | null;
+  creator_username: string | null;
+  usage_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CannedResponseListResponse {
+  responses: CannedResponse[];
+  total: number;
+}

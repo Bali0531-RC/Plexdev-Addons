@@ -158,6 +158,10 @@ export default function Dashboard() {
               <span className="action-icon">📦</span>
               <span>Create Addon</span>
             </Link>
+            <Link to="/dashboard/support" className="action-item">
+              <span className="action-icon">🎫</span>
+              <span>Support</span>
+            </Link>
             <Link to="/dashboard/settings" className="action-item">
               <span className="action-icon">⚙️</span>
               <span>Settings</span>

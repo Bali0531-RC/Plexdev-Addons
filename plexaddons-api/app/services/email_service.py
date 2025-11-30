@@ -220,6 +220,86 @@ class EmailService:
         
         return await self.send_email(self.admin_email, subject, html_content)
     
+    async def send_admin_new_ticket(
+        self,
+        user: User,
+        ticket_id: int,
+        subject: str,
+        category: str,
+        priority: str,
+        is_paid_user: bool
+    ) -> bool:
+        """Notify admin of new support ticket"""
+        if not self.admin_email:
+            return False
+        
+        from app.services.email_templates import EmailTemplates
+        
+        priority_badge = "🚨 " if priority in ("high", "urgent") else ""
+        paid_badge = "[PAID] " if is_paid_user else ""
+        email_subject = f"[PlexAddons Support] {priority_badge}{paid_badge}Ticket #{ticket_id}: {subject}"
+        
+        html_content = EmailTemplates.admin_new_ticket(
+            username=user.discord_username,
+            ticket_id=ticket_id,
+            subject=subject,
+            category=category,
+            priority=priority,
+            is_paid_user=is_paid_user
+        )
+        
+        return await self.send_email(self.admin_email, email_subject, html_content)
+    
+    async def send_user_ticket_reply(
+        self,
+        user: User,
+        ticket_id: int,
+        subject: str,
+        staff_name: str,
+        message_preview: str
+    ) -> bool:
+        """Notify user of staff reply on their ticket"""
+        if not user.email:
+            return False
+        
+        from app.services.email_templates import EmailTemplates
+        
+        email_subject = f"[PlexAddons Support] Reply on Ticket #{ticket_id}"
+        html_content = EmailTemplates.user_ticket_reply(
+            username=user.discord_username,
+            ticket_id=ticket_id,
+            subject=subject,
+            staff_name=staff_name,
+            message_preview=message_preview
+        )
+        
+        return await self.send_email(user.email, email_subject, html_content)
+    
+    async def send_ticket_status_changed(
+        self,
+        user: User,
+        ticket_id: int,
+        subject: str,
+        old_status: str,
+        new_status: str
+    ) -> bool:
+        """Notify user of ticket status change"""
+        if not user.email:
+            return False
+        
+        from app.services.email_templates import EmailTemplates
+        
+        email_subject = f"[PlexAddons Support] Ticket #{ticket_id} - Status: {new_status.replace('_', ' ').title()}"
+        html_content = EmailTemplates.ticket_status_changed(
+            username=user.discord_username,
+            ticket_id=ticket_id,
+            subject=subject,
+            old_status=old_status,
+            new_status=new_status
+        )
+        
+        return await self.send_email(user.email, email_subject, html_content)
+    
     # Weekly Summary
     
     async def send_admin_weekly_summary(

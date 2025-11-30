@@ -83,6 +83,10 @@ export default function AdminDashboard() {
             <span className="nav-icon">📦</span>
             <span className="nav-label">Manage Addons</span>
           </Link>
+          <Link to="/admin/tickets" className="admin-nav-item">
+            <span className="nav-icon">🎫</span>
+            <span className="nav-label">Support Tickets</span>
+          </Link>
           <Link to="/admin/audit-log" className="admin-nav-item">
             <span className="nav-icon">📋</span>
             <span className="nav-label">Audit Log</span>

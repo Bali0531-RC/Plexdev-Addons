@@ -27,6 +27,45 @@ class PaymentProvider(str, enum.Enum):
     PAYPAL = "paypal"
 
 
+# Ticket System Enums
+class TicketStatus(str, enum.Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
+class TicketPriority(str, enum.Enum):
+    LOW = "low"          # Free users
+    NORMAL = "normal"    # Pro users
+    HIGH = "high"        # Premium users
+    URGENT = "urgent"    # Admin-set only
+
+
+class TicketCategory(str, enum.Enum):
+    GENERAL = "general"
+    BILLING = "billing"
+    TECHNICAL = "technical"
+    FEATURE_REQUEST = "feature_request"
+    BUG_REPORT = "bug_report"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    CANCELED = "canceled"
+    UNPAID = "unpaid"
+    TRIALING = "trialing"
+    PAUSED = "paused"
+    INCOMPLETE = "incomplete"
+    INCOMPLETE_EXPIRED = "incomplete_expired"
+
+
+class PaymentProvider(str, enum.Enum):
+    STRIPE = "stripe"
+    PAYPAL = "paypal"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -232,4 +271,129 @@ class ApiRequestLog(Base):
     __table_args__ = (
         Index("idx_api_request_logs_timestamp", "timestamp"),
         Index("idx_api_request_logs_endpoint", "endpoint"),
+    )
+
+
+# ============== SUPPORT TICKET SYSTEM ==============
+
+class Ticket(Base):
+    """Support tickets created by users"""
+    __tablename__ = "tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Ticket details
+    subject = Column(String(255), nullable=False)
+    category = Column(SQLEnum(TicketCategory), default=TicketCategory.GENERAL, nullable=False)
+    priority = Column(SQLEnum(TicketPriority), default=TicketPriority.LOW, nullable=False)
+    status = Column(SQLEnum(TicketStatus), default=TicketStatus.OPEN, nullable=False, index=True)
+    
+    # Assignment
+    assigned_admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], backref="tickets")
+    assigned_admin = relationship("User", foreign_keys=[assigned_admin_id])
+    messages = relationship("TicketMessage", back_populates="ticket", cascade="all, delete-orphan", order_by="TicketMessage.created_at")
+    
+    __table_args__ = (
+        Index("idx_tickets_user_id", "user_id"),
+        Index("idx_tickets_status", "status"),
+        Index("idx_tickets_priority", "priority"),
+        Index("idx_tickets_created_at", "created_at"),
+    )
+
+
+class TicketMessage(Base):
+    """Messages within a ticket (both user and staff replies)"""
+    __tablename__ = "ticket_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Message content
+    content = Column(Text, nullable=False)
+    is_staff_reply = Column(Boolean, default=False)
+    is_system_message = Column(Boolean, default=False)  # Auto-generated messages (welcome, status changes)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    edited_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    ticket = relationship("Ticket", back_populates="messages")
+    author = relationship("User")
+    attachments = relationship("TicketAttachment", back_populates="message", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index("idx_ticket_messages_ticket_id", "ticket_id"),
+        Index("idx_ticket_messages_created_at", "created_at"),
+    )
+
+
+class TicketAttachment(Base):
+    """File attachments for ticket messages"""
+    __tablename__ = "ticket_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("ticket_messages.id", ondelete="CASCADE"), nullable=False)
+    
+    # File info
+    file_path = Column(String(500), nullable=False)  # Path on filesystem
+    original_filename = Column(String(255), nullable=False)
+    file_size = Column(BigInteger, nullable=False)  # Original size in bytes
+    compressed_size = Column(BigInteger, nullable=True)  # Size after LZMA compression
+    mime_type = Column(String(100), nullable=True)
+    
+    # Compression status
+    is_compressed = Column(Boolean, default=False)
+    compressed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    message = relationship("TicketMessage", back_populates="attachments")
+    
+    __table_args__ = (
+        Index("idx_ticket_attachments_message_id", "message_id"),
+        Index("idx_ticket_attachments_created_at", "created_at"),
+    )
+
+
+class CannedResponse(Base):
+    """Pre-written responses for admin quick replies"""
+    __tablename__ = "canned_responses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Response details
+    title = Column(String(100), nullable=False)
+    content = Column(Text, nullable=False)
+    category = Column(SQLEnum(TicketCategory), nullable=True)  # Optional: suggest based on ticket category
+    
+    # Metadata
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    usage_count = Column(Integer, default=0)
+    
+    # Status
+    is_active = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    creator = relationship("User")
+    
+    __table_args__ = (
+        Index("idx_canned_responses_category", "category"),
     )

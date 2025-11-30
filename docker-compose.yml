@@ -38,6 +38,15 @@ services:
       - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-no-reply@m.plexdev.live}
       - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-PlexAddons}
       - ADMIN_NOTIFICATION_EMAIL=${ADMIN_NOTIFICATION_EMAIL}
+      # Discord Bot (for DM notifications)
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - DISCORD_BOT_DM_ENABLED=${DISCORD_BOT_DM_ENABLED:-false}
+      - DISCORD_ADMIN_DM_USER_ID=${DISCORD_ADMIN_DM_USER_ID}
+      # Support Ticket System
+      - TICKET_ATTACHMENTS_PATH=${TICKET_ATTACHMENTS_PATH:-/mnt/raid0/plex/ticket_attachments}
+      - TICKET_ATTACHMENT_MAX_SIZE_MB=${TICKET_ATTACHMENT_MAX_SIZE_MB:-10}
+      - TICKET_ATTACHMENT_COMPRESS_DAYS=${TICKET_ATTACHMENT_COMPRESS_DAYS:-14}
+      - TICKET_ATTACHMENT_DELETE_DAYS=${TICKET_ATTACHMENT_DELETE_DAYS:-45}
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +54,7 @@ services:
         condition: service_healthy
     volumes:
       - ./plexaddons-api:/app
+      - ${TICKET_ATTACHMENTS_PATH:-/mnt/raid0/plex/ticket_attachments}:/mnt/raid0/plex/ticket_attachments
     networks:
       - plexaddons-network
 

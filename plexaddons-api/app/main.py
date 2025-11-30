@@ -60,6 +60,25 @@ async def send_weekly_summary():
             print("[Scheduler] Weekly summary email skipped (no admin email configured)")
 
 
+async def compress_ticket_attachments():
+    """Scheduled task to compress old ticket attachments."""
+    from app.services.ticket_service import ticket_service
+    
+    async with AsyncSessionLocal() as db:
+        compressed_count = await ticket_service.compress_old_attachments(db)
+        print(f"[Scheduler] Compressed {compressed_count} ticket attachments")
+
+
+async def cleanup_ticket_attachments():
+    """Scheduled task to delete very old ticket attachments."""
+    from app.services.ticket_service import ticket_service
+    
+    async with AsyncSessionLocal() as db:
+        deleted_count = await ticket_service.delete_old_attachments(db)
+        removed_dirs = await ticket_service.cleanup_empty_directories()
+        print(f"[Scheduler] Deleted {deleted_count} old ticket attachments, removed {removed_dirs} empty directories")
+
+
 async def bootstrap_initial_admin():
     """Create initial admin user if configured."""
     if not settings.initial_admin_discord_id:
@@ -125,6 +144,18 @@ async def lifespan(app: FastAPI):
         day_of_week="mon",  # Run every Monday
         hour=8,  # at 8 AM UTC
         minute=0,
+    )
+    scheduler.add_job(
+        compress_ticket_attachments,
+        "cron",
+        hour=4,  # Run at 4 AM daily
+        minute=0,
+    )
+    scheduler.add_job(
+        cleanup_ticket_attachments,
+        "cron",
+        hour=4,  # Run at 4 AM daily
+        minute=30,
     )
     scheduler.start()
     print("[Startup] Scheduler started")

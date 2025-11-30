@@ -51,6 +51,7 @@ export default function Layout() {
                 <span className="username">{user?.discord_username}</span>
                 <div className="dropdown">
                   <Link to="/dashboard">Dashboard</Link>
+                  <Link to="/dashboard/support">Support</Link>
                   <Link to="/dashboard/settings">Settings</Link>
                   {isAdmin && <Link to="/admin">Admin Panel</Link>}
                   <button onClick={logout}>Logout</button>

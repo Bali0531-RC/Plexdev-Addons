@@ -76,6 +76,18 @@ class Settings(BaseSettings):
     email_from_name: str = "PlexAddons"
     admin_notification_email: Optional[str] = None
     
+    # Discord Bot (separate from OAuth2 - for DMs)
+    discord_bot_token: Optional[str] = None
+    discord_bot_dm_enabled: bool = False
+    discord_admin_dm_user_id: Optional[str] = None  # Admin's Discord user ID for DM notifications
+    
+    # Support Ticket System
+    ticket_attachments_path: str = "/mnt/raid0/plex/ticket_attachments"
+    ticket_attachment_max_size_mb: int = 10
+    ticket_attachment_compress_days: int = 14  # Compress attachments after this many days
+    ticket_attachment_delete_days: int = 45    # Delete attachments after this many days
+    ticket_auto_welcome_message: str = "Thank you for contacting PlexAddons support! A team member will review your ticket shortly."
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

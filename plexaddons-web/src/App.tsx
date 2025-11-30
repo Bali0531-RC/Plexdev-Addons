@@ -14,11 +14,16 @@ import AddonEditor from './pages/dashboard/AddonEditor'
 import VersionEditor from './pages/dashboard/VersionEditor'
 import Settings from './pages/dashboard/Settings'
 import Subscription from './pages/dashboard/Subscription'
+import Support from './pages/dashboard/Support'
+import NewTicket from './pages/dashboard/NewTicket'
+import TicketDetail from './pages/dashboard/TicketDetail'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAddons from './pages/admin/AdminAddons'
 import AdminAddonDetail from './pages/admin/AdminAddonDetail'
 import AdminAuditLog from './pages/admin/AdminAuditLog'
+import AdminTickets from './pages/admin/AdminTickets'
+import AdminTicketDetail from './pages/admin/AdminTicketDetail'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 
@@ -46,6 +51,9 @@ export default function App() {
           <Route path="addons/:slug/versions/:version" element={<VersionEditor />} />
           <Route path="settings" element={<Settings />} />
           <Route path="subscription" element={<Subscription />} />
+          <Route path="support" element={<Support />} />
+          <Route path="support/new" element={<NewTicket />} />
+          <Route path="support/:ticketId" element={<TicketDetail />} />
         </Route>
 
         {/* Admin routes */}
@@ -55,6 +63,8 @@ export default function App() {
           <Route path="addons" element={<AdminAddons />} />
           <Route path="addons/:addonId" element={<AdminAddonDetail />} />
           <Route path="audit-log" element={<AdminAuditLog />} />
+          <Route path="tickets" element={<AdminTickets />} />
+          <Route path="tickets/:ticketId" element={<AdminTicketDetail />} />
         </Route>
       </Route>
     </Routes>
