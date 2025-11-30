@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import './ApiDocs.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://addons.plexdev.live/api';
+const OPENAPI_URL = API_BASE.replace(/\/api\/?$/, '/api/openapi.json');
+
 export default function ApiDocs() {
   useEffect(() => {
     // Load ReDoc script
@@ -12,7 +15,7 @@ export default function ApiDocs() {
       if (window.Redoc) {
         // @ts-expect-error ReDoc is loaded from CDN
         window.Redoc.init(
-          `${import.meta.env.VITE_API_URL || 'https://addons.plexdev.live/api'}/openapi.json`,
+          OPENAPI_URL,
           {
             theme: {
               colors: {
@@ -78,7 +81,7 @@ export default function ApiDocs() {
         <p>Interactive API reference powered by OpenAPI/Swagger</p>
         <div className="api-docs-links">
           <a 
-            href={`${import.meta.env.VITE_API_URL || 'https://addons.plexdev.live/api'}/openapi.json`}
+            href={OPENAPI_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-secondary"

@@ -108,6 +108,7 @@ app = FastAPI(
     description="PlexAddons Version Management API",
     docs_url="/docs" if settings.environment != "production" else None,
     redoc_url="/redoc" if settings.environment != "production" else None,
+    openapi_url="/openapi.json",  # Always available for frontend ReDoc
     lifespan=lifespan,
 )
 
