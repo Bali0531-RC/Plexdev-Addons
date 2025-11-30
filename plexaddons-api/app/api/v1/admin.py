@@ -600,3 +600,81 @@ async def cleanup_audit_log(
     )
     
     return {"status": "cleaned", "deleted_count": deleted_count}
+
+
+@router.post("/test-email")
+async def test_email(
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Send a test email to verify SMTP configuration."""
+    from app.services.email_service import email_service
+    from app.services.email_templates import EmailTemplates
+    from app.config import get_settings
+    
+    settings = get_settings()
+    
+    # Check configuration
+    config_info = {
+        "email_enabled": settings.email_enabled,
+        "smtp_host": settings.smtp_host,
+        "smtp_port": settings.smtp_port,
+        "smtp_username": settings.smtp_username,
+        "smtp_password_set": bool(settings.smtp_password),
+        "admin_notification_email": settings.admin_notification_email,
+    }
+    
+    if not settings.email_enabled:
+        return {"status": "skipped", "reason": "Email is disabled", "config": config_info}
+    
+    if not settings.smtp_password:
+        return {"status": "error", "reason": "SMTP password not set", "config": config_info}
+    
+    if not settings.admin_notification_email:
+        return {"status": "error", "reason": "Admin notification email not set", "config": config_info}
+    
+    # Send test email
+    subject = "[PlexAddons] Test Email"
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; padding: 20px; }}
+            .box {{ background: #f5f5f5; padding: 20px; border-radius: 8px; }}
+            h1 {{ color: #e9a426; }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <h1>🎬 PlexAddons Email Test</h1>
+            <p>This is a test email to verify your SMTP configuration is working correctly.</p>
+            <p><strong>Sent at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+            <p><strong>Triggered by:</strong> {admin.discord_username}</p>
+            <hr>
+            <p>If you received this email, your email configuration is working! ✅</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        result = await email_service.send_email(
+            to_email=settings.admin_notification_email,
+            subject=subject,
+            html_content=html_content,
+            plain_content=f"PlexAddons Email Test - Sent at {datetime.utcnow()} by {admin.discord_username}"
+        )
+        
+        if result:
+            await log_admin_action(
+                db, admin,
+                action="test_email_sent",
+                details={"to": settings.admin_notification_email},
+            )
+            return {"status": "sent", "to": settings.admin_notification_email, "config": config_info}
+        else:
+            return {"status": "failed", "reason": "send_email returned False", "config": config_info}
+    except Exception as e:
+        return {"status": "error", "reason": str(e), "config": config_info}
