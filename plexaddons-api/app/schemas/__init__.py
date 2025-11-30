@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import datetime, date
+import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory
@@ -66,6 +67,16 @@ class UserResponse(BaseModel):
     temp_tier: Optional[SubscriptionTier] = None
     temp_tier_expires_at: Optional[datetime] = None
 
+    @field_validator('badges', mode='before')
+    @classmethod
+    def parse_badges(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return []
+        return v
+
     class Config:
         from_attributes = True
 
@@ -114,6 +125,16 @@ class UserPublicProfile(BaseModel):
     created_at: datetime
     addons: Optional[List["AddonResponse"]] = None  # Only if show_addons=True
     
+    @field_validator('badges', mode='before')
+    @classmethod
+    def parse_badges(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return []
+        return v
+
     class Config:
         from_attributes = True
 
