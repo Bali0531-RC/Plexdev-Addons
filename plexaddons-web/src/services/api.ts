@@ -255,6 +255,18 @@ class ApiClient {
     return this.fetch(`/v1/admin/users/${userId}/revoke-temp-tier`, { method: 'POST' });
   }
 
+  async getUserBadges(userId: number): Promise<{ user_id: number; badges: string[] }> {
+    return this.fetch(`/v1/admin/users/${userId}/badges`);
+  }
+
+  async addUserBadge(userId: number, badge: string): Promise<{ status: string; badges: string[] }> {
+    return this.fetch(`/v1/admin/users/${userId}/badges?badge=${encodeURIComponent(badge)}`, { method: 'POST' });
+  }
+
+  async removeUserBadge(userId: number, badge: string): Promise<{ status: string; badges: string[] }> {
+    return this.fetch(`/v1/admin/users/${userId}/badges?badge=${encodeURIComponent(badge)}`, { method: 'DELETE' });
+  }
+
   async listAllAddons(page = 1, perPage = 50, search?: string): Promise<AddonListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.append('search', search);

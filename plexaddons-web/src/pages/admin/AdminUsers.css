@@ -50,7 +50,7 @@
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 1.5fr 0.75fr 1fr;
+  grid-template-columns: 2fr 1fr 1.5fr 1.2fr 0.75fr 0.75fr 1fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   align-items: center;
@@ -340,4 +340,123 @@
   .user-actions {
     width: 100%;
   }
+}
+
+/* Badge Management */
+.badges-cell {
+  display: flex;
+  align-items: center;
+}
+
+.badge-modal {
+  max-width: 500px;
+}
+
+.current-badges {
+  margin-bottom: 1.5rem;
+}
+
+.current-badges label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.no-badges {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--bg);
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.badge-supporter {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+  color: #f59e0b;
+}
+
+.badge-premium {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.2));
+  color: #a78bfa;
+}
+
+.badge-addon_creator {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+  color: #60a5fa;
+}
+
+.badge-early_adopter {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2));
+  color: #4ade80;
+}
+
+.badge-contributor {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.2));
+  color: #f472b6;
+}
+
+.badge-beta_tester {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2));
+  color: #38bdf8;
+}
+
+.badge-bug_hunter {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+  color: #f87171;
+}
+
+.badge-top_contributor {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+  color: #fbbf24;
+}
+
+.badge-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.badge-remove:hover {
+  opacity: 1;
+}
+
+.add-badge-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-badge-row select {
+  flex: 1;
+}
+
+.custom-badge-row {
+  margin-top: 0.5rem;
+}
+
+.custom-badge-row input {
+  width: 100%;
 }

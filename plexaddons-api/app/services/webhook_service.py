@@ -50,6 +50,82 @@ class WebhookService:
         return hmac.compare_digest(expected, signature)
     
     @staticmethod
+    def is_discord_webhook(url: str) -> bool:
+        """Check if URL is a Discord webhook."""
+        return 'discord.com/api/webhooks/' in url or 'discordapp.com/api/webhooks/' in url
+    
+    @staticmethod
+    def format_discord_payload(event_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Format payload for Discord webhook (embeds)."""
+        # Map event types to colors
+        colors = {
+            WebhookEvent.VERSION_RELEASED: 0x22c55e,  # green
+            WebhookEvent.VERSION_UPDATED: 0x3b82f6,   # blue
+            WebhookEvent.VERSION_DELETED: 0xef4444,   # red
+            WebhookEvent.ADDON_CREATED: 0x8b5cf6,     # purple
+            WebhookEvent.ADDON_UPDATED: 0xf59e0b,    # orange
+            WebhookEvent.ADDON_DELETED: 0xef4444,    # red
+            "test": 0x6366f1,                         # indigo
+        }
+        
+        color = colors.get(event_type, 0x5865f2)
+        
+        # Build embed based on event type
+        embed = {
+            "color": color,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "footer": {"text": "PlexAddons"},
+        }
+        
+        if event_type == WebhookEvent.VERSION_RELEASED:
+            addon = data.get("addon", {})
+            version = data.get("version", {})
+            embed["title"] = f"🚀 New Version Released: {addon.get('name')}"
+            embed["description"] = f"Version **{version.get('version')}** is now available!"
+            embed["fields"] = []
+            if version.get("description"):
+                embed["fields"].append({"name": "Description", "value": version.get("description")[:1024], "inline": False})
+            if version.get("breaking"):
+                embed["fields"].append({"name": "⚠️ Breaking Changes", "value": "This version contains breaking changes", "inline": True})
+            if version.get("urgent"):
+                embed["fields"].append({"name": "🔴 Urgent", "value": "This is an urgent update", "inline": True})
+            embed["url"] = version.get("download_url")
+        elif event_type == WebhookEvent.VERSION_UPDATED:
+            addon = data.get("addon", {})
+            version = data.get("version", {})
+            embed["title"] = f"📝 Version Updated: {addon.get('name')}"
+            embed["description"] = f"Version **{version.get('version')}** has been updated."
+        elif event_type == WebhookEvent.VERSION_DELETED:
+            addon = data.get("addon", {})
+            embed["title"] = f"🗑️ Version Deleted: {addon.get('name')}"
+            embed["description"] = f"Version **{data.get('version')}** has been removed."
+        elif event_type == WebhookEvent.ADDON_CREATED:
+            addon = data.get("addon", {})
+            embed["title"] = f"📦 New Addon Created: {addon.get('name')}"
+            embed["description"] = addon.get("description") or "No description"
+        elif event_type == WebhookEvent.ADDON_UPDATED:
+            addon = data.get("addon", {})
+            embed["title"] = f"✏️ Addon Updated: {addon.get('name')}"
+            embed["description"] = addon.get("description") or "No description"
+        elif event_type == WebhookEvent.ADDON_DELETED:
+            addon = data.get("addon", {})
+            embed["title"] = f"🗑️ Addon Deleted: {addon.get('name')}"
+            embed["description"] = f"The addon **{addon.get('slug')}** has been removed."
+        elif event_type == "test":
+            embed["title"] = "🧪 PlexAddons Webhook Test"
+            embed["description"] = "Your webhook is configured correctly!"
+            embed["fields"] = [
+                {"name": "Status", "value": "✅ Connected", "inline": True},
+            ]
+        else:
+            embed["title"] = f"📣 {event_type}"
+            embed["description"] = json.dumps(data, indent=2, default=str)[:2000]
+        
+        return {
+            "embeds": [embed]
+        }
+    
+    @staticmethod
     async def send_webhook(
         user: User,
         event_type: str,
@@ -73,12 +149,19 @@ class WebhookService:
         if not user.webhook_enabled or not user.webhook_url or not user.webhook_secret:
             return False
         
-        # Build webhook payload
-        payload = {
-            "event": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": data,
-        }
+        # Check if this is a Discord webhook
+        is_discord = WebhookService.is_discord_webhook(user.webhook_url)
+        
+        if is_discord:
+            # Use Discord embed format
+            payload = WebhookService.format_discord_payload(event_type, data)
+        else:
+            # Use standard PlexAddons format
+            payload = {
+                "event": event_type,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "data": data,
+            }
         
         payload_json = json.dumps(payload, default=str)
         
@@ -88,11 +171,14 @@ class WebhookService:
         # Send the webhook
         headers = {
             "Content-Type": "application/json",
-            "X-PlexAddons-Event": event_type,
-            "X-PlexAddons-Signature": signature,
-            "X-PlexAddons-Timestamp": str(int(datetime.now(timezone.utc).timestamp())),
             "User-Agent": "PlexAddons-Webhook/1.0",
         }
+        
+        # Only add custom headers for non-Discord webhooks
+        if not is_discord:
+            headers["X-PlexAddons-Event"] = event_type
+            headers["X-PlexAddons-Signature"] = signature
+            headers["X-PlexAddons-Timestamp"] = str(int(datetime.now(timezone.utc).timestamp()))
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -245,25 +331,39 @@ class WebhookService:
                 "error": "Webhook URL or secret not configured",
             }
         
-        test_payload = {
-            "event": "test",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": {
+        # Check if this is a Discord webhook
+        is_discord = WebhookService.is_discord_webhook(user.webhook_url)
+        
+        if is_discord:
+            # Use Discord embed format for test
+            test_payload = WebhookService.format_discord_payload("test", {
                 "message": "This is a test webhook from PlexAddons",
                 "user_id": user.id,
-            },
-        }
+            })
+        else:
+            # Standard format
+            test_payload = {
+                "event": "test",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "data": {
+                    "message": "This is a test webhook from PlexAddons",
+                    "user_id": user.id,
+                },
+            }
         
         payload_json = json.dumps(test_payload, default=str)
         signature = WebhookService.sign_payload(payload_json, user.webhook_secret)
         
         headers = {
             "Content-Type": "application/json",
-            "X-PlexAddons-Event": "test",
-            "X-PlexAddons-Signature": signature,
-            "X-PlexAddons-Timestamp": str(int(datetime.now(timezone.utc).timestamp())),
             "User-Agent": "PlexAddons-Webhook/1.0",
         }
+        
+        # Only add custom headers for non-Discord webhooks
+        if not is_discord:
+            headers["X-PlexAddons-Event"] = "test"
+            headers["X-PlexAddons-Signature"] = signature
+            headers["X-PlexAddons-Timestamp"] = str(int(datetime.now(timezone.utc).timestamp()))
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:

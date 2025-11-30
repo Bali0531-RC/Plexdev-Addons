@@ -390,6 +390,76 @@ async def revoke_temp_tier(
     }
 
 
+@router.get("/users/{user_id}/badges")
+async def get_user_badges(
+    user_id: int,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Get a user's badges."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    badges = await UserService.get_badges(db, user)
+    return {"user_id": user_id, "badges": badges}
+
+
+@router.post("/users/{user_id}/badges")
+async def add_user_badge(
+    user_id: int,
+    badge: str = Query(..., description="Badge to add"),
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Add a badge to a user."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    await UserService.add_badge(db, user, badge)
+    badges = await UserService.get_badges(db, user)
+    
+    await log_admin_action(
+        db, admin,
+        action="add_badge",
+        target_type="user",
+        target_id=user_id,
+        details={"username": user.discord_username, "badge": badge},
+    )
+    
+    return {"status": "added", "user_id": user_id, "badge": badge, "badges": badges}
+
+
+@router.delete("/users/{user_id}/badges")
+async def remove_user_badge(
+    user_id: int,
+    badge: str = Query(..., description="Badge to remove"),
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Remove a badge from a user."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    await UserService.remove_badge(db, user, badge)
+    badges = await UserService.get_badges(db, user)
+    
+    await log_admin_action(
+        db, admin,
+        action="remove_badge",
+        target_type="user",
+        target_id=user_id,
+        details={"username": user.discord_username, "badge": badge},
+    )
+    
+    return {"status": "removed", "user_id": user_id, "badge": badge, "badges": badges}
+
+
 @router.get("/addons")
 async def list_all_addons(
     page: int = Query(1, ge=1),

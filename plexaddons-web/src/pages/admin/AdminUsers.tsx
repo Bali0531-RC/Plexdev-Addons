@@ -10,6 +10,23 @@ interface TempTierModal {
   currentTier: string;
 }
 
+interface BadgeModal {
+  userId: number;
+  username: string;
+  badges: string[];
+}
+
+const AVAILABLE_BADGES = [
+  'supporter',
+  'premium',
+  'addon_creator',
+  'early_adopter',
+  'contributor',
+  'beta_tester',
+  'bug_hunter',
+  'top_contributor',
+];
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +41,10 @@ export default function AdminUsers() {
   const [tempTier, setTempTier] = useState('pro');
   const [tempDays, setTempDays] = useState(7);
   const [tempReason, setTempReason] = useState('');
+
+  // Badge modal state
+  const [badgeModal, setBadgeModal] = useState<BadgeModal | null>(null);
+  const [newBadge, setNewBadge] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -122,6 +143,51 @@ export default function AdminUsers() {
     );
   };
 
+  const openBadgeModal = async (user: User) => {
+    try {
+      const { badges } = await api.getUserBadges(user.id);
+      setBadgeModal({
+        userId: user.id,
+        username: user.discord_username,
+        badges: badges || [],
+      });
+      setNewBadge('');
+    } catch (err) {
+      toast.error('Failed to load user badges');
+    }
+  };
+
+  const handleAddBadge = async () => {
+    if (!badgeModal || !newBadge) return;
+    
+    toast.promise(
+      api.addUserBadge(badgeModal.userId, newBadge).then(({ badges }) => {
+        setBadgeModal(prev => prev ? { ...prev, badges } : null);
+        setNewBadge('');
+      }),
+      {
+        loading: 'Adding badge...',
+        success: `Badge "${newBadge}" added`,
+        error: 'Failed to add badge',
+      }
+    );
+  };
+
+  const handleRemoveBadge = async (badge: string) => {
+    if (!badgeModal) return;
+    
+    toast.promise(
+      api.removeUserBadge(badgeModal.userId, badge).then(({ badges }) => {
+        setBadgeModal(prev => prev ? { ...prev, badges } : null);
+      }),
+      {
+        loading: 'Removing badge...',
+        success: `Badge "${badge}" removed`,
+        error: 'Failed to remove badge',
+      }
+    );
+  };
+
   const formatTempTierExpiry = (expiresAt: string) => {
     const expires = new Date(expiresAt);
     const now = new Date();
@@ -190,6 +256,7 @@ export default function AdminUsers() {
               <span>Temp Tier</span>
               <span>Storage</span>
               <span>Admin</span>
+              <span>Badges</span>
               <span>Actions</span>
             </div>
             {users.map(user => (
@@ -244,6 +311,15 @@ export default function AdminUsers() {
                   {user.is_admin ? (
                     <span className="admin-badge">Admin</span>
                   ) : '-'}
+                </span>
+                <span className="badges-cell">
+                  <button
+                    onClick={() => openBadgeModal(user)}
+                    className="btn btn-xs btn-outline"
+                    title="Manage badges"
+                  >
+                    🏷️ {user.badges?.length || 0}
+                  </button>
                 </span>
                 <span className="user-actions">
                   {user.is_admin ? (
@@ -388,6 +464,87 @@ export default function AdminUsers() {
                 onClick={handleGrantTempTier}
               >
                 Grant {tempTier.charAt(0).toUpperCase() + tempTier.slice(1)} for {tempDays} days
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Badge Management Modal */}
+      {badgeModal && (
+        <div className="modal-overlay" onClick={() => setBadgeModal(null)}>
+          <div className="modal badge-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Manage Badges</h2>
+              <button className="modal-close" onClick={() => setBadgeModal(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-info">
+                Managing badges for <strong>{badgeModal.username}</strong>
+              </p>
+
+              <div className="current-badges">
+                <label>Current Badges</label>
+                {badgeModal.badges.length === 0 ? (
+                  <p className="no-badges">No badges assigned</p>
+                ) : (
+                  <div className="badge-list">
+                    {badgeModal.badges.map(badge => (
+                      <span key={badge} className={`badge badge-${badge}`}>
+                        {badge.replace(/_/g, ' ')}
+                        <button 
+                          className="badge-remove"
+                          onClick={() => handleRemoveBadge(badge)}
+                          title="Remove badge"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Add Badge</label>
+                <div className="add-badge-row">
+                  <select
+                    value={newBadge}
+                    onChange={e => setNewBadge(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select a badge...</option>
+                    {AVAILABLE_BADGES.filter(b => !badgeModal.badges.includes(b)).map(badge => (
+                      <option key={badge} value={badge}>
+                        {badge.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleAddBadge}
+                    disabled={!newBadge}
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="custom-badge-row">
+                  <input
+                    type="text"
+                    value={newBadge}
+                    onChange={e => setNewBadge(e.target.value)}
+                    placeholder="Or enter custom badge name..."
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setBadgeModal(null)}
+              >
+                Close
               </button>
             </div>
           </div>
