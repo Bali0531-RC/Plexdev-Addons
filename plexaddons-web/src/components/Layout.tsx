@@ -46,9 +46,11 @@ export default function Layout() {
 
           <div className="header-actions">
             {isAuthenticated ? (
-              <div className="user-menu">
-                <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
-                <span className="username">{user?.discord_username}</span>
+              <>
+                <div className="user-menu">
+                  <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
+                  <span className="username">{user?.discord_username}</span>
+                </div>
                 <div className="dropdown">
                   <Link to="/dashboard">Dashboard</Link>
                   <Link to="/dashboard/support">Support</Link>
@@ -56,7 +58,7 @@ export default function Layout() {
                   {isAdmin && <Link to="/admin">Admin Panel</Link>}
                   <button onClick={logout}>Logout</button>
                 </div>
-              </div>
+              </>
             ) : (
               <button onClick={() => login()} className="btn btn-primary">
                 Login with Discord

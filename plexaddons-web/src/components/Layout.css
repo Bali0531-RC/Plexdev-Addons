@@ -106,7 +106,8 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.user-menu:hover .dropdown {
+.user-menu:hover + .dropdown,
+.dropdown:hover {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
