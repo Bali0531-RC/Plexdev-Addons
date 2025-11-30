@@ -96,6 +96,7 @@
 .username {
   font-weight: 500;
   color: var(--text);
+  display: inline-block;
 }
 
 .dropdown-arrow {
@@ -226,7 +227,7 @@
     display: none;
   }
 
-  .username {
+  .user-menu-trigger .username {
     display: none;
   }
 
