@@ -112,7 +112,7 @@
 
 .dropdown {
   position: absolute;
-  top: 60px;
+  top: 64px;
   right: var(--space-md);
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -122,7 +122,6 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(-8px);
   transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
