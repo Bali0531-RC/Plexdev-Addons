@@ -213,7 +213,7 @@ class AnalyticsService:
         """
         # Get all user's addons
         addons_result = await db.execute(
-            select(Addon).where(Addon.user_id == user_id)
+            select(Addon).where(Addon.owner_id == user_id)
         )
         addons = addons_result.scalars().all()
         

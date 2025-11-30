@@ -65,7 +65,7 @@
 }
 
 .user-menu {
-  position: static;
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -90,9 +90,10 @@
 }
 
 .dropdown {
-  position: fixed;
-  top: 72px;
-  right: 16px;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-xs);
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);

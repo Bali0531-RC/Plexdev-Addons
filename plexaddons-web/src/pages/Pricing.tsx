@@ -29,40 +29,61 @@ export default function Pricing() {
           tier: 'free',
           name: 'Free',
           price_monthly: 0,
-          storage_quota_bytes: 50 * 1024 * 1024,
-          version_history_limit: 5,
-          rate_limit: 30,
-          features: ['50MB storage', '5 version history', '30 requests/min'],
+          storage_quota_bytes: 5 * 1024 * 1024,
+          version_history_limit: 3,
+          rate_limit: 100,
+          features: [
+            '5MB storage',
+            '3 version history',
+            '100 requests/min',
+            'Public profile',
+          ],
         },
         {
           tier: 'pro',
           name: 'Pro',
           price_monthly: 1,
-          storage_quota_bytes: 500 * 1024 * 1024,
+          storage_quota_bytes: 100 * 1024 * 1024,
           version_history_limit: 10,
-          rate_limit: 60,
-          features: ['500MB storage', '10 version history', '60 requests/min', 'Priority support'],
+          rate_limit: 300,
+          features: [
+            '100MB storage',
+            '10 version history',
+            '300 requests/min',
+            'Custom profile URL',
+            'Profile banner',
+            'Ticket attachments',
+            'Usage analytics (30 days)',
+            'Private addons',
+            'Supporter badge',
+          ],
         },
         {
           tier: 'premium',
           name: 'Premium',
           price_monthly: 5,
-          storage_quota_bytes: 5 * 1024 * 1024 * 1024,
+          storage_quota_bytes: 1024 * 1024 * 1024,
           version_history_limit: -1,
-          rate_limit: 120,
-          features: ['5GB storage', 'Unlimited version history', '120 requests/min', 'Priority support', 'Early access features'],
+          rate_limit: 1000,
+          features: [
+            '1GB storage',
+            'Unlimited version history',
+            '1000 requests/min',
+            'Custom profile URL',
+            'Profile banner',
+            'Accent color customization',
+            'Ticket attachments',
+            'Usage analytics (90 days)',
+            'Private addons',
+            'API key access',
+            'Webhook notifications',
+            'Supporter badge',
+          ],
         },
       ]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes >= 1024 * 1024 * 1024) {
-      return `${(bytes / (1024 * 1024 * 1024)).toFixed(0)}GB`;
-    }
-    return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
   };
 
   const handleSubscribe = async (tier: 'pro' | 'premium', provider: 'stripe' | 'paypal') => {
@@ -127,32 +148,12 @@ export default function Pricing() {
                 <span className="price-period">/month</span>
               </div>
               <ul className="pricing-features">
-                <li>
-                  <span className="feature-icon">✓</span>
-                  {formatBytes(plan.storage_quota_bytes)} storage
-                </li>
-                <li>
-                  <span className="feature-icon">✓</span>
-                  {plan.version_history_limit === -1 
-                    ? 'Unlimited version history' 
-                    : `${plan.version_history_limit} version history`}
-                </li>
-                <li>
-                  <span className="feature-icon">✓</span>
-                  {plan.rate_limit} requests/min
-                </li>
-                {plan.tier !== 'free' && (
-                  <li>
+                {plan.features.map((feature, index) => (
+                  <li key={index}>
                     <span className="feature-icon">✓</span>
-                    Priority support
+                    {feature}
                   </li>
-                )}
-                {plan.tier === 'premium' && (
-                  <li>
-                    <span className="feature-icon">✓</span>
-                    Early access features
-                  </li>
-                )}
+                ))}
               </ul>
               <div className="pricing-action">
                 {isCurrentPlan ? (

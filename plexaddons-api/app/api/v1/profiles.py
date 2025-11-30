@@ -54,22 +54,25 @@ async def get_public_profile(
     if user.show_addons:
         addons_result = await db.execute(
             select(Addon)
-            .where(Addon.user_id == user.id)
+            .where(Addon.owner_id == user.id)
+            .where(Addon.is_public == True)
             .order_by(Addon.name)
         )
         addons = addons_result.scalars().all()
         addons_list = [
             AddonResponse(
                 id=addon.id,
-                user_id=addon.user_id,
+                owner_id=addon.owner_id,
                 name=addon.name,
                 slug=addon.slug,
                 description=addon.description,
-                repository_url=addon.repository_url,
-                documentation_url=addon.documentation_url,
-                icon_url=addon.icon_url,
+                homepage=addon.homepage,
+                external=addon.external,
+                is_active=addon.is_active,
+                is_public=addon.is_public,
                 created_at=addon.created_at,
                 updated_at=addon.updated_at,
+                owner_username=user.discord_username,
             )
             for addon in addons
         ]
