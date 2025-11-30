@@ -84,10 +84,43 @@ class User(Base):
     
     # Storage tracking
     storage_used_bytes = Column(BigInteger, default=0)
-    storage_quota_bytes = Column(BigInteger, default=50 * 1024 * 1024)  # 50MB default
+    storage_quota_bytes = Column(BigInteger, default=5 * 1024 * 1024)  # 5MB default
     
     # Admin flag
     is_admin = Column(Boolean, default=False, index=True)
+    
+    # ============== PROFILE FIELDS ==============
+    # Basic profile info
+    bio = Column(Text, nullable=True)  # Max 500 chars enforced at API level
+    website = Column(String(500), nullable=True)
+    github_username = Column(String(100), nullable=True)
+    twitter_username = Column(String(100), nullable=True)
+    
+    # Custom profile URL (Pro+ only)
+    profile_slug = Column(String(50), unique=True, nullable=True, index=True)
+    
+    # Profile visibility
+    profile_public = Column(Boolean, default=True)
+    show_addons = Column(Boolean, default=True)
+    
+    # Badges (JSON array of badge IDs)
+    badges = Column(Text, nullable=True)  # e.g., '["pro", "early_adopter", "addon_creator"]'
+    
+    # Profile customization (tier-locked)
+    banner_url = Column(String(500), nullable=True)  # Pro+ only
+    accent_color = Column(String(7), nullable=True)  # Premium only, hex color e.g., "#e9a426"
+    
+    # ============== API KEY (Premium only) ==============
+    api_key = Column(String(67), unique=True, nullable=True, index=True)  # pa_ + 64 hex chars
+    api_key_created_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # ============== TEMPORARY TIER (Admin-granted) ==============
+    # When set, this overrides subscription_tier until expiration
+    temp_tier = Column(SQLEnum(SubscriptionTier), nullable=True)
+    temp_tier_expires_at = Column(DateTime(timezone=True), nullable=True)
+    temp_tier_granted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    temp_tier_granted_at = Column(DateTime(timezone=True), nullable=True)
+    temp_tier_reason = Column(String(500), nullable=True)  # Why was temp tier granted
     
     # OAuth tokens (should be encrypted in production)
     discord_access_token = Column(Text, nullable=True)
@@ -396,4 +429,55 @@ class CannedResponse(Base):
     
     __table_args__ = (
         Index("idx_canned_responses_category", "category"),
+    )
+
+
+# ============== USAGE ANALYTICS SYSTEM ==============
+
+class VersionCheck(Base):
+    """Raw version check logs for analytics"""
+    __tablename__ = "version_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="SET NULL"), nullable=True)
+    
+    # Version the client reported they're running
+    checked_version = Column(String(50), nullable=True)
+    
+    # Privacy-preserving unique user tracking (hashed IP with daily rotating salt)
+    client_ip_hash = Column(String(64), nullable=True)
+    
+    # Timestamp
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    __table_args__ = (
+        Index("idx_version_checks_addon_id", "addon_id"),
+        Index("idx_version_checks_timestamp", "timestamp"),
+        Index("idx_version_checks_addon_timestamp", "addon_id", "timestamp"),
+    )
+
+
+class AddonUsageStats(Base):
+    """Daily aggregated usage statistics per addon/version"""
+    __tablename__ = "addon_usage_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="SET NULL"), nullable=True)
+    
+    # The date this aggregate is for
+    date = Column(Date, nullable=False, index=True)
+    
+    # Aggregated counts
+    check_count = Column(Integer, default=0)  # Total version checks that day
+    unique_users = Column(Integer, default=0)  # Unique IP hashes
+    
+    # Relationships
+    addon = relationship("Addon")
+    version = relationship("Version")
+    
+    __table_args__ = (
+        Index("idx_addon_usage_stats_addon_date", "addon_id", "date"),
+        Index("idx_addon_usage_stats_addon_version_date", "addon_id", "version_id", "date", unique=True),
     )

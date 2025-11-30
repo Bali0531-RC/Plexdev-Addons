@@ -4,6 +4,12 @@ import { api } from '../../services/api';
 import type { User } from '../../types';
 import './AdminUsers.css';
 
+interface TempTierModal {
+  userId: number;
+  username: string;
+  currentTier: string;
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +18,12 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('');
   const perPage = 20;
+
+  // Temp tier modal state
+  const [tempTierModal, setTempTierModal] = useState<TempTierModal | null>(null);
+  const [tempTier, setTempTier] = useState('pro');
+  const [tempDays, setTempDays] = useState(7);
+  const [tempReason, setTempReason] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -68,6 +80,59 @@ export default function AdminUsers() {
     );
   };
 
+  const openTempTierModal = (user: User) => {
+    setTempTierModal({
+      userId: user.id,
+      username: user.discord_username,
+      currentTier: user.subscription_tier,
+    });
+    // Set default temp tier to one level above current
+    const tierOrder = ['free', 'pro', 'premium'];
+    const currentIndex = tierOrder.indexOf(user.subscription_tier);
+    setTempTier(tierOrder[Math.min(currentIndex + 1, 2)]);
+    setTempDays(7);
+    setTempReason('');
+  };
+
+  const handleGrantTempTier = async () => {
+    if (!tempTierModal) return;
+    
+    toast.promise(
+      api.grantTempTier(tempTierModal.userId, tempTier, tempDays, tempReason || undefined)
+        .then(() => {
+          setTempTierModal(null);
+          loadUsers();
+        }),
+      {
+        loading: 'Granting temporary tier...',
+        success: `Granted ${tempTier} tier for ${tempDays} days`,
+        error: (err) => err.message || 'Failed to grant temporary tier',
+      }
+    );
+  };
+
+  const handleRevokeTempTier = async (userId: number) => {
+    toast.promise(
+      api.revokeTempTier(userId).then(() => loadUsers()),
+      {
+        loading: 'Revoking temporary tier...',
+        success: 'Temporary tier revoked',
+        error: 'Failed to revoke temporary tier',
+      }
+    );
+  };
+
+  const formatTempTierExpiry = (expiresAt: string) => {
+    const expires = new Date(expiresAt);
+    const now = new Date();
+    const diffMs = expires.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) return 'Expired';
+    if (diffDays === 1) return '1 day left';
+    return `${diffDays} days left`;
+  };
+
   const totalPages = Math.ceil(total / perPage);
 
   const formatBytes = (bytes: number) => {
@@ -122,6 +187,7 @@ export default function AdminUsers() {
             <div className="table-header">
               <span>User</span>
               <span>Tier</span>
+              <span>Temp Tier</span>
               <span>Storage</span>
               <span>Admin</span>
               <span>Actions</span>
@@ -142,6 +208,34 @@ export default function AdminUsers() {
                     <option value="pro">Pro</option>
                     <option value="premium">Premium</option>
                   </select>
+                </span>
+                <span className="temp-tier-cell">
+                  {user.temp_tier && user.temp_tier_expires_at ? (
+                    <div className="temp-tier-info">
+                      <span className={`temp-tier-badge tier-${user.temp_tier}`}>
+                        {user.temp_tier.toUpperCase()}
+                      </span>
+                      <span className="temp-tier-expiry">
+                        {formatTempTierExpiry(user.temp_tier_expires_at)}
+                      </span>
+                      <button
+                        onClick={() => handleRevokeTempTier(user.id)}
+                        className="btn btn-xs btn-danger"
+                        title="Revoke temporary tier"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => openTempTierModal(user)}
+                      className="btn btn-xs btn-outline"
+                      disabled={user.subscription_tier === 'premium'}
+                      title={user.subscription_tier === 'premium' ? 'Already Premium' : 'Grant temporary tier'}
+                    >
+                      + Grant
+                    </button>
+                  )}
                 </span>
                 <span className="storage-info">
                   {formatStorage(user)}
@@ -194,6 +288,110 @@ export default function AdminUsers() {
             </div>
           )}
         </>
+      )}
+
+      {/* Grant Temp Tier Modal */}
+      {tempTierModal && (
+        <div className="modal-overlay" onClick={() => setTempTierModal(null)}>
+          <div className="modal temp-tier-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Grant Temporary Tier</h2>
+              <button className="modal-close" onClick={() => setTempTierModal(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-info">
+                Granting temporary tier to <strong>{tempTierModal.username}</strong>
+                <br />
+                <small>Current tier: {tempTierModal.currentTier}</small>
+              </p>
+
+              <div className="form-group">
+                <label>Tier to Grant</label>
+                <select 
+                  value={tempTier} 
+                  onChange={e => setTempTier(e.target.value)}
+                  className="form-input"
+                >
+                  {tempTierModal.currentTier === 'free' && (
+                    <>
+                      <option value="pro">Pro</option>
+                      <option value="premium">Premium</option>
+                    </>
+                  )}
+                  {tempTierModal.currentTier === 'pro' && (
+                    <option value="premium">Premium</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Duration</label>
+                <div className="duration-options">
+                  <button 
+                    className={`duration-btn ${tempDays === 7 ? 'active' : ''}`}
+                    onClick={() => setTempDays(7)}
+                  >
+                    7 days
+                  </button>
+                  <button 
+                    className={`duration-btn ${tempDays === 14 ? 'active' : ''}`}
+                    onClick={() => setTempDays(14)}
+                  >
+                    14 days
+                  </button>
+                  <button 
+                    className={`duration-btn ${tempDays === 30 ? 'active' : ''}`}
+                    onClick={() => setTempDays(30)}
+                  >
+                    30 days
+                  </button>
+                  <button 
+                    className={`duration-btn ${tempDays === 90 ? 'active' : ''}`}
+                    onClick={() => setTempDays(90)}
+                  >
+                    90 days
+                  </button>
+                </div>
+                <div className="custom-duration">
+                  <input
+                    type="number"
+                    value={tempDays}
+                    onChange={e => setTempDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+                    min={1}
+                    max={365}
+                    className="form-input"
+                  />
+                  <span>days</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Reason (optional)</label>
+                <input
+                  type="text"
+                  value={tempReason}
+                  onChange={e => setTempReason(e.target.value)}
+                  placeholder="e.g., Contest winner, Beta tester..."
+                  className="form-input"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setTempTierModal(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleGrantTempTier}
+              >
+                Grant {tempTier.charAt(0).toUpperCase() + tempTier.slice(1)} for {tempDays} days
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

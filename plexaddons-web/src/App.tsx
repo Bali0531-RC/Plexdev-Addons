@@ -9,12 +9,14 @@ import Docs from './pages/Docs'
 import ApiDocs from './pages/ApiDocs'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
+import Profile from './pages/Profile'
 import Dashboard from './pages/dashboard/Dashboard'
 import MyAddons from './pages/dashboard/MyAddons'
 import AddonEditor from './pages/dashboard/AddonEditor'
 import VersionEditor from './pages/dashboard/VersionEditor'
 import Settings from './pages/dashboard/Settings'
 import Subscription from './pages/dashboard/Subscription'
+import Analytics from './pages/dashboard/Analytics'
 import Support from './pages/dashboard/Support'
 import NewTicket from './pages/dashboard/NewTicket'
 import TicketDetail from './pages/dashboard/TicketDetail'
@@ -51,6 +53,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="addons" element={<Addons />} />
         <Route path="addons/:slug" element={<AddonDetail />} />
+        <Route path="u/:identifier" element={<Profile />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="docs" element={<Docs />} />
         <Route path="redocs" element={<ApiDocs />} />
@@ -67,6 +70,7 @@ export default function App() {
           <Route path="addons/:slug/versions/:version" element={<VersionEditor />} />
           <Route path="settings" element={<Settings />} />
           <Route path="subscription" element={<Subscription />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="support" element={<Support />} />
           <Route path="support/new" element={<NewTicket />} />
           <Route path="support/:ticketId" element={<TicketDetail />} />

@@ -43,11 +43,28 @@ class UserResponse(BaseModel):
     discord_avatar: Optional[str] = None
     email: Optional[str] = None
     subscription_tier: SubscriptionTier
+    effective_tier: Optional[SubscriptionTier] = None  # Includes temp tier if active
     storage_used_bytes: int
     storage_quota_bytes: int
     is_admin: bool
     created_at: datetime
     last_login_at: Optional[datetime] = None
+    # Profile fields
+    bio: Optional[str] = None
+    website: Optional[str] = None
+    github_username: Optional[str] = None
+    twitter_username: Optional[str] = None
+    profile_slug: Optional[str] = None
+    profile_public: bool = True
+    show_addons: bool = True
+    badges: Optional[List[str]] = None
+    banner_url: Optional[str] = None
+    accent_color: Optional[str] = None
+    # API key (only shows if exists, not the actual key)
+    has_api_key: bool = False
+    # Temporary tier info
+    temp_tier: Optional[SubscriptionTier] = None
+    temp_tier_expires_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -63,6 +80,58 @@ class UserStorageResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+
+
+# ============ Profile Schemas ============
+
+class UserProfileUpdate(BaseModel):
+    """Update user profile - tier-restricted fields validated in endpoint"""
+    bio: Optional[str] = Field(None, max_length=500)
+    website: Optional[str] = Field(None, max_length=200)
+    github_username: Optional[str] = Field(None, max_length=39)  # GitHub limit
+    twitter_username: Optional[str] = Field(None, max_length=15)  # Twitter limit
+    profile_slug: Optional[str] = Field(None, min_length=3, max_length=30, pattern=r'^[a-zA-Z0-9_-]+$')
+    profile_public: Optional[bool] = None
+    show_addons: Optional[bool] = None
+    banner_url: Optional[str] = Field(None, max_length=500)
+    accent_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')  # Hex color
+
+
+class UserPublicProfile(BaseModel):
+    """Public profile data for /u/:identifier endpoint"""
+    discord_id: str
+    discord_username: str
+    discord_avatar: Optional[str] = None
+    subscription_tier: SubscriptionTier
+    bio: Optional[str] = None
+    website: Optional[str] = None
+    github_username: Optional[str] = None
+    twitter_username: Optional[str] = None
+    profile_slug: Optional[str] = None
+    badges: Optional[List[str]] = None
+    banner_url: Optional[str] = None
+    accent_color: Optional[str] = None
+    created_at: datetime
+    addons: Optional[List["AddonResponse"]] = None  # Only if show_addons=True
+    
+    class Config:
+        from_attributes = True
+
+
+# ============ API Key Schemas ============
+
+class ApiKeyCreate(BaseModel):
+    """Response when creating a new API key"""
+    api_key: str  # Full key, only shown once
+    created_at: datetime
+
+
+class ApiKeyResponse(BaseModel):
+    """API key info without the actual key"""
+    has_api_key: bool
+    created_at: Optional[datetime] = None
+    # Show masked key like pa_xxxx...xxxx
+    masked_key: Optional[str] = None
 
 
 # ============== Subscription Schemas ==============
@@ -193,12 +262,66 @@ class VersionListResponse(BaseModel):
     total: int
 
 
+# ============== Analytics Schemas ==============
+
+class DailyStats(BaseModel):
+    """Daily statistics for a version or addon"""
+    date: date
+    check_count: int
+    unique_users: int
+
+
+class VersionDistribution(BaseModel):
+    """Version usage distribution"""
+    version: str
+    version_id: int
+    check_count: int
+    unique_users: int
+    percentage: float  # Percentage of total checks
+
+
+class AddonAnalyticsResponse(BaseModel):
+    """Analytics data for an addon"""
+    addon_id: int
+    addon_name: str
+    addon_slug: str
+    period_days: int  # 30 or 90
+    total_checks: int
+    total_unique_users: int
+    daily_stats: List[DailyStats]
+    version_distribution: List[VersionDistribution]
+
+
+class AnalyticsSummary(BaseModel):
+    """Summary analytics across all user's addons"""
+    total_addons: int
+    total_checks: int
+    total_unique_users: int
+    addons: List[AddonAnalyticsResponse]
+
+
 # ============== Admin Schemas ==============
 
 class AdminUserUpdate(BaseModel):
     is_admin: Optional[bool] = None
     subscription_tier: Optional[SubscriptionTier] = None
     storage_quota_bytes: Optional[int] = None
+
+
+class GrantTempTierRequest(BaseModel):
+    """Request to grant a temporary tier to a user"""
+    tier: SubscriptionTier = Field(..., description="The tier to grant")
+    days: int = Field(..., ge=1, le=365, description="Number of days until expiration")
+    reason: Optional[str] = Field(None, max_length=500, description="Reason for granting")
+
+
+class TempTierInfo(BaseModel):
+    """Temporary tier information"""
+    tier: SubscriptionTier
+    expires_at: datetime
+    granted_by: Optional[int] = None
+    granted_at: Optional[datetime] = None
+    days_remaining: int
 
 
 class AdminStatsResponse(BaseModel):

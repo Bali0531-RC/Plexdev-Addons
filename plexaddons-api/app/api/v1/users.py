@@ -1,14 +1,21 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from typing import Optional
+import secrets
+from datetime import datetime
 from app.database import get_db
-from app.models import User, Subscription, SubscriptionStatus, PaymentProvider
+from app.models import User, Subscription, SubscriptionStatus, PaymentProvider, SubscriptionTier, Addon
 from app.schemas import (
     UserResponse,
     UserStorageResponse,
     UserUpdate,
     SubscriptionResponse,
+    UserProfileUpdate,
+    UserPublicProfile,
+    ApiKeyCreate,
+    ApiKeyResponse,
+    AddonResponse,
 )
 from app.services import UserService, StripeService, PayPalService
 from app.api.deps import get_current_user, rate_limit_check_authenticated
@@ -177,6 +184,144 @@ async def delete_my_account(
     
     # Delete the user - CASCADE will handle related records
     await db.delete(user)
+    await db.commit()
+    
+    return None
+
+
+# ============== Profile Endpoints ==============
+
+@router.patch("/me/profile", response_model=UserResponse)
+async def update_my_profile(
+    data: UserProfileUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Update current user's profile.
+    
+    Tier restrictions:
+    - profile_slug: Pro and Premium only (Free users use Discord ID)
+    - banner_url: Premium only
+    - accent_color: Pro and Premium only
+    """
+    update_data = data.model_dump(exclude_unset=True)
+    
+    # Validate tier restrictions
+    if "profile_slug" in update_data and update_data["profile_slug"] is not None:
+        if user.subscription_tier == SubscriptionTier.FREE:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Custom profile URLs require Pro or Premium subscription"
+            )
+        # Check slug uniqueness
+        existing = await db.execute(
+            select(User).where(
+                User.profile_slug == update_data["profile_slug"],
+                User.id != user.id
+            )
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This profile URL is already taken"
+            )
+    
+    if "banner_url" in update_data and update_data["banner_url"] is not None:
+        if user.subscription_tier != SubscriptionTier.PREMIUM:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Custom banners require Premium subscription"
+            )
+    
+    if "accent_color" in update_data and update_data["accent_color"] is not None:
+        if user.subscription_tier == SubscriptionTier.FREE:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Custom accent colors require Pro or Premium subscription"
+            )
+    
+    # Apply updates
+    for key, value in update_data.items():
+        setattr(user, key, value)
+    
+    await db.commit()
+    await db.refresh(user)
+    
+    return user
+
+
+@router.get("/me/api-key", response_model=ApiKeyResponse)
+async def get_my_api_key(
+    user: User = Depends(get_current_user),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Get current user's API key status."""
+    masked_key = None
+    if user.api_key:
+        # Show first 6 and last 4 characters: pa_xxxx...xxxx
+        masked_key = f"{user.api_key[:6]}...{user.api_key[-4:]}"
+    
+    return ApiKeyResponse(
+        has_api_key=user.api_key is not None,
+        created_at=user.api_key_created_at,
+        masked_key=masked_key
+    )
+
+
+@router.post("/me/api-key", response_model=ApiKeyCreate)
+async def create_my_api_key(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """
+    Generate a new API key for the current user.
+    
+    Requirements:
+    - Premium subscription required
+    - Replaces any existing API key
+    
+    The full API key is only shown once!
+    """
+    if user.subscription_tier != SubscriptionTier.PREMIUM:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API keys require Premium subscription"
+        )
+    
+    # Generate new API key with pa_ prefix
+    api_key = f"pa_{secrets.token_hex(32)}"
+    now = datetime.utcnow()
+    
+    user.api_key = api_key
+    user.api_key_created_at = now
+    
+    await db.commit()
+    
+    return ApiKeyCreate(
+        api_key=api_key,
+        created_at=now
+    )
+
+
+@router.delete("/me/api-key", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_my_api_key(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Revoke the current user's API key."""
+    if not user.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No API key to revoke"
+        )
+    
+    user.api_key = None
+    user.api_key_created_at = None
+    
     await db.commit()
     
     return None

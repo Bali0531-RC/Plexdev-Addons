@@ -162,6 +162,10 @@ export default function Dashboard() {
               <span className="action-icon">🎫</span>
               <span>Support</span>
             </Link>
+            <Link to="/dashboard/analytics" className="action-item">
+              <span className="action-icon">📊</span>
+              <span>Analytics</span>
+            </Link>
             <Link to="/dashboard/settings" className="action-item">
               <span className="action-icon">⚙️</span>
               <span>Settings</span>

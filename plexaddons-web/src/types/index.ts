@@ -7,11 +7,27 @@ export interface User {
   discord_avatar: string | null;
   email: string | null;
   subscription_tier: 'free' | 'pro' | 'premium';
+  effective_tier?: 'free' | 'pro' | 'premium' | null;
   storage_used_bytes: number;
   storage_quota_bytes: number;
   is_admin: boolean;
   created_at: string;
   last_login_at: string | null;
+  // Profile fields
+  bio?: string | null;
+  website?: string | null;
+  github_username?: string | null;
+  twitter_username?: string | null;
+  profile_slug?: string | null;
+  profile_public?: boolean;
+  show_addons?: boolean;
+  badges?: string[] | null;
+  banner_url?: string | null;
+  accent_color?: string | null;
+  has_api_key?: boolean;
+  // Temporary tier fields
+  temp_tier?: 'free' | 'pro' | 'premium' | null;
+  temp_tier_expires_at?: string | null;
 }
 
 export interface Addon {
@@ -245,4 +261,78 @@ export interface CannedResponse {
 export interface CannedResponseListResponse {
   responses: CannedResponse[];
   total: number;
+}
+
+// Profile Types
+export interface UserPublicProfile {
+  discord_id: string;
+  discord_username: string;
+  discord_avatar: string | null;
+  subscription_tier: 'free' | 'pro' | 'premium';
+  bio: string | null;
+  website: string | null;
+  github_username: string | null;
+  twitter_username: string | null;
+  profile_slug: string | null;
+  badges: string[] | null;
+  banner_url: string | null;
+  accent_color: string | null;
+  created_at: string;
+  addons: Addon[] | null;
+}
+
+export interface UserProfileUpdate {
+  bio?: string | null;
+  website?: string | null;
+  github_username?: string | null;
+  twitter_username?: string | null;
+  profile_slug?: string | null;
+  profile_public?: boolean;
+  show_addons?: boolean;
+  banner_url?: string | null;
+  accent_color?: string | null;
+}
+
+export interface ApiKeyInfo {
+  has_api_key: boolean;
+  created_at: string | null;
+  masked_key: string | null;
+}
+
+export interface ApiKeyCreated {
+  api_key: string;
+  created_at: string;
+}
+
+// Analytics Types
+export interface DailyStats {
+  date: string;
+  check_count: number;
+  unique_users: number;
+}
+
+export interface VersionDistribution {
+  version: string;
+  version_id: number;
+  check_count: number;
+  unique_users: number;
+  percentage: number;
+}
+
+export interface AddonAnalytics {
+  addon_id: number;
+  addon_name: string;
+  addon_slug: string;
+  period_days: number;
+  total_checks: number;
+  total_unique_users: number;
+  daily_stats: DailyStats[];
+  version_distribution: VersionDistribution[];
+}
+
+export interface AnalyticsSummary {
+  total_addons: number;
+  total_checks: number;
+  total_unique_users: number;
+  addons: AddonAnalytics[];
 }

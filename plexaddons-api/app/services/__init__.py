@@ -9,3 +9,4 @@ from app.services.email_service import EmailService, email_service
 from app.services.email_templates import EmailTemplates
 from app.services.ticket_service import TicketService, ticket_service
 from app.services.discord_service import DiscordService, discord_service
+from app.services.analytics_service import AnalyticsService

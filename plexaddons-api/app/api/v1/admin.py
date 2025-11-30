@@ -20,6 +20,7 @@ from app.schemas import (
     AddonUpdate,
     VersionResponse,
     VersionUpdate,
+    GrantTempTierRequest,
     # Ticket schemas
     TicketResponse,
     TicketDetailResponse,
@@ -288,6 +289,105 @@ async def demote_from_admin(
     )
     
     return {"status": "demoted", "user_id": user_id}
+
+
+@router.post("/users/{user_id}/grant-temp-tier")
+async def grant_temp_tier(
+    user_id: int,
+    request: GrantTempTierRequest,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Grant a temporary tier to a user that expires after specified days."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    # Can't downgrade - temp tier must be higher than current tier
+    tier_order = {SubscriptionTier.FREE: 0, SubscriptionTier.PRO: 1, SubscriptionTier.PREMIUM: 2}
+    if tier_order.get(request.tier, 0) <= tier_order.get(user.subscription_tier, 0):
+        raise BadRequestError(
+            f"Temp tier must be higher than user's current tier ({user.subscription_tier.value})"
+        )
+    
+    from datetime import datetime, timezone, timedelta
+    
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=request.days)
+    
+    user.temp_tier = request.tier
+    user.temp_tier_expires_at = expires_at
+    user.temp_tier_granted_by = admin.id
+    user.temp_tier_granted_at = now
+    
+    await db.commit()
+    
+    await log_admin_action(
+        db, admin,
+        action="grant_temp_tier",
+        target_type="user",
+        target_id=user_id,
+        details={
+            "username": user.discord_username,
+            "tier": request.tier.value,
+            "days": request.days,
+            "expires_at": expires_at.isoformat(),
+            "reason": request.reason,
+        },
+    )
+    
+    return {
+        "status": "granted",
+        "user_id": user_id,
+        "temp_tier": request.tier.value,
+        "expires_at": expires_at.isoformat(),
+        "days": request.days,
+    }
+
+
+@router.post("/users/{user_id}/revoke-temp-tier")
+async def revoke_temp_tier(
+    user_id: int,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Revoke a user's temporary tier early."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    if not user.temp_tier:
+        raise BadRequestError("User does not have a temporary tier")
+    
+    old_tier = user.temp_tier.value
+    old_expires = user.temp_tier_expires_at.isoformat() if user.temp_tier_expires_at else None
+    
+    user.temp_tier = None
+    user.temp_tier_expires_at = None
+    user.temp_tier_granted_by = None
+    user.temp_tier_granted_at = None
+    
+    await db.commit()
+    
+    await log_admin_action(
+        db, admin,
+        action="revoke_temp_tier",
+        target_type="user",
+        target_id=user_id,
+        details={
+            "username": user.discord_username,
+            "revoked_tier": old_tier,
+            "was_expiring": old_expires,
+        },
+    )
+    
+    return {
+        "status": "revoked",
+        "user_id": user_id,
+        "revoked_tier": old_tier,
+    }
 
 
 @router.get("/addons")

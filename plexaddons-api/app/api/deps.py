@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import Depends, Request, HTTPException, status
+from fastapi import Depends, Request, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -110,3 +110,64 @@ async def rate_limit_check_authenticated(
     )
     
     request.state.rate_limit_headers = headers
+
+
+async def get_user_from_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Get user from API key header.
+    
+    API keys are formatted as: pa_<64_hex_chars>
+    Only Premium users can have API keys.
+    """
+    if not x_api_key:
+        return None
+    
+    # Validate API key format
+    if not x_api_key.startswith("pa_") or len(x_api_key) != 67:  # 3 + 64
+        return None
+    
+    result = await db.execute(
+        select(User).where(User.api_key == x_api_key)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_current_user_or_api_key(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    Get the current user from either JWT token or API key.
+    
+    Checks in order:
+    1. JWT Bearer token
+    2. X-API-Key header
+    
+    Raises UnauthorizedError if neither is valid.
+    """
+    # First try JWT token
+    if credentials:
+        payload = decode_access_token(credentials.credentials)
+        if payload:
+            user_id = payload.get("sub")
+            if user_id:
+                result = await db.execute(select(User).where(User.id == int(user_id)))
+                user = result.scalar_one_or_none()
+                if user:
+                    return user
+    
+    # Then try API key
+    if x_api_key and x_api_key.startswith("pa_") and len(x_api_key) == 67:
+        result = await db.execute(
+            select(User).where(User.api_key == x_api_key)
+        )
+        user = result.scalar_one_or_none()
+        if user:
+            return user
+    
+    raise UnauthorizedError("Missing or invalid authentication")

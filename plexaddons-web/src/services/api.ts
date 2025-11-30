@@ -25,6 +25,12 @@ import {
   TicketStats,
   CannedResponse,
   CannedResponseListResponse,
+  UserPublicProfile,
+  UserProfileUpdate,
+  ApiKeyInfo,
+  ApiKeyCreated,
+  AnalyticsSummary,
+  AddonAnalytics,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -235,6 +241,17 @@ class ApiClient {
     return this.fetch(`/v1/admin/users/${userId}/demote`, { method: 'POST' });
   }
 
+  async grantTempTier(userId: number, tier: string, days: number, reason?: string): Promise<{ status: string; temp_tier: string; expires_at: string; days: number }> {
+    return this.fetch(`/v1/admin/users/${userId}/grant-temp-tier`, {
+      method: 'POST',
+      body: JSON.stringify({ tier, days, reason }),
+    });
+  }
+
+  async revokeTempTier(userId: number): Promise<{ status: string; revoked_tier: string }> {
+    return this.fetch(`/v1/admin/users/${userId}/revoke-temp-tier`, { method: 'POST' });
+  }
+
   async listAllAddons(page = 1, perPage = 50, search?: string): Promise<AddonListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.append('search', search);
@@ -443,6 +460,43 @@ class ApiClient {
 
   async useCannedResponse(id: number): Promise<CannedResponse> {
     return this.fetch(`/v1/admin/canned-responses/${id}/use`);
+  }
+
+  // ============== PROFILES ==============
+
+  async getPublicProfile(identifier: string): Promise<UserPublicProfile> {
+    return this.fetch(`/v1/u/${identifier}`);
+  }
+
+  async updateMyProfile(data: UserProfileUpdate): Promise<User> {
+    return this.fetch('/v1/users/me/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============== API KEYS ==============
+
+  async getMyApiKey(): Promise<ApiKeyInfo> {
+    return this.fetch('/v1/users/me/api-key');
+  }
+
+  async createMyApiKey(): Promise<ApiKeyCreated> {
+    return this.fetch('/v1/users/me/api-key', { method: 'POST' });
+  }
+
+  async revokeMyApiKey(): Promise<void> {
+    return this.fetch('/v1/users/me/api-key', { method: 'DELETE' });
+  }
+
+  // ============== ANALYTICS ==============
+
+  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
+    return this.fetch('/v1/analytics/summary');
+  }
+
+  async getAddonAnalytics(addonId: number): Promise<AddonAnalytics> {
+    return this.fetch(`/v1/analytics/addons/${addonId}`);
   }
 }
 

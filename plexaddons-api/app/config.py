@@ -48,19 +48,24 @@ class Settings(BaseSettings):
     # Rate Limiting (requests per minute)
     rate_limit_public: int = 100
     rate_limit_auth_endpoints: int = 30
-    rate_limit_user_free: int = 200
-    rate_limit_user_pro: int = 500
+    rate_limit_user_free: int = 100
+    rate_limit_user_pro: int = 300
     rate_limit_user_premium: int = 1000
     
     # Storage Quotas (in bytes)
-    storage_quota_free: int = 50 * 1024 * 1024  # 50MB
-    storage_quota_pro: int = 500 * 1024 * 1024  # 500MB
-    storage_quota_premium: int = 5 * 1024 * 1024 * 1024  # 5GB
+    storage_quota_free: int = 5 * 1024 * 1024  # 5MB
+    storage_quota_pro: int = 100 * 1024 * 1024  # 100MB
+    storage_quota_premium: int = 1 * 1024 * 1024 * 1024  # 1GB
     
     # Version History Limits
-    version_limit_free: int = 5
+    version_limit_free: int = 3
     version_limit_pro: int = 10
     version_limit_premium: int = -1  # Unlimited
+    
+    # Analytics Data Retention (days)
+    analytics_retention_free: int = 0  # No analytics
+    analytics_retention_pro: int = 30
+    analytics_retention_premium: int = 90
     
     # Audit Log
     audit_log_retention_days: int = 90
