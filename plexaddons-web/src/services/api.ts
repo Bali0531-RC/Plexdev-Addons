@@ -31,6 +31,9 @@ import {
   ApiKeyCreated,
   AnalyticsSummary,
   AddonAnalytics,
+  WebhookConfig,
+  WebhookUpdate,
+  WebhookTestResponse,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -497,6 +500,31 @@ class ApiClient {
 
   async getAddonAnalytics(addonId: number): Promise<AddonAnalytics> {
     return this.fetch(`/v1/analytics/addons/${addonId}`);
+  }
+
+  // ============== WEBHOOKS ==============
+
+  async getMyWebhook(): Promise<WebhookConfig> {
+    return this.fetch('/v1/users/me/webhook');
+  }
+
+  async updateMyWebhook(data: WebhookUpdate): Promise<WebhookConfig> {
+    return this.fetch('/v1/users/me/webhook', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async regenerateWebhookSecret(): Promise<{ secret: string }> {
+    return this.fetch('/v1/users/me/webhook/secret', { method: 'POST' });
+  }
+
+  async testMyWebhook(): Promise<WebhookTestResponse> {
+    return this.fetch('/v1/users/me/webhook/test', { method: 'POST' });
+  }
+
+  async deleteMyWebhook(): Promise<void> {
+    return this.fetch('/v1/users/me/webhook', { method: 'DELETE' });
   }
 }
 

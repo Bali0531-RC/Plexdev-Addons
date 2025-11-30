@@ -304,6 +304,24 @@ export interface ApiKeyCreated {
   created_at: string;
 }
 
+// Webhook Types
+export interface WebhookConfig {
+  webhook_url: string | null;
+  webhook_enabled: boolean;
+  has_secret: boolean;
+}
+
+export interface WebhookUpdate {
+  webhook_url?: string | null;
+  webhook_enabled?: boolean;
+}
+
+export interface WebhookTestResponse {
+  success: boolean;
+  status_code?: number;
+  error?: string;
+}
+
 // Analytics Types
 export interface DailyStats {
   date: string;

@@ -99,7 +99,9 @@ export default function Profile() {
             {profile.badges && profile.badges.length > 0 && (
               <div className="profile-badges">
                 {profile.badges.map((badge, i) => (
-                  <span key={i} className="badge">{badge}</span>
+                  <span key={i} className={`badge badge-${badge.replace(/\s+/g, '_').toLowerCase()}`}>
+                    {badge.replace(/_/g, ' ')}
+                  </span>
                 ))}
               </div>
             )}

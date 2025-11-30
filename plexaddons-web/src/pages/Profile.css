@@ -150,6 +150,33 @@
   border-radius: 4px;
   background: var(--primary-muted);
   color: var(--primary);
+  text-transform: capitalize;
+}
+
+/* Named badge colors */
+.badge-supporter {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.badge-premium {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.badge-addon_creator {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.badge-early_adopter {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+}
+
+.badge-contributor {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: white;
 }
 
 .profile-bio {
