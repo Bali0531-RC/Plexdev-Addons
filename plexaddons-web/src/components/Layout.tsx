@@ -26,6 +26,9 @@ export default function Layout() {
             <Link to="/addons" className={location.pathname === '/addons' ? 'active' : ''}>
               Addons
             </Link>
+            <Link to="/users" className={location.pathname === '/users' ? 'active' : ''}>
+              Users
+            </Link>
             <Link to="/docs" className={location.pathname === '/docs' ? 'active' : ''}>
               Docs
             </Link>

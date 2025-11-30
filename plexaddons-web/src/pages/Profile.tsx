@@ -8,6 +8,7 @@ const TIER_BADGES: Record<string, { label: string; color: string }> = {
   free: { label: 'Free', color: '#666' },
   pro: { label: 'Pro', color: '#f59e0b' },
   premium: { label: 'Premium', color: '#8b5cf6' },
+  admin: { label: 'Admin', color: '#ef4444' },
 }
 
 export default function Profile() {
@@ -58,7 +59,9 @@ export default function Profile() {
     )
   }
 
-  const tierBadge = TIER_BADGES[profile.subscription_tier]
+  // Show Admin badge if user has staff badge, otherwise show tier
+  const isStaff = profile.badges?.includes('staff')
+  const tierBadge = isStaff ? TIER_BADGES['admin'] : TIER_BADGES[profile.subscription_tier]
   const avatarUrl = profile.discord_avatar
     ? `https://cdn.discordapp.com/avatars/${profile.discord_id}/${profile.discord_avatar}.png?size=256`
     : `https://cdn.discordapp.com/embed/avatars/${parseInt(profile.discord_id) % 5}.png`

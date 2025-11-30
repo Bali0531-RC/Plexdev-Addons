@@ -479,6 +479,27 @@ class ApiClient {
 
   // ============== PROFILES ==============
 
+  async listPublicUsers(page = 1, perPage = 24, search?: string): Promise<{
+    users: Array<{
+      discord_id: string;
+      discord_username: string;
+      discord_avatar: string | null;
+      subscription_tier: string;
+      profile_slug: string | null;
+      badges: string[];
+      bio: string | null;
+      addon_count: number;
+      created_at: string;
+    }>;
+    total: number;
+    page: number;
+    per_page: number;
+  }> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (search) params.append('search', search);
+    return this.fetch(`/v1/u?${params}`);
+  }
+
   async getPublicProfile(identifier: string): Promise<UserPublicProfile> {
     return this.fetch(`/v1/u/${identifier}`);
   }

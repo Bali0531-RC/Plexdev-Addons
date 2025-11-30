@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Addons from './pages/Addons'
 import AddonDetail from './pages/AddonDetail'
+import Users from './pages/Users'
 import Pricing from './pages/Pricing'
 import Docs from './pages/Docs'
 import ApiDocs from './pages/ApiDocs'
@@ -53,6 +54,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="addons" element={<Addons />} />
         <Route path="addons/:slug" element={<AddonDetail />} />
+        <Route path="users" element={<Users />} />
         <Route path="u/:identifier" element={<Profile />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="docs" element={<Docs />} />

@@ -93,7 +93,18 @@ export default function Addons() {
                 {addon.external && (
                   <span className="badge badge-external">External</span>
                 )}
-                <span className="addon-author">by {addon.owner_username || 'Unknown'}</span>
+                <span 
+                  className="addon-author addon-author-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (addon.owner_id) {
+                      window.location.href = `/u/${addon.owner_id}`;
+                    }
+                  }}
+                >
+                  by {addon.owner_username || 'Unknown'}
+                </span>
               </div>
             </Link>
           ))}

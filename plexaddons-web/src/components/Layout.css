@@ -112,7 +112,7 @@
 
 .dropdown {
   position: absolute;
-  top: 80px;
+  top: 84px;
   right: var(--space-md);
   background: var(--bg-card);
   border: 1px solid var(--border);
