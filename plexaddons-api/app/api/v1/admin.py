@@ -629,6 +629,7 @@ async def admin_update_addon(
         latest_version=None,
         version_count=0,
         created_at=addon.created_at,
+        updated_at=addon.updated_at,
     )
 
 
