@@ -97,6 +97,9 @@ export default function ApiDocs() {
         <div className="redoc-loading">
           <div className="spinner"></div>
           <p>Loading API documentation...</p>
+          <p className="redoc-loading-hint">
+            If this takes too long, the API server may need to be restarted.
+          </p>
         </div>
       </div>
     </div>
