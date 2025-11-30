@@ -714,16 +714,14 @@ class EmailTemplates:
         
         tier_features = {
             "pro": [
-                "📦 10 addon slots (up from 3)",
-                "💾 500MB storage quota",
+                "💾 100MB storage quota",
                 "📊 30-day analytics history",
                 "🔗 Custom profile URL",
                 "🎨 Profile customization",
                 "📧 Priority email support",
             ],
             "premium": [
-                "📦 Unlimited addon slots",
-                "💾 2GB storage quota", 
+                "💾 1GB storage quota", 
                 "📊 90-day analytics history",
                 "🔔 Webhook notifications",
                 "⭐ Priority support",
