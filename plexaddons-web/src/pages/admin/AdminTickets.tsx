@@ -206,10 +206,7 @@ export default function AdminTickets() {
                     </td>
                     <td>
                       <div className="user-cell">
-                        <span className="user-name">{ticket.user?.discord_username || 'Unknown'}</span>
-                        {ticket.user?.subscription_tier && ticket.user.subscription_tier !== 'free' && (
-                          <span className="user-tier">{ticket.user.subscription_tier}</span>
-                        )}
+                        <span className="user-name">{ticket.user_username || 'Unknown'}</span>
                       </div>
                     </td>
                     <td>
@@ -234,9 +231,9 @@ export default function AdminTickets() {
                       </span>
                     </td>
                     <td>
-                      {ticket.assigned_to ? (
+                      {ticket.assigned_admin_username ? (
                         <span className="assigned-name">
-                          {ticket.assigned_to.discord_username}
+                          {ticket.assigned_admin_username}
                         </span>
                       ) : (
                         <span className="unassigned">—</span>

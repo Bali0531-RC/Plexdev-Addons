@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import type { TicketDetail as TicketDetailType, TicketMessage, TicketStatus, CannedResponse } from '../../types';
+import type { TicketDetail as TicketDetailType, TicketStatus, CannedResponse } from '../../types';
 import Spinner from '../../components/Spinner';
 import './AdminTickets.css';
 
@@ -28,7 +28,6 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function AdminTicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
-  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [ticket, setTicket] = useState<TicketDetailType | null>(null);
@@ -255,10 +254,7 @@ export default function AdminTicketDetail() {
           <div className="meta-item">
             <span className="meta-label">User</span>
             <span className="meta-value">
-              {ticket.user?.discord_username || 'Unknown'}
-              {ticket.user?.subscription_tier && ticket.user.subscription_tier !== 'free' && (
-                <span className="user-tier-badge">{ticket.user.subscription_tier}</span>
-              )}
+              {ticket.user_username || 'Unknown'}
             </span>
           </div>
           <div className="meta-item">
@@ -278,8 +274,8 @@ export default function AdminTicketDetail() {
           <div className="meta-item">
             <span className="meta-label">Assigned To</span>
             <span className="meta-value">
-              {ticket.assigned_to ? (
-                ticket.assigned_to.discord_username
+              {ticket.assigned_admin_username ? (
+                ticket.assigned_admin_username
               ) : (
                 <button className="btn btn-sm btn-secondary" onClick={handleAssignToMe}>
                   Assign to Me
@@ -303,7 +299,7 @@ export default function AdminTicketDetail() {
               <div className="message-header">
                 <div className="message-author">
                   <span className="message-author-name">
-                    {message.author?.discord_username || (message.is_system_message ? 'System' : 'Unknown')}
+                    {message.author_username || (message.is_system_message ? 'System' : 'Unknown')}
                   </span>
                   {message.is_staff_reply && !message.is_system_message && (
                     <span className="message-author-badge">Staff</span>

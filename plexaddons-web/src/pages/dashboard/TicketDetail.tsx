@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import type { TicketDetail, TicketMessage, TicketAttachment } from '../../types';
+import type { TicketDetail, TicketAttachment } from '../../types';
 import './Support.css';
 
 const statusLabels: Record<string, string> = {
@@ -43,8 +42,6 @@ const priorityColors: Record<string, string> = {
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams();
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
@@ -129,21 +126,21 @@ export default function TicketDetailPage() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(f => f.size <= 10 * 1024 * 1024); // 10MB max
+    const files = Array.from(e.target.files || []) as File[];
+    const validFiles = files.filter((f) => f.size <= 10 * 1024 * 1024); // 10MB max
     
     if (validFiles.length !== files.length) {
       alert('Some files were too large (max 10MB) and were not added.');
     }
     
-    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setSelectedFiles((prev: File[]) => [...prev, ...validFiles]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev: File[]) => prev.filter((_: File, i: number) => i !== index));
   };
 
   const handleDownloadAttachment = async (attachment: TicketAttachment) => {
