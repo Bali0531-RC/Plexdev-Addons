@@ -13,10 +13,13 @@ import aiosmtplib
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.config import get_settings
 from app.models import User, Addon, Subscription, ApiRequestLog
 
 logger = logging.getLogger(__name__)
+
+# Get settings instance
+settings = get_settings()
 
 
 class EmailService:
