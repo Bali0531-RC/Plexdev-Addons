@@ -88,8 +88,9 @@
 
 .dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: 100%;
   right: 0;
+  margin-top: 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -97,8 +98,8 @@
   min-width: 160px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
-  transition: all var(--transition);
+  transform: translateY(0);
+  transition: opacity var(--transition), visibility var(--transition);
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
