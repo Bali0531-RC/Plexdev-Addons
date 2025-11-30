@@ -81,6 +81,7 @@
   font-family: inherit;
   font-size: inherit;
   transition: background var(--transition);
+  width: auto;
 }
 
 .user-menu-trigger:hover {
@@ -133,7 +134,7 @@
 }
 
 .dropdown a,
-.dropdown button {
+.dropdown > button {
   display: block;
   width: 100%;
   padding: var(--space-sm) var(--space-md);
@@ -142,11 +143,14 @@
   background: none;
   border: none;
   border-radius: var(--radius-s);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
   transition: background var(--transition);
 }
 
 .dropdown a:hover,
-.dropdown button:hover {
+.dropdown > button:hover {
   background: var(--bg-hover);
 }
 
