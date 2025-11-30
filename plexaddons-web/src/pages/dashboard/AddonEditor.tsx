@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { Addon, Version, AddonCreate, AddonUpdate } from '../../types';
 import './AddonEditor.css';
@@ -89,16 +90,14 @@ export default function AddonEditor() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this addon? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await api.deleteAddon(slug!);
-      navigate('/dashboard/addons');
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete addon');
-    }
+    toast.promise(
+      api.deleteAddon(slug!).then(() => navigate('/dashboard/addons')),
+      {
+        loading: 'Deleting addon...',
+        success: 'Addon deleted',
+        error: (err: any) => err.message || 'Failed to delete addon',
+      }
+    );
   };
 
   if (loading) {

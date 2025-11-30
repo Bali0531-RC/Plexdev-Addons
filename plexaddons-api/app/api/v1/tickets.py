@@ -312,6 +312,7 @@ async def upload_attachment(
             message=message,
             file_content=file_content,
             original_filename=file.filename or "attachment",
+            skip_size_check=user.is_admin,  # Admins can upload any size
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

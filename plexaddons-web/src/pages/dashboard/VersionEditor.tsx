@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { Version, VersionCreate, VersionUpdate } from '../../types';
 import './VersionEditor.css';
@@ -91,16 +92,14 @@ export default function VersionEditor() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this version? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await api.deleteVersion(slug!, versionParam!);
-      navigate(`/dashboard/addons/${slug}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete version');
-    }
+    toast.promise(
+      api.deleteVersion(slug!, versionParam!).then(() => navigate(`/dashboard/addons/${slug}`)),
+      {
+        loading: 'Deleting version...',
+        success: 'Version deleted',
+        error: (err: any) => err.message || 'Failed to delete version',
+      }
+    );
   };
 
   if (loading) {

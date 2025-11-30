@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import './AddonDetail.css';
 
 export default function AddonDetail() {
@@ -120,7 +121,7 @@ export default function AddonDetail() {
                 {version.changelog_content && (
                   <div className="version-changelog">
                     <h4>Changelog</h4>
-                    <pre>{version.changelog_content}</pre>
+                    <MarkdownRenderer content={version.changelog_content} />
                   </div>
                 )}
 

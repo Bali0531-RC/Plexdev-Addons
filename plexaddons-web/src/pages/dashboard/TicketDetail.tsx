@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { TicketDetail, TicketAttachment } from '../../types';
 import './Support.css';
@@ -119,7 +120,7 @@ export default function TicketDetailPage() {
       await loadTicket();
     } catch (err) {
       console.error('Failed to submit reply:', err);
-      alert('Failed to submit reply. Please try again.');
+      toast.error('Failed to submit reply. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -130,7 +131,7 @@ export default function TicketDetailPage() {
     const validFiles = files.filter((f) => f.size <= 10 * 1024 * 1024); // 10MB max
     
     if (validFiles.length !== files.length) {
-      alert('Some files were too large (max 10MB) and were not added.');
+      toast.error('Some files were too large (max 10MB) and were not added.');
     }
     
     setSelectedFiles((prev: File[]) => [...prev, ...validFiles]);
@@ -156,32 +157,34 @@ export default function TicketDetailPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to download attachment:', err);
-      alert('Failed to download attachment.');
+      toast.error('Failed to download attachment.');
     }
   };
 
   const handleCloseTicket = async () => {
-    if (!ticket || !confirm('Are you sure you want to close this ticket?')) return;
+    if (!ticket) return;
     
-    try {
-      await api.closeTicket(ticket.id);
-      await loadTicket();
-    } catch (err) {
-      console.error('Failed to close ticket:', err);
-      alert('Failed to close ticket.');
-    }
+    toast.promise(
+      api.closeTicket(ticket.id).then(() => loadTicket()),
+      {
+        loading: 'Closing ticket...',
+        success: 'Ticket closed',
+        error: (err: any) => err.message || 'Failed to close ticket',
+      }
+    );
   };
 
   const handleReopenTicket = async () => {
     if (!ticket) return;
     
-    try {
-      await api.reopenTicket(ticket.id);
-      await loadTicket();
-    } catch (err) {
-      console.error('Failed to reopen ticket:', err);
-      alert('Failed to reopen ticket.');
-    }
+    toast.promise(
+      api.reopenTicket(ticket.id).then(() => loadTicket()),
+      {
+        loading: 'Reopening ticket...',
+        success: 'Ticket reopened',
+        error: (err: any) => err.message || 'Failed to reopen ticket',
+      }
+    );
   };
 
   if (loading) {

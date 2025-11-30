@@ -364,12 +364,17 @@ class TicketService:
         db: AsyncSession,
         message: TicketMessage,
         file_content: bytes,
-        original_filename: str
+        original_filename: str,
+        skip_size_check: bool = False
     ) -> TicketAttachment:
-        """Add an attachment to a message"""
-        # Validate file size
+        """Add an attachment to a message
+        
+        Args:
+            skip_size_check: If True, bypasses file size validation (for admins)
+        """
+        # Validate file size (skip for admins)
         file_size = len(file_content)
-        if file_size > self.max_attachment_size:
+        if not skip_size_check and file_size > self.max_attachment_size:
             raise ValueError(f"File size exceeds maximum allowed ({settings.ticket_attachment_max_size_mb}MB)")
         
         # Generate unique filename

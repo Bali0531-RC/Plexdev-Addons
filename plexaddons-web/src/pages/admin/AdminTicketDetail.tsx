@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { TicketDetail as TicketDetailType, TicketStatus, CannedResponse } from '../../types';
 import Spinner from '../../components/Spinner';
@@ -29,6 +30,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 export default function AdminTicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [ticket, setTicket] = useState<TicketDetailType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,7 @@ export default function AdminTicketDetail() {
 
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
@@ -83,24 +86,50 @@ export default function AdminTicketDetail() {
 
     try {
       setSending(true);
-      await api.adminAddTicketMessage(ticket.id, reply);
+      const message = await api.adminAddTicketMessage(ticket.id, reply);
+      
+      // Upload attachments if any
+      for (const file of selectedFiles) {
+        try {
+          await api.uploadTicketAttachment(ticket.id, message.id, file);
+        } catch (err: any) {
+          toast.error(`Failed to upload ${file.name}: ${err.message}`);
+        }
+      }
+      
       setReply('');
+      setSelectedFiles([]);
+      toast.success('Reply sent');
       await loadTicket();
     } catch (err: any) {
-      alert(err.message || 'Failed to send reply');
+      toast.error(err.message || 'Failed to send reply');
     } finally {
       setSending(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    // No size limit for admins
+    setSelectedFiles((prev) => [...prev, ...files]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleStatusChange = async (status: TicketStatus) => {
     if (!ticket) return;
     try {
       await api.updateTicketStatus(ticket.id, status);
+      toast.success(`Status updated to ${STATUS_LABELS[status]}`);
       await loadTicket();
       setShowStatusMenu(false);
     } catch (err: any) {
-      alert(err.message || 'Failed to update status');
+      toast.error(err.message || 'Failed to update status');
     }
   };
 
@@ -108,10 +137,11 @@ export default function AdminTicketDetail() {
     if (!ticket) return;
     try {
       await api.updateTicketPriority(ticket.id, priority as any);
+      toast.success(`Priority updated to ${priority.toUpperCase()}`);
       await loadTicket();
       setShowPriorityMenu(false);
     } catch (err: any) {
-      alert(err.message || 'Failed to update priority');
+      toast.error(err.message || 'Failed to update priority');
     }
   };
 
@@ -119,9 +149,10 @@ export default function AdminTicketDetail() {
     if (!ticket) return;
     try {
       await api.assignTicketToMe(ticket.id);
+      toast.success('Ticket assigned to you');
       await loadTicket();
     } catch (err: any) {
-      alert(err.message || 'Failed to assign ticket');
+      toast.error(err.message || 'Failed to assign ticket');
     }
   };
 
@@ -150,7 +181,7 @@ export default function AdminTicketDetail() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(err.message || 'Failed to download attachment');
+      toast.error(err.message || 'Failed to download attachment');
     }
   };
 
@@ -369,8 +400,30 @@ export default function AdminTicketDetail() {
             disabled={sending}
           />
 
+          {/* Selected Files Preview */}
+          {selectedFiles.length > 0 && (
+            <div className="selected-files">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="selected-file">
+                  📎 {file.name} ({formatBytes(file.size)})
+                  <button type="button" onClick={() => removeFile(index)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="reply-actions">
             <div className="quick-actions">
+              <label className="btn btn-secondary btn-sm file-upload-btn">
+                📎 Attach Files (no size limit)
+                <input
+                  type="file"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+              </label>
               <button
                 className="btn btn-secondary"
                 onClick={() => {

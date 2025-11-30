@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { AuditLogEntry } from '../../types';
 import './AdminAuditLog.css';
@@ -28,17 +29,17 @@ export default function AdminAuditLog() {
   };
 
   const handleCleanup = async () => {
-    if (!confirm('This will delete all audit log entries older than 90 days. Continue?')) {
-      return;
-    }
-    try {
-      const result = await api.cleanupAuditLog();
-      alert(`Cleanup complete. ${result.deleted_count} entries deleted.`);
-      loadAuditLog();
-    } catch (err) {
-      console.error('Failed to cleanup:', err);
-      alert('Failed to cleanup audit log');
-    }
+    toast.promise(
+      api.cleanupAuditLog().then((result) => {
+        loadAuditLog();
+        return result;
+      }),
+      {
+        loading: 'Cleaning up old entries...',
+        success: (result) => `Cleanup complete. ${result.deleted_count} entries deleted.`,
+        error: 'Failed to cleanup audit log',
+      }
+    );
   };
 
   const formatDate = (dateStr: string) => {

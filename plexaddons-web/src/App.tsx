@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Addons from './pages/Addons'
@@ -24,13 +25,28 @@ import AdminAddonDetail from './pages/admin/AdminAddonDetail'
 import AdminAuditLog from './pages/admin/AdminAuditLog'
 import AdminTickets from './pages/admin/AdminTickets'
 import AdminTicketDetail from './pages/admin/AdminTicketDetail'
+import AdminCannedResponses from './pages/admin/AdminCannedResponses'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
+    <>
+      <Toaster 
+        theme="dark"
+        position="top-right"
+        richColors
+        closeButton
+        toastOptions={{
+          style: {
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+          },
+        }}
+      />
+      <Routes>
+        <Route path="/" element={<Layout />}>
         {/* Public routes */}
         <Route index element={<Home />} />
         <Route path="addons" element={<Addons />} />
@@ -65,8 +81,10 @@ export default function App() {
           <Route path="audit-log" element={<AdminAuditLog />} />
           <Route path="tickets" element={<AdminTickets />} />
           <Route path="tickets/:ticketId" element={<AdminTicketDetail />} />
+          <Route path="canned-responses" element={<AdminCannedResponses />} />
         </Route>
       </Route>
     </Routes>
+    </>
   )
 }

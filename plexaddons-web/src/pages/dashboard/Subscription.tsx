@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Subscription } from '../../types';
@@ -28,7 +29,7 @@ export default function Subscription() {
 
   const handleManageSubscription = async () => {
     if (subscription?.provider !== 'stripe') {
-      alert('Please manage your PayPal subscription through PayPal.com');
+      toast.info('Please manage your PayPal subscription through PayPal.com');
       return;
     }
 
@@ -38,7 +39,7 @@ export default function Subscription() {
       window.location.href = portal_url;
     } catch (err) {
       console.error('Failed to create portal:', err);
-      alert('Failed to open billing portal. Please try again.');
+      toast.error('Failed to open billing portal. Please try again.');
     } finally {
       setManaging(false);
     }

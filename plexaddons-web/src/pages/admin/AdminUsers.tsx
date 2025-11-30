@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { User } from '../../types';
 import './AdminUsers.css';
@@ -35,35 +36,36 @@ export default function AdminUsers() {
   };
 
   const handlePromote = async (userId: number) => {
-    if (!confirm('Are you sure you want to promote this user to admin?')) return;
-    try {
-      await api.promoteToAdmin(userId);
-      loadUsers();
-    } catch (err) {
-      console.error('Failed to promote user:', err);
-      alert('Failed to promote user');
-    }
+    toast.promise(
+      api.promoteToAdmin(userId).then(() => loadUsers()),
+      {
+        loading: 'Promoting user...',
+        success: 'User promoted to admin',
+        error: 'Failed to promote user',
+      }
+    );
   };
 
   const handleDemote = async (userId: number) => {
-    if (!confirm('Are you sure you want to remove admin privileges?')) return;
-    try {
-      await api.demoteFromAdmin(userId);
-      loadUsers();
-    } catch (err) {
-      console.error('Failed to demote user:', err);
-      alert('Failed to demote user');
-    }
+    toast.promise(
+      api.demoteFromAdmin(userId).then(() => loadUsers()),
+      {
+        loading: 'Removing admin privileges...',
+        success: 'Admin privileges removed',
+        error: 'Failed to demote user',
+      }
+    );
   };
 
   const handleUpdateTier = async (userId: number, tier: string) => {
-    try {
-      await api.updateUser(userId, { subscription_tier: tier });
-      loadUsers();
-    } catch (err) {
-      console.error('Failed to update tier:', err);
-      alert('Failed to update tier');
-    }
+    toast.promise(
+      api.updateUser(userId, { subscription_tier: tier }).then(() => loadUsers()),
+      {
+        loading: 'Updating tier...',
+        success: `Tier updated to ${tier}`,
+        error: 'Failed to update tier',
+      }
+    );
   };
 
   const totalPages = Math.ceil(total / perPage);

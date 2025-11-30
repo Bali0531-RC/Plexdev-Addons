@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { Addon, Version, AddonUpdate, VersionUpdate } from '../../types';
 import './AdminAddonDetail.css';
@@ -92,16 +93,15 @@ export default function AdminAddonDetail() {
 
   const handleDelete = async () => {
     if (!addon) return;
-    if (!confirm(`Are you sure you want to delete "${addon.name}"? This will also delete all versions. This action cannot be undone.`)) {
-      return;
-    }
     
-    try {
-      await api.adminDeleteAddon(addon.id);
-      navigate('/admin/addons');
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete addon');
-    }
+    toast.promise(
+      api.adminDeleteAddon(addon.id).then(() => navigate('/admin/addons')),
+      {
+        loading: `Deleting "${addon.name}"...`,
+        success: `"${addon.name}" deleted successfully`,
+        error: (err: any) => err.message || 'Failed to delete addon',
+      }
+    );
   };
 
   const handleEditVersion = (version: Version) => {
@@ -145,17 +145,18 @@ export default function AdminAddonDetail() {
 
   const handleDeleteVersion = async (version: Version) => {
     if (!addon) return;
-    if (!confirm(`Are you sure you want to delete version ${version.version}? This action cannot be undone.`)) {
-      return;
-    }
     
-    try {
-      await api.adminDeleteVersion(addon.id, version.id);
-      setSuccessMessage('Version deleted successfully');
-      loadAddon();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete version');
-    }
+    toast.promise(
+      api.adminDeleteVersion(addon.id, version.id).then(() => {
+        setSuccessMessage('Version deleted successfully');
+        loadAddon();
+      }),
+      {
+        loading: `Deleting version ${version.version}...`,
+        success: `Version ${version.version} deleted`,
+        error: (err: any) => err.message || 'Failed to delete version',
+      }
+    );
   };
 
   if (loading) {

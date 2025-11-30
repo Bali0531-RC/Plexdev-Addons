@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { Addon } from '../../types';
 import './AdminAddons.css';
@@ -30,16 +31,14 @@ export default function AdminAddons() {
   };
 
   const handleDelete = async (addonId: number, addonName: string) => {
-    if (!confirm(`Are you sure you want to delete "${addonName}"? This action cannot be undone.`)) {
-      return;
-    }
-    try {
-      await api.adminDeleteAddon(addonId);
-      loadAddons();
-    } catch (err) {
-      console.error('Failed to delete addon:', err);
-      alert('Failed to delete addon');
-    }
+    toast.promise(
+      api.adminDeleteAddon(addonId).then(() => loadAddons()),
+      {
+        loading: `Deleting "${addonName}"...`,
+        success: `"${addonName}" deleted successfully`,
+        error: 'Failed to delete addon',
+      }
+    );
   };
 
   const totalPages = Math.ceil(total / perPage);

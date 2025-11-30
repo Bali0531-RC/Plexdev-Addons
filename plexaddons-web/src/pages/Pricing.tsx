@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import type { PaymentPlan } from '../types';
@@ -85,7 +86,7 @@ export default function Pricing() {
       }
     } catch (err) {
       console.error('Failed to create checkout:', err);
-      alert('Failed to start checkout. Please try again.');
+      toast.error('Failed to start checkout. Please try again.');
       setCheckoutLoading(null);
     }
   };
