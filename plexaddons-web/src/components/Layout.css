@@ -65,27 +65,18 @@
 }
 
 .user-menu {
-  position: relative;
-}
-
-.user-menu-trigger {
+  position: static;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   cursor: pointer;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-s);
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
   transition: background var(--transition);
-  width: auto !important;
 }
 
-.user-menu-trigger:hover {
-  background: var(--bg-hover);
+.user-menu:hover {
+  background: transparent;
 }
 
 .avatar {
@@ -96,24 +87,12 @@
 
 .username {
   font-weight: 500;
-  color: var(--text);
-  display: inline-block;
-}
-
-.dropdown-arrow {
-  font-size: 0.6rem;
-  opacity: 0.6;
-  transition: transform var(--transition);
-}
-
-.dropdown-arrow.open {
-  transform: rotate(180deg);
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  top: 72px;
+  right: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -121,20 +100,20 @@
   min-width: 180px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-8px);
-  transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
+  pointer-events: none;
+  transition: opacity var(--transition), visibility var(--transition);
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.dropdown.open {
+.user-menu:hover .dropdown {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .dropdown a,
-.dropdown > button {
+.dropdown button {
   display: block;
   width: 100%;
   padding: var(--space-sm) var(--space-md);
@@ -143,14 +122,11 @@
   background: none;
   border: none;
   border-radius: var(--radius-s);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
   transition: background var(--transition);
 }
 
 .dropdown a:hover,
-.dropdown > button:hover {
+.dropdown button:hover {
   background: var(--bg-hover);
 }
 
@@ -231,7 +207,7 @@
     display: none;
   }
 
-  .user-menu-trigger .username {
+  .username {
     display: none;
   }
 
