@@ -39,6 +39,7 @@ export interface Addon {
   external: boolean;
   is_active: boolean;
   is_public: boolean;
+  verified: boolean;
   owner_id: number;
   owner_username: string | null;
   owner_discord_id: string | null;
@@ -149,6 +150,7 @@ export interface AddonUpdate {
   external?: boolean;
   is_active?: boolean;
   is_public?: boolean;
+  verified?: boolean;
 }
 
 export interface VersionCreate {

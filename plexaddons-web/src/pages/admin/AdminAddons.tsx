@@ -74,7 +74,10 @@ export default function AdminAddons() {
             {addons.map(addon => (
               <div key={addon.id} className="table-row">
                 <div className="addon-info">
-                  <span className="addon-name">{addon.name}</span>
+                  <span className="addon-name">
+                    {addon.name}
+                    {addon.verified && <span className="verified-mark" title="Verified">✓</span>}
+                  </span>
                   <span className="addon-slug">{addon.slug}</span>
                 </div>
                 <span className="addon-owner">{addon.owner_username || 'Unknown'}</span>

@@ -23,6 +23,7 @@ export default function AdminAddonDetail() {
   const [external, setExternal] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
+  const [verified, setVerified] = useState(false);
   
   // Version editing
   const [editingVersion, setEditingVersion] = useState<Version | null>(null);
@@ -56,6 +57,7 @@ export default function AdminAddonDetail() {
       setExternal(data.addon.external);
       setIsActive(data.addon.is_active);
       setIsPublic(data.addon.is_public);
+      setVerified(data.addon.verified || false);
     } catch (err: any) {
       setError(err.message || 'Failed to load addon');
     } finally {
@@ -79,6 +81,7 @@ export default function AdminAddonDetail() {
         external,
         is_active: isActive,
         is_public: isPublic,
+        verified,
       };
       
       await api.adminUpdateAddon(addon.id, data);
@@ -260,6 +263,17 @@ export default function AdminAddonDetail() {
                     onChange={(e) => setIsPublic(e.target.checked)}
                   />
                   <span>Public</span>
+                </label>
+              </div>
+
+              <div className="checkbox-group verified-checkbox">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={verified}
+                    onChange={(e) => setVerified(e.target.checked)}
+                  />
+                  <span>✓ Verified (PlexDevelopment Store)</span>
                 </label>
               </div>
             </div>

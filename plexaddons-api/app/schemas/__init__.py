@@ -232,6 +232,7 @@ class AddonUpdate(BaseModel):
     external: Optional[bool] = None
     is_active: Optional[bool] = None
     is_public: Optional[bool] = None
+    verified: Optional[bool] = None  # Admin only
 
 
 class AddonResponse(BaseModel):
@@ -243,6 +244,7 @@ class AddonResponse(BaseModel):
     external: bool
     is_active: bool
     is_public: bool
+    verified: bool = False
     owner_id: int
     created_at: datetime
     updated_at: datetime

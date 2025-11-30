@@ -115,6 +115,15 @@
   accent-color: var(--accent);
 }
 
+.checkbox-group.verified-checkbox label {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.checkbox-group.verified-checkbox input[type="checkbox"]:checked {
+  accent-color: #22c55e;
+}
+
 .checkbox-inline {
   display: flex;
   align-items: center;

@@ -592,6 +592,7 @@ async def admin_update_addon(
         "external": addon.external,
         "is_active": addon.is_active,
         "is_public": addon.is_public,
+        "verified": addon.verified,
     }
     
     update_dict = data.model_dump(exclude_unset=True)
@@ -622,6 +623,7 @@ async def admin_update_addon(
         external=addon.external,
         is_active=addon.is_active,
         is_public=addon.is_public,
+        verified=addon.verified,
         owner_id=addon.owner_id,
         owner_username=owner.discord_username if owner else None,
         latest_version=None,

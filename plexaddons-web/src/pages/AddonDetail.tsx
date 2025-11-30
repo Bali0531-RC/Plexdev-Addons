@@ -67,7 +67,12 @@ export default function AddonDetail() {
     <div className="addon-detail">
       <div className="addon-detail-header">
         <div className="addon-detail-title">
-          <h1>{addon.name}</h1>
+          <h1>
+            {addon.name}
+            {addon.verified && (
+              <span className="verified-badge-large" title="Verified by PlexDevelopment">✓</span>
+            )}
+          </h1>
           {addon.external && <span className="badge badge-external">External</span>}
         </div>
         {addon.latest_version && (

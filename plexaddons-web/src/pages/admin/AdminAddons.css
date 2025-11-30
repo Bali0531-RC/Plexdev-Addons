@@ -55,6 +55,22 @@
 
 .addon-name {
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.verified-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #22c55e;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: bold;
 }
 
 .addon-slug {

@@ -193,6 +193,7 @@ class Addon(Base):
     # Status
     is_active = Column(Boolean, default=True)
     is_public = Column(Boolean, default=True, index=True)
+    verified = Column(Boolean, default=False, index=True)  # Verified by PlexDevelopment team
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

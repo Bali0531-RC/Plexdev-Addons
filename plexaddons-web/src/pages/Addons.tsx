@@ -81,7 +81,12 @@ export default function Addons() {
               className="addon-card"
             >
               <div className="addon-card-header">
-                <h3>{addon.name}</h3>
+                <h3>
+                  {addon.name}
+                  {addon.verified && (
+                    <span className="verified-badge" title="Verified by PlexDevelopment">✓</span>
+                  )}
+                </h3>
                 {addon.latest_version && (
                   <span className="addon-version">v{addon.latest_version}</span>
                 )}

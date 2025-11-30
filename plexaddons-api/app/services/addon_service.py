@@ -180,6 +180,7 @@ class AddonService:
                 "external": addon.external,
                 "is_active": addon.is_active,
                 "is_public": addon.is_public,
+                "verified": addon.verified,
                 "owner_id": addon.owner_id,
                 "owner_username": owner.discord_username if owner else None,
                 "owner_discord_id": owner.discord_id if owner else None,
