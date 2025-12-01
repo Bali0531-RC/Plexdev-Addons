@@ -49,13 +49,15 @@ export default function Layout() {
 
           <div className="header-actions">
             {isAuthenticated ? (
-              <div className="user-menu-container">
-                <div className="user-menu">
-                  <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
-                  <span className="username">{user?.discord_username}</span>
-                  <svg className="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
+              <>
+                <div className="user-menu-container">
+                  <div className="user-menu">
+                    <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
+                    <span className="username">{user?.discord_username}</span>
+                    <svg className="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
                 </div>
                 <div className="dropdown">
                   <Link to="/dashboard">Dashboard</Link>
@@ -65,7 +67,7 @@ export default function Layout() {
                   {isAdmin && <Link to="/admin">Admin Panel</Link>}
                   <button onClick={logout}>Logout</button>
                 </div>
-              </div>
+              </>
             ) : (
               <button onClick={() => login()} className="btn btn-primary">
                 Login with Discord
@@ -86,7 +88,7 @@ export default function Layout() {
             <span className="separator">•</span>
             <span className="version-badge alpha">Alpha</span>
             <span className="separator">•</span>
-            <span className="build-info">v0.2.0 · Build {__BUILD_TIME__}</span>
+            <span className="build-info">v0.2.1 · Build {__BUILD_TIME__}</span>
           </div>
           <div className="footer-right">
             <a href="/redocs" target="_blank" rel="noopener noreferrer">

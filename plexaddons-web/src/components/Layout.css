@@ -58,7 +58,7 @@
 }
 
 .header-actions {
-  position: relative;
+  position: static;
   display: flex;
   align-items: center;
   gap: var(--space-md);
@@ -71,6 +71,7 @@
 }
 
 .user-menu {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -129,16 +130,12 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Show dropdown when hovering the user-menu or the dropdown itself */
-.user-menu:hover + .dropdown,
+/* Show dropdown when hovering user-menu-container or the dropdown itself */
+.header-actions:has(.user-menu-container:hover) .dropdown,
 .dropdown:hover {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-}
-
-.user-menu:hover ~ .dropdown-arrow {
-  transform: rotate(180deg);
 }
 
 .dropdown a,
