@@ -1,5 +1,33 @@
 // API Types
 
+// Addon Tags - predefined categories
+export type AddonTag = 
+  | 'utility'
+  | 'media'
+  | 'automation'
+  | 'moderation'
+  | 'fun'
+  | 'economy'
+  | 'music'
+  | 'leveling'
+  | 'logging'
+  | 'integration'
+  | 'other';
+
+export const ADDON_TAGS: { value: AddonTag; label: string; description: string }[] = [
+  { value: 'utility', label: 'Utility', description: 'General purpose tools' },
+  { value: 'media', label: 'Media', description: 'Image, video, audio handling' },
+  { value: 'automation', label: 'Automation', description: 'Automated tasks and workflows' },
+  { value: 'moderation', label: 'Moderation', description: 'Server moderation tools' },
+  { value: 'fun', label: 'Fun', description: 'Games and entertainment' },
+  { value: 'economy', label: 'Economy', description: 'Virtual currency systems' },
+  { value: 'music', label: 'Music', description: 'Music playback features' },
+  { value: 'leveling', label: 'Leveling', description: 'XP and level systems' },
+  { value: 'logging', label: 'Logging', description: 'Event and action logging' },
+  { value: 'integration', label: 'Integration', description: 'Third-party service integrations' },
+  { value: 'other', label: 'Other', description: 'Miscellaneous addons' },
+];
+
 export interface User {
   id: number;
   discord_id: string;
@@ -46,6 +74,8 @@ export interface Addon {
   latest_version: string | null;
   latest_release_date: string | null;
   version_count: number;
+  tags: AddonTag[] | null;
+  organization_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +92,9 @@ export interface Version {
   breaking: boolean;
   urgent: boolean;
   storage_size_bytes: number;
+  scheduled_release_at: string | null;
+  is_published: boolean;
+  rollout_percentage: number | null;
   created_at: string;
 }
 
@@ -141,6 +174,7 @@ export interface AddonCreate {
   description?: string;
   homepage?: string;
   external?: boolean;
+  tags?: AddonTag[];
 }
 
 export interface AddonUpdate {
@@ -151,6 +185,7 @@ export interface AddonUpdate {
   is_active?: boolean;
   is_public?: boolean;
   verified?: boolean;
+  tags?: AddonTag[];
 }
 
 export interface VersionCreate {
@@ -162,6 +197,8 @@ export interface VersionCreate {
   breaking?: boolean;
   urgent?: boolean;
   release_date?: string;
+  scheduled_release_at?: string;
+  rollout_percentage?: number;
 }
 
 export interface VersionUpdate {
@@ -171,6 +208,8 @@ export interface VersionUpdate {
   changelog_content?: string;
   breaking?: boolean;
   urgent?: boolean;
+  scheduled_release_at?: string;
+  rollout_percentage?: number;
 }
 
 // Ticket Types

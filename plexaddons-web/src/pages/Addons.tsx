@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import type { Addon } from '../types';
+import type { Addon, AddonTag } from '../types';
+import { ADDON_TAGS } from '../types';
 import './Addons.css';
 
 export default function Addons() {
@@ -9,15 +10,16 @@ export default function Addons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [selectedTag, setSelectedTag] = useState<AddonTag | null>(null);
 
   useEffect(() => {
     loadAddons();
-  }, []);
+  }, [selectedTag]);
 
   const loadAddons = async () => {
     try {
       setLoading(true);
-      const response = await api.listAddons();
+      const response = await api.listAddons(1, 100, undefined, selectedTag || undefined);
       setAddons(response.addons);
     } catch (err) {
       setError('Failed to load addons');
@@ -68,9 +70,28 @@ export default function Addons() {
         />
       </div>
 
+      <div className="tags-filter">
+        <button
+          className={`tag-chip ${selectedTag === null ? 'active' : ''}`}
+          onClick={() => setSelectedTag(null)}
+        >
+          All
+        </button>
+        {ADDON_TAGS.map(tag => (
+          <button
+            key={tag.value}
+            className={`tag-chip ${selectedTag === tag.value ? 'active' : ''}`}
+            onClick={() => setSelectedTag(tag.value)}
+            title={tag.description}
+          >
+            {tag.label}
+          </button>
+        ))}
+      </div>
+
       {filteredAddons.length === 0 ? (
         <div className="no-addons">
-          <p>No addons found{search && ` matching "${search}"`}</p>
+          <p>No addons found{search && ` matching "${search}"`}{selectedTag && ` in ${ADDON_TAGS.find(t => t.value === selectedTag)?.label}`}</p>
         </div>
       ) : (
         <div className="addons-grid">
@@ -93,6 +114,18 @@ export default function Addons() {
               </div>
               {addon.description && (
                 <p className="addon-description">{addon.description}</p>
+              )}
+              {addon.tags && addon.tags.length > 0 && (
+                <div className="addon-tags">
+                  {addon.tags.slice(0, 3).map(tag => (
+                    <span key={tag} className="addon-tag">
+                      {ADDON_TAGS.find(t => t.value === tag)?.label || tag}
+                    </span>
+                  ))}
+                  {addon.tags.length > 3 && (
+                    <span className="addon-tag addon-tag-more">+{addon.tags.length - 3}</span>
+                  )}
+                </div>
               )}
               <div className="addon-card-footer">
                 {addon.external && (

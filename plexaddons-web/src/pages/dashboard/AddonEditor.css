@@ -96,6 +96,43 @@
   accent-color: var(--accent);
 }
 
+/* Tags Selector */
+.tags-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tag-option {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-option:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tag-option.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.form-group small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -167,6 +204,16 @@
 .version-number {
   font-family: var(--font-mono);
   font-weight: 600;
+}
+
+.badge-scheduled {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.badge-rollout {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
 }
 
 .version-date {

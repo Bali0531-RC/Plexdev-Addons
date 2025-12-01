@@ -34,6 +34,7 @@ import {
   WebhookConfig,
   WebhookUpdate,
   WebhookTestResponse,
+  AddonTag,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -113,10 +114,16 @@ class ApiClient {
   }
 
   // Addons
-  async listAddons(page = 1, perPage = 20, search?: string): Promise<AddonListResponse> {
+  async listAddons(page = 1, perPage = 20, search?: string, tag?: AddonTag): Promise<AddonListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.append('search', search);
+    if (tag) params.append('tag', tag);
     return this.fetch(`/v1/addons?${params}`);
+  }
+
+  // Tags
+  async getTags(): Promise<{ tags: AddonTag[] }> {
+    return this.fetch('/v1/tags');
   }
 
   async listMyAddons(page = 1, perPage = 20): Promise<AddonListResponse> {

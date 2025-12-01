@@ -2,7 +2,8 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
-import type { Addon, Version, AddonCreate, AddonUpdate } from '../../types';
+import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
+import { ADDON_TAGS } from '../../types';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -23,6 +24,7 @@ export default function AddonEditor() {
   const [external, setExternal] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
+  const [selectedTags, setSelectedTags] = useState<AddonTag[]>([]);
 
   useEffect(() => {
     if (!isNew && slug) {
@@ -47,12 +49,21 @@ export default function AddonEditor() {
       setExternal(addonData.external);
       setIsActive(addonData.is_active);
       setIsPublic(addonData.is_public);
+      setSelectedTags(addonData.tags || []);
     } catch (err) {
       setError('Failed to load addon');
       console.error(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleTag = (tag: AddonTag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -67,6 +78,7 @@ export default function AddonEditor() {
           description: description || undefined,
           homepage: homepage || undefined,
           external,
+          tags: selectedTags.length > 0 ? selectedTags : undefined,
         };
         const newAddon = await api.createAddon(data);
         navigate(`/dashboard/addons/${newAddon.slug}`, { replace: true });
@@ -78,6 +90,7 @@ export default function AddonEditor() {
           external,
           is_active: isActive,
           is_public: isPublic,
+          tags: selectedTags,
         };
         await api.updateAddon(slug!, data);
         navigate('/dashboard/addons');
@@ -162,6 +175,24 @@ export default function AddonEditor() {
               placeholder="https://github.com/username/addon"
             />
           </div>
+
+          <div className="form-group">
+            <label>Tags</label>
+            <div className="tags-selector">
+              {ADDON_TAGS.map(tag => (
+                <button
+                  key={tag.value}
+                  type="button"
+                  className={`tag-option ${selectedTags.includes(tag.value) ? 'selected' : ''}`}
+                  onClick={() => toggleTag(tag.value)}
+                  title={tag.description}
+                >
+                  {tag.label}
+                </button>
+              ))}
+            </div>
+            <small>Select tags that describe your addon</small>
+          </div>
         </div>
 
         <div className="form-section">
@@ -237,11 +268,17 @@ export default function AddonEditor() {
                 <div key={version.id} className="version-row">
                   <div className="version-info">
                     <span className="version-number">v{version.version}</span>
-                    {index === 0 && <span className="badge badge-latest">Latest</span>}
+                    {index === 0 && version.is_published && <span className="badge badge-latest">Latest</span>}
+                    {!version.is_published && <span className="badge badge-scheduled">Scheduled</span>}
                     {version.breaking && <span className="badge badge-breaking">Breaking</span>}
+                    {version.rollout_percentage !== null && version.rollout_percentage < 100 && (
+                      <span className="badge badge-rollout">{version.rollout_percentage}%</span>
+                    )}
                   </div>
                   <span className="version-date">
-                    {new Date(version.release_date).toLocaleDateString()}
+                    {version.scheduled_release_at && !version.is_published
+                      ? `Releases ${new Date(version.scheduled_release_at).toLocaleDateString()}`
+                      : new Date(version.release_date).toLocaleDateString()}
                   </span>
                   <Link 
                     to={`/dashboard/addons/${slug}/versions/${version.version}`}

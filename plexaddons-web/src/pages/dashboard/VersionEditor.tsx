@@ -2,12 +2,14 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import type { Version, VersionCreate, VersionUpdate } from '../../types';
 import './VersionEditor.css';
 
 export default function VersionEditor() {
   const { slug, version: versionParam } = useParams<{ slug: string; version: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew = !versionParam || versionParam === 'new';
 
   const [existingVersion, setExistingVersion] = useState<Version | null>(null);
@@ -24,6 +26,13 @@ export default function VersionEditor() {
   const [breaking, setBreaking] = useState(false);
   const [urgent, setUrgent] = useState(false);
   const [releaseDate, setReleaseDate] = useState('');
+  const [scheduledReleaseAt, setScheduledReleaseAt] = useState('');
+  const [rolloutPercentage, setRolloutPercentage] = useState<number | ''>('');
+
+  // Tier checks
+  const effectiveTier = user?.effective_tier || user?.subscription_tier || 'free';
+  const canSchedule = effectiveTier === 'pro' || effectiveTier === 'premium';
+  const canRollout = effectiveTier === 'premium';
 
   useEffect(() => {
     if (!isNew && slug && versionParam) {
@@ -46,6 +55,12 @@ export default function VersionEditor() {
       setBreaking(data.breaking);
       setUrgent(data.urgent);
       setReleaseDate(data.release_date.split('T')[0]);
+      if (data.scheduled_release_at) {
+        setScheduledReleaseAt(data.scheduled_release_at.slice(0, 16)); // format: YYYY-MM-DDTHH:MM
+      }
+      if (data.rollout_percentage !== null) {
+        setRolloutPercentage(data.rollout_percentage);
+      }
     } catch (err) {
       setError('Failed to load version');
       console.error(err);
@@ -70,6 +85,8 @@ export default function VersionEditor() {
           breaking,
           urgent,
           release_date: releaseDate || undefined,
+          scheduled_release_at: canSchedule && scheduledReleaseAt ? scheduledReleaseAt : undefined,
+          rollout_percentage: canRollout && rolloutPercentage !== '' ? rolloutPercentage : undefined,
         };
         await api.createVersion(slug!, data);
       } else {
@@ -80,6 +97,8 @@ export default function VersionEditor() {
           changelog_content: changelogContent || undefined,
           breaking,
           urgent,
+          scheduled_release_at: canSchedule ? (scheduledReleaseAt || undefined) : undefined,
+          rollout_percentage: canRollout ? (rolloutPercentage !== '' ? rolloutPercentage : undefined) : undefined,
         };
         await api.updateVersion(slug!, versionParam!, data);
       }
@@ -204,6 +223,65 @@ export default function VersionEditor() {
               rows={6}
             />
           </div>
+        </div>
+
+        <div className="form-section">
+          <h2>
+            Release Scheduling
+            {!canSchedule && <span className="tier-badge pro">Pro+</span>}
+          </h2>
+          
+          <div className="form-group">
+            <label htmlFor="scheduledReleaseAt">Scheduled Release</label>
+            <input
+              type="datetime-local"
+              id="scheduledReleaseAt"
+              value={scheduledReleaseAt}
+              onChange={(e) => setScheduledReleaseAt(e.target.value)}
+              disabled={!canSchedule}
+              min={new Date().toISOString().slice(0, 16)}
+            />
+            <small>
+              {canSchedule 
+                ? 'Leave empty to publish immediately. Set a future date to schedule the release.'
+                : 'Upgrade to Pro or Premium to schedule releases.'}
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="rolloutPercentage">
+              Gradual Rollout
+              {!canRollout && <span className="tier-badge premium">Premium</span>}
+            </label>
+            <input
+              type="number"
+              id="rolloutPercentage"
+              value={rolloutPercentage}
+              onChange={(e) => setRolloutPercentage(e.target.value ? parseInt(e.target.value) : '')}
+              disabled={!canRollout}
+              min={1}
+              max={100}
+              placeholder="100"
+            />
+            <small>
+              {canRollout 
+                ? 'Percentage of users who will receive this update (1-100). Leave empty for 100%.'
+                : 'Upgrade to Premium for A/B testing and gradual rollouts.'}
+            </small>
+          </div>
+
+          {existingVersion && (
+            <div className="version-status">
+              <span className={`status-indicator ${existingVersion.is_published ? 'published' : 'scheduled'}`}>
+                {existingVersion.is_published ? '● Published' : '◐ Scheduled'}
+              </span>
+              {existingVersion.rollout_percentage !== null && existingVersion.rollout_percentage < 100 && (
+                <span className="rollout-indicator">
+                  {existingVersion.rollout_percentage}% rollout
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="form-section">

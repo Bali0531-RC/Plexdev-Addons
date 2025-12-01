@@ -29,3 +29,73 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Tier badges */
+.tier-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.tier-badge.pro {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+}
+
+.tier-badge.premium {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: white;
+}
+
+/* Form group label with tier badge */
+.form-group label .tier-badge {
+  margin-left: 0.5rem;
+}
+
+/* Version status indicators */
+.version-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: calc(var(--radius) / 2);
+}
+
+.status-indicator {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-indicator.published {
+  color: #22c55e;
+}
+
+.status-indicator.scheduled {
+  color: #f59e0b;
+}
+
+.rollout-indicator {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.2rem 0.5rem;
+  background: rgba(var(--accent-rgb), 0.1);
+  border-radius: 10px;
+}
+
+/* Number input styling */
+.form-group input[type="number"] {
+  width: 120px;
+}
+
+/* Datetime input styling */
+.form-group input[type="datetime-local"] {
+  width: auto;
+  max-width: 100%;
+}
