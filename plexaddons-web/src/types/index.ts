@@ -396,3 +396,45 @@ export interface AnalyticsSummary {
   total_unique_users: number;
   addons: AddonAnalytics[];
 }
+
+// Organization Types (Premium Feature)
+export type OrganizationRole = 'owner' | 'admin' | 'member';
+
+export interface OrganizationMember {
+  id: number;
+  user_id: number;
+  role: OrganizationRole;
+  joined_at: string;
+  discord_username: string | null;
+  discord_avatar: string | null;
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  avatar_url: string | null;
+  owner_id: number;
+  created_at: string;
+  updated_at: string;
+  member_count: number;
+  addon_count: number;
+  storage_used_bytes: number;
+}
+
+export interface OrganizationDetail extends Organization {
+  members: OrganizationMember[];
+  owner_username: string | null;
+}
+
+export interface OrganizationCreate {
+  name: string;
+  description?: string;
+}
+
+export interface OrganizationUpdate {
+  name?: string;
+  description?: string;
+  avatar_url?: string;
+}

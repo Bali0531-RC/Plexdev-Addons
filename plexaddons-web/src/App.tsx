@@ -21,6 +21,7 @@ import Analytics from './pages/dashboard/Analytics'
 import Support from './pages/dashboard/Support'
 import NewTicket from './pages/dashboard/NewTicket'
 import TicketDetail from './pages/dashboard/TicketDetail'
+import Organizations from './pages/dashboard/Organizations'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAddons from './pages/admin/AdminAddons'
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="support" element={<Support />} />
           <Route path="support/new" element={<NewTicket />} />
           <Route path="support/:ticketId" element={<TicketDetail />} />
+          <Route path="organizations" element={<Organizations />} />
         </Route>
 
         {/* Admin routes */}

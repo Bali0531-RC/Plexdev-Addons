@@ -35,6 +35,12 @@ import {
   WebhookUpdate,
   WebhookTestResponse,
   AddonTag,
+  Organization,
+  OrganizationDetail,
+  OrganizationCreate,
+  OrganizationUpdate,
+  OrganizationMember,
+  OrganizationRole,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -565,6 +571,52 @@ class ApiClient {
 
   async deleteMyWebhook(): Promise<void> {
     return this.fetch('/v1/users/me/webhook', { method: 'DELETE' });
+  }
+
+  // ============== ORGANIZATIONS (Premium) ==============
+
+  async listMyOrganizations(): Promise<{ organizations: Organization[]; total: number }> {
+    return this.fetch('/v1/organizations');
+  }
+
+  async getOrganization(orgId: number): Promise<OrganizationDetail> {
+    return this.fetch(`/v1/organizations/${orgId}`);
+  }
+
+  async createOrganization(data: OrganizationCreate): Promise<Organization> {
+    return this.fetch('/v1/organizations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOrganization(orgId: number, data: OrganizationUpdate): Promise<Organization> {
+    return this.fetch(`/v1/organizations/${orgId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteOrganization(orgId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgId}`, { method: 'DELETE' });
+  }
+
+  async inviteOrganizationMember(orgId: number, discordUsername: string, role: OrganizationRole = 'member'): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ discord_username: discordUsername, role }),
+    });
+  }
+
+  async updateOrganizationMemberRole(orgId: number, memberId: number, role: OrganizationRole): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgId}/members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async removeOrganizationMember(orgId: number, memberId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgId}/members/${memberId}`, { method: 'DELETE' });
   }
 }
 

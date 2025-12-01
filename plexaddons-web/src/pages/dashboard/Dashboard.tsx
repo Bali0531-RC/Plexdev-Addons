@@ -174,6 +174,10 @@ export default function Dashboard() {
               <span className="action-icon">💳</span>
               <span>Subscription</span>
             </Link>
+            <Link to="/dashboard/organizations" className="action-item">
+              <span className="action-icon">👥</span>
+              <span>Organizations</span>
+            </Link>
             {user?.is_admin && (
               <Link to="/admin" className="action-item">
                 <span className="action-icon">🛡️</span>
