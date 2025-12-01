@@ -66,10 +66,11 @@
 
 .user-menu-wrapper {
   position: relative;
+  display: inline-block;
 }
 
 .user-menu {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
   cursor: pointer;
@@ -104,15 +105,14 @@
   flex-shrink: 0;
 }
 
-.user-menu-wrapper:hover .dropdown-arrow {
+.user-menu:hover .dropdown-arrow {
   transform: rotate(180deg);
 }
 
 .dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   right: 0;
-  margin-top: 4px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -128,7 +128,9 @@
   transition: opacity var(--transition), visibility var(--transition);
 }
 
-.user-menu-wrapper:hover .dropdown {
+/* Only trigger on user-menu hover, keep open when hovering dropdown */
+.user-menu:hover + .dropdown,
+.dropdown:hover {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
