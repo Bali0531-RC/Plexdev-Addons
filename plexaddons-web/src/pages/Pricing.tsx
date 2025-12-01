@@ -37,6 +37,7 @@ export default function Pricing() {
             '3 version history',
             '100 requests/min',
             'Public profile',
+            'Addon tags',
           ],
         },
         {
@@ -55,6 +56,7 @@ export default function Pricing() {
             'Ticket attachments',
             'Usage analytics (30 days)',
             'Private addons',
+            'Scheduled releases',
             'Supporter badge',
           ],
         },
@@ -75,6 +77,9 @@ export default function Pricing() {
             'Ticket attachments',
             'Usage analytics (90 days)',
             'Private addons',
+            'Scheduled releases',
+            'Gradual rollouts (A/B testing)',
+            'Team organizations',
             'API key access',
             'Webhook notifications',
             'Supporter badge',
@@ -84,6 +89,27 @@ export default function Pricing() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Features that are NOT available in each tier (shown with ❌)
+  const unavailableFeatures: Record<string, string[]> = {
+    free: [
+      'Custom profile URL',
+      'Profile banner',
+      'Private addons',
+      'Scheduled releases',
+      'Gradual rollouts',
+      'Team organizations',
+      'API key access',
+      'Webhook notifications',
+    ],
+    pro: [
+      'Gradual rollouts',
+      'Team organizations',
+      'API key access',
+      'Webhook notifications',
+    ],
+    premium: [],
   };
 
   const handleSubscribe = async (tier: 'pro' | 'premium', provider: 'stripe' | 'paypal') => {
@@ -150,7 +176,13 @@ export default function Pricing() {
               <ul className="pricing-features">
                 {plan.features.map((feature, index) => (
                   <li key={index}>
-                    <span className="feature-icon">✓</span>
+                    <span className="feature-icon feature-included">✓</span>
+                    {feature}
+                  </li>
+                ))}
+                {unavailableFeatures[plan.tier]?.map((feature, index) => (
+                  <li key={`unavailable-${index}`} className="feature-unavailable">
+                    <span className="feature-icon feature-excluded">✗</span>
                     {feature}
                   </li>
                 ))}

@@ -89,8 +89,20 @@
 }
 
 .feature-icon {
-  color: var(--accent);
   font-weight: bold;
+  flex-shrink: 0;
+}
+
+.feature-included {
+  color: var(--accent);
+}
+
+.feature-excluded {
+  color: #ef4444;
+}
+
+.feature-unavailable {
+  opacity: 0.5;
 }
 
 .pricing-action {
