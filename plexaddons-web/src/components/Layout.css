@@ -58,19 +58,15 @@
 }
 
 .header-actions {
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-md);
 }
 
-.user-menu-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
+/* User Menu */
 .user-menu {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   gap: var(--space-sm);
   cursor: pointer;
@@ -83,14 +79,14 @@
   background: var(--bg-hover);
 }
 
-.avatar {
+.user-menu .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.username {
+.user-menu .username {
   font-weight: 500;
   color: var(--text);
   max-width: 150px;
@@ -99,17 +95,18 @@
   white-space: nowrap;
 }
 
-.dropdown-arrow {
+.user-menu .arrow {
   color: var(--text-muted);
   transition: transform var(--transition);
   flex-shrink: 0;
 }
 
-.user-menu:hover .dropdown-arrow {
+.user-menu:hover .arrow {
   transform: rotate(180deg);
 }
 
-.dropdown {
+/* Dropdown */
+.user-menu .dropdown {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
@@ -118,26 +115,22 @@
   border-radius: var(--radius-m);
   padding: var(--space-xs);
   min-width: 180px;
-  max-height: calc(100vh - 80px);
-  overflow-y: auto;
-  z-index: 9999;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity var(--transition), visibility var(--transition);
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Only trigger on user-menu hover, keep open when hovering dropdown */
-.user-menu:hover + .dropdown,
-.dropdown:hover {
+.user-menu:hover .dropdown {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-.dropdown a,
-.dropdown button {
+.user-menu .dropdown a,
+.user-menu .dropdown button {
   display: block;
   width: 100%;
   padding: var(--space-sm) var(--space-md);
@@ -146,12 +139,15 @@
   background: none;
   border: none;
   border-radius: var(--radius-s);
+  cursor: pointer;
+  font-size: inherit;
   transition: background var(--transition);
 }
 
-.dropdown a:hover,
-.dropdown button:hover {
+.user-menu .dropdown a:hover,
+.user-menu .dropdown button:hover {
   background: var(--bg-hover);
+  color: var(--text);
 }
 
 /* Main */
