@@ -101,6 +101,7 @@ input, textarea, select {
 
 .btn-primary:hover {
   background: var(--accent-hover);
+  color: var(--bg);
 }
 
 .btn-secondary {
@@ -111,6 +112,7 @@ input, textarea, select {
 
 .btn-secondary:hover {
   background: var(--border);
+  color: var(--text);
 }
 
 .btn-danger {
@@ -120,6 +122,7 @@ input, textarea, select {
 
 .btn-danger:hover {
   background: #dc2626;
+  color: white;
 }
 
 .btn-sm {
