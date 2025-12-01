@@ -4,7 +4,7 @@ from datetime import datetime, date
 import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
-    TicketStatus, TicketPriority, TicketCategory
+    TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole
 )
 
 
@@ -219,6 +219,7 @@ class AddonBase(BaseModel):
     description: Optional[str] = None
     homepage: Optional[str] = None
     external: bool = False
+    tags: Optional[List[AddonTag]] = Field(default_factory=list)
 
 
 class AddonCreate(AddonBase):
@@ -233,6 +234,7 @@ class AddonUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_public: Optional[bool] = None
     verified: Optional[bool] = None  # Admin only
+    tags: Optional[List[AddonTag]] = None
 
 
 class AddonResponse(BaseModel):
@@ -246,6 +248,8 @@ class AddonResponse(BaseModel):
     is_public: bool
     verified: bool = False
     owner_id: int
+    organization_id: Optional[int] = None
+    tags: List[AddonTag] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     
@@ -281,6 +285,8 @@ class VersionBase(BaseModel):
 
 class VersionCreate(VersionBase):
     release_date: Optional[date] = None
+    scheduled_release_at: Optional[datetime] = None  # Pro+ feature
+    rollout_percentage: int = Field(default=100, ge=0, le=100)  # Premium feature
 
 
 class VersionUpdate(BaseModel):
@@ -288,6 +294,8 @@ class VersionUpdate(BaseModel):
     description: Optional[str] = None
     changelog_url: Optional[str] = None
     changelog_content: Optional[str] = None
+    scheduled_release_at: Optional[datetime] = None  # Pro+ feature
+    rollout_percentage: Optional[int] = Field(default=None, ge=0, le=100)  # Premium feature
     breaking: Optional[bool] = None
     urgent: Optional[bool] = None
 
@@ -305,6 +313,11 @@ class VersionResponse(BaseModel):
     urgent: bool
     storage_size_bytes: int
     created_at: datetime
+    # Pro+ features
+    scheduled_release_at: Optional[datetime] = None
+    is_published: bool = True
+    # Premium features
+    rollout_percentage: int = 100
 
     class Config:
         from_attributes = True
@@ -579,6 +592,75 @@ class TicketStatsResponse(BaseModel):
     active_urgent_priority: int
     unassigned_tickets: int
     avg_resolution_hours: Optional[float] = None
+
+
+# ============== Organization Schemas (Premium Feature) ==============
+
+class OrganizationCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+class OrganizationMemberResponse(BaseModel):
+    id: int
+    user_id: int
+    role: OrganizationRole
+    joined_at: datetime
+    # User info
+    discord_username: Optional[str] = None
+    discord_avatar: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class OrganizationResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+    # Stats
+    member_count: int = 0
+    addon_count: int = 0
+    storage_used_bytes: int = 0
+    
+    class Config:
+        from_attributes = True
+
+
+class OrganizationDetailResponse(OrganizationResponse):
+    members: List[OrganizationMemberResponse] = []
+    owner_username: Optional[str] = None
+
+
+class OrganizationListResponse(BaseModel):
+    organizations: List[OrganizationResponse]
+    total: int
+
+
+class InviteMemberRequest(BaseModel):
+    discord_username: str
+    role: OrganizationRole = OrganizationRole.MEMBER
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role: OrganizationRole
+
+
+# ============== Tag Schema ==============
+
+class TagListResponse(BaseModel):
+    tags: List[AddonTag]
 
 
 # Forward reference resolution

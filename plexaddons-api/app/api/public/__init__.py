@@ -14,6 +14,7 @@ router = APIRouter(tags=["Public API"])
 
 @router.get("/versions.json", response_model=PublicVersionsJson)
 async def get_versions_json(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check),
 ):
@@ -22,8 +23,16 @@ async def get_versions_json(
     
     This endpoint returns all public addons with their latest version info
     in the same format as the original GitHub-hosted versions.json.
+    
+    A/B Rollouts: If an addon version has rollout_percentage < 100, only a
+    subset of users will see that version. Rollout is based on client IP hash
+    for consistency.
     """
-    addon_data = await AddonService.get_all_public_addons_for_json(db)
+    # Get client IP hash for A/B rollout consistency
+    client_ip = request.client.host if request.client else None
+    client_ip_hash = AnalyticsService.hash_ip(client_ip) if client_ip else None
+    
+    addon_data = await AddonService.get_all_public_addons_for_json(db, client_ip_hash=client_ip_hash)
     
     addons_dict = {}
     for addon in addon_data:

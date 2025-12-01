@@ -11,4 +11,4 @@ from app.core.exceptions import (
     VersionLimitExceededError,
     PaymentError,
 )
-from app.core.rate_limit import RateLimitMiddleware, RateLimiter, get_rate_limiter, set_rate_limiter
+from app.core.rate_limit import RateLimitMiddleware, RateLimiter, get_rate_limiter, set_rate_limiter, get_redis_client, set_redis_client

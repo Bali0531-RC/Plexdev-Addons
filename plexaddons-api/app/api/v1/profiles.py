@@ -13,6 +13,11 @@ from app.schemas import UserPublicProfile, AddonResponse
 router = APIRouter(prefix="/u", tags=["Profiles"])
 
 
+def sanitize_ilike_pattern(search: str) -> str:
+    """Escape special characters in ILIKE patterns to prevent SQL injection."""
+    return search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def get_effective_tier(user: User):
     """Get effective tier considering temp_tier if active."""
     if user.temp_tier and user.temp_tier_expires_at:
@@ -41,7 +46,8 @@ async def list_public_users(
     count_query = select(func.count(User.id)).where(User.profile_public == True)
     
     if search:
-        search_filter = User.discord_username.ilike(f"%{search}%")
+        safe_search = sanitize_ilike_pattern(search)
+        search_filter = User.discord_username.ilike(f"%{safe_search}%")
         query = query.where(search_filter)
         count_query = count_query.where(search_filter)
     

@@ -11,7 +11,7 @@ from app.database import engine, Base, AsyncSessionLocal
 from app.api.v1 import router as v1_router
 from app.api.public import router as public_router
 from app.webhooks import router as webhooks_router
-from app.core.rate_limit import RateLimitMiddleware, set_rate_limiter
+from app.core.rate_limit import RateLimitMiddleware, set_rate_limiter, set_redis_client
 from app.core.exceptions import PlexAddonsException
 
 settings = get_settings()
@@ -79,6 +79,36 @@ async def cleanup_ticket_attachments():
         print(f"[Scheduler] Deleted {deleted_count} old ticket attachments, removed {removed_dirs} empty directories")
 
 
+async def publish_scheduled_versions():
+    """Scheduled task to publish versions that have reached their scheduled release time."""
+    from app.models import Version
+    from sqlalchemy import select, and_
+    from datetime import datetime, timezone
+    
+    async with AsyncSessionLocal() as db:
+        now = datetime.now(timezone.utc)
+        
+        # Find versions that are scheduled and ready to publish
+        result = await db.execute(
+            select(Version).where(
+                and_(
+                    Version.scheduled_release_at.isnot(None),
+                    Version.scheduled_release_at <= now,
+                    Version.is_published == False
+                )
+            )
+        )
+        versions = result.scalars().all()
+        
+        for version in versions:
+            version.is_published = True
+            print(f"[Scheduler] Published scheduled version {version.version} for addon {version.addon_id}")
+        
+        if versions:
+            await db.commit()
+            print(f"[Scheduler] Published {len(versions)} scheduled versions")
+
+
 async def bootstrap_initial_admin():
     """Create initial admin user if configured."""
     if not settings.initial_admin_discord_id:
@@ -115,6 +145,7 @@ async def lifespan(app: FastAPI):
     try:
         redis_client = redis.from_url(settings.redis_url, decode_responses=True)
         await redis_client.ping()
+        set_redis_client(redis_client)  # Store globally for OAuth state storage
         rate_limiter = RateLimitMiddleware(redis_client)
         set_rate_limiter(rate_limiter)
         print("[Startup] Redis connected successfully")
@@ -156,6 +187,11 @@ async def lifespan(app: FastAPI):
         "cron",
         hour=4,  # Run at 4 AM daily
         minute=30,
+    )
+    scheduler.add_job(
+        publish_scheduled_versions,
+        "interval",
+        minutes=5,  # Check every 5 minutes for scheduled versions
     )
     scheduler.start()
     print("[Startup] Scheduler started")
@@ -213,6 +249,29 @@ async def add_rate_limit_headers(request: Request, call_next):
     if hasattr(request.state, "rate_limit_headers"):
         for key, value in request.state.rate_limit_headers.items():
             response.headers[key] = value
+    
+    return response
+
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+    
+    # Prevent MIME type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    
+    # XSS Protection (legacy but still useful)
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    # Referrer policy
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Permissions policy (disable unnecessary browser features)
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     
     return response
 

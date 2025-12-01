@@ -69,6 +69,38 @@ async def get_admin_user(
     return user
 
 
+def get_effective_tier(user: User):
+    """Get effective tier including temp tier if active."""
+    from datetime import datetime, timezone
+    from app.models import SubscriptionTier
+    if user.temp_tier and user.temp_tier_expires_at:
+        if user.temp_tier_expires_at > datetime.now(timezone.utc):
+            return user.temp_tier
+    return user.subscription_tier
+
+
+async def require_pro(
+    user: User = Depends(get_current_user),
+) -> User:
+    """Require Pro or higher subscription."""
+    from app.models import SubscriptionTier
+    effective = get_effective_tier(user)
+    if effective not in [SubscriptionTier.PRO, SubscriptionTier.PREMIUM]:
+        raise ForbiddenError("Pro subscription required")
+    return user
+
+
+async def require_premium(
+    user: User = Depends(get_current_user),
+) -> User:
+    """Require Premium subscription."""
+    from app.models import SubscriptionTier
+    effective = get_effective_tier(user)
+    if effective != SubscriptionTier.PREMIUM:
+        raise ForbiddenError("Premium subscription required")
+    return user
+
+
 async def rate_limit_check(
     request: Request,
     user: Optional[User] = Depends(get_current_user_optional),

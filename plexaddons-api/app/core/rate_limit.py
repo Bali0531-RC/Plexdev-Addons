@@ -145,6 +145,8 @@ class RateLimitMiddleware:
 
 # Global rate limiter instance (initialized in main.py)
 rate_limiter: Optional[RateLimitMiddleware] = None
+# Global Redis client (initialized in main.py)
+redis_client: Optional[redis.Redis] = None
 
 
 def get_rate_limiter() -> Optional[RateLimitMiddleware]:
@@ -154,3 +156,12 @@ def get_rate_limiter() -> Optional[RateLimitMiddleware]:
 def set_rate_limiter(limiter: RateLimitMiddleware):
     global rate_limiter
     rate_limiter = limiter
+
+
+def get_redis_client() -> Optional[redis.Redis]:
+    return redis_client
+
+
+def set_redis_client(client: redis.Redis):
+    global redis_client
+    redis_client = client

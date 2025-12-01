@@ -9,6 +9,11 @@ from app.core.exceptions import NotFoundError, ConflictError, ForbiddenError
 from app.services.user_service import UserService
 
 
+def sanitize_ilike_pattern(search: str) -> str:
+    """Escape special characters in ILIKE patterns to prevent SQL injection."""
+    return search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 class AddonService:
     """Service for addon management operations."""
     
@@ -134,7 +139,8 @@ class AddonService:
         if owner_id:
             filters.append(Addon.owner_id == owner_id)
         if search:
-            filters.append(Addon.name.ilike(f"%{search}%"))
+            safe_search = sanitize_ilike_pattern(search)
+            filters.append(Addon.name.ilike(f"%{safe_search}%"))
         
         if filters:
             query = query.where(and_(*filters))
@@ -194,8 +200,14 @@ class AddonService:
         return enriched_addons, total
     
     @staticmethod
-    async def get_all_public_addons_for_json(db: AsyncSession) -> List[dict]:
-        """Get all public addons with latest version for versions.json format."""
+    async def get_all_public_addons_for_json(db: AsyncSession, client_ip_hash: str = None) -> List[dict]:
+        """
+        Get all public addons with latest version for versions.json format.
+        
+        Args:
+            client_ip_hash: Optional hashed IP for A/B rollout consistency.
+                           If provided, respects rollout_percentage.
+        """
         result = await db.execute(
             select(Addon)
             .where(Addon.is_public == True)
@@ -209,14 +221,37 @@ class AddonService:
             owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
             owner = owner_result.scalar_one_or_none()
             
-            # Get latest version
+            # Get latest PUBLISHED version that user is eligible for
             latest_version_result = await db.execute(
                 select(Version)
                 .where(Version.addon_id == addon.id)
+                .where(Version.is_published == True)  # Only published versions
                 .order_by(Version.release_date.desc(), Version.created_at.desc())
-                .limit(1)
             )
-            latest_version = latest_version_result.scalar_one_or_none()
+            versions = latest_version_result.scalars().all()
+            
+            # Find the latest version this user is eligible for (based on rollout)
+            latest_version = None
+            for version in versions:
+                if version.rollout_percentage >= 100:
+                    latest_version = version
+                    break
+                elif client_ip_hash and version.rollout_percentage > 0:
+                    # Use consistent hash to determine if user is in rollout
+                    hash_value = int(client_ip_hash[:8], 16) % 100
+                    if hash_value < version.rollout_percentage:
+                        latest_version = version
+                        break
+                elif version.rollout_percentage >= 100:
+                    latest_version = version
+                    break
+            
+            # Fallback to first published version if no rollout match
+            if not latest_version and versions:
+                for v in versions:
+                    if v.rollout_percentage >= 100:
+                        latest_version = v
+                        break
             
             if latest_version:
                 addon_data.append({
@@ -231,6 +266,7 @@ class AddonService:
                     "author": owner.discord_username if owner else None,
                     "homepage": addon.homepage,
                     "changelog": latest_version.changelog_url,
+                    "tags": addon.tags or [],
                 })
         
         return addon_data

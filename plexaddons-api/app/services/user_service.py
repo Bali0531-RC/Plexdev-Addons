@@ -9,6 +9,12 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
+def sanitize_ilike_pattern(search: str) -> str:
+    """Escape special characters in ILIKE patterns to prevent SQL injection."""
+    return search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 # Available badges in the system
 AVAILABLE_BADGES = {
     "supporter": "💎 Supporter",  # Pro or Premium subscriber
@@ -335,7 +341,8 @@ class UserService:
         count_query = select(func.count(User.id))
         
         if search:
-            search_filter = User.discord_username.ilike(f"%{search}%")
+            safe_search = sanitize_ilike_pattern(search)
+            search_filter = User.discord_username.ilike(f"%{safe_search}%")
             query = query.where(search_filter)
             count_query = count_query.where(search_filter)
         

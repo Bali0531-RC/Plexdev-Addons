@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -25,6 +25,28 @@ class SubscriptionStatus(str, enum.Enum):
 class PaymentProvider(str, enum.Enum):
     STRIPE = "stripe"
     PAYPAL = "paypal"
+
+
+# Predefined addon tags
+class AddonTag(str, enum.Enum):
+    UTILITY = "utility"           # General utility tools
+    MEDIA = "media"               # Media management
+    AUTOMATION = "automation"     # Automated tasks
+    INTEGRATION = "integration"   # Third-party integrations
+    SECURITY = "security"         # Security-related
+    UI = "ui"                     # User interface enhancements
+    LIBRARY = "library"           # Library management
+    METADATA = "metadata"         # Metadata handling
+    SYNC = "sync"                 # Syncing features
+    NOTIFICATION = "notification" # Notifications
+    OTHER = "other"               # Miscellaneous
+
+
+# Organization member roles
+class OrganizationRole(str, enum.Enum):
+    OWNER = "owner"       # Full control, billing
+    ADMIN = "admin"       # Can manage addons and members
+    MEMBER = "member"     # Can create/edit addons
 
 
 # Ticket System Enums
@@ -140,6 +162,8 @@ class User(Base):
     # Relationships
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
     addons = relationship("Addon", back_populates="owner", cascade="all, delete-orphan")
+    owned_organizations = relationship("Organization", back_populates="owner", foreign_keys="Organization.owner_id")
+    organization_memberships = relationship("OrganizationMember", back_populates="user", foreign_keys="OrganizationMember.user_id")
 
 
 class Subscription(Base):
@@ -180,6 +204,7 @@ class Addon(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True)
     
     # Addon identification
     name = Column(String(100), nullable=False)
@@ -189,6 +214,7 @@ class Addon(Base):
     description = Column(Text, nullable=True)
     homepage = Column(String(500), nullable=True)
     external = Column(Boolean, default=False)  # true = free community addon
+    tags = Column(JSON, default=list)  # List of AddonTag values
     
     # Status
     is_active = Column(Boolean, default=True)
@@ -200,10 +226,12 @@ class Addon(Base):
     
     # Relationships
     owner = relationship("User", back_populates="addons")
+    organization = relationship("Organization", back_populates="addons")
     versions = relationship("Version", back_populates="addon", cascade="all, delete-orphan", order_by="desc(Version.release_date)")
     
     __table_args__ = (
         Index("idx_addons_owner_name", "owner_id", "name", unique=True),
+        Index("idx_addons_organization", "organization_id"),
     )
 
 
@@ -232,6 +260,13 @@ class Version(Base):
     # Storage tracking
     storage_size_bytes = Column(Integer, default=0)
     
+    # Pro+ Feature: Scheduled releases
+    scheduled_release_at = Column(DateTime(timezone=True), nullable=True)  # If set, version is hidden until this time
+    is_published = Column(Boolean, default=True)  # False if scheduled and not yet published
+    
+    # Premium Feature: A/B Rollouts
+    rollout_percentage = Column(Integer, default=100)  # 0-100, percentage of users who see this version
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
@@ -240,6 +275,7 @@ class Version(Base):
     __table_args__ = (
         Index("idx_versions_addon_version", "addon_id", "version", unique=True),
         Index("idx_versions_release_date", "release_date"),
+        Index("idx_versions_scheduled_release", "scheduled_release_at"),
     )
 
 
@@ -486,4 +522,60 @@ class AddonUsageStats(Base):
     __table_args__ = (
         Index("idx_addon_usage_stats_addon_date", "addon_id", "date"),
         Index("idx_addon_usage_stats_addon_version_date", "addon_id", "version_id", "date", unique=True),
+    )
+
+
+# ============== ORGANIZATION MODELS (Premium Feature) ==============
+
+class Organization(Base):
+    """Organizations for team addon management (Premium feature)."""
+    __tablename__ = "organizations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Organization info
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    
+    # Avatar/branding
+    avatar_url = Column(String(500), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    owner = relationship("User", back_populates="owned_organizations", foreign_keys=[owner_id])
+    members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
+    addons = relationship("Addon", back_populates="organization")
+    
+    __table_args__ = (
+        Index("idx_organizations_owner", "owner_id"),
+    )
+
+
+class OrganizationMember(Base):
+    """Organization membership with roles."""
+    __tablename__ = "organization_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Role
+    role = Column(SQLEnum(OrganizationRole), default=OrganizationRole.MEMBER, nullable=False)
+    
+    # Invitation tracking
+    invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="members")
+    user = relationship("User", back_populates="organization_memberships", foreign_keys=[user_id])
+    invited_by = relationship("User", foreign_keys=[invited_by_id])
+    
+    __table_args__ = (
+        Index("idx_org_members_org_user", "organization_id", "user_id", unique=True),
+        Index("idx_org_members_user", "user_id"),
     )
