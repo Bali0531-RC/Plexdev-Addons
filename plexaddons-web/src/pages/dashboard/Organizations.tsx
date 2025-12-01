@@ -40,9 +40,9 @@ export default function Organizations() {
     }
   };
 
-  const loadOrgDetails = async (orgId: number) => {
+  const loadOrgDetails = async (orgSlug: string) => {
     try {
-      const org = await api.getOrganization(orgId);
+      const org = await api.getOrganization(orgSlug);
       setSelectedOrg(org);
     } catch (err) {
       console.error('Failed to load organization:', err);
@@ -78,8 +78,8 @@ export default function Organizations() {
 
     setSaving(true);
     try {
-      await api.inviteOrganizationMember(selectedOrg.id, inviteUsername, inviteRole);
-      await loadOrgDetails(selectedOrg.id);
+      await api.inviteOrganizationMember(selectedOrg.slug, inviteUsername, inviteRole);
+      await loadOrgDetails(selectedOrg.slug);
       setShowInviteModal(false);
       setInviteUsername('');
       setInviteRole('member');
@@ -91,24 +91,24 @@ export default function Organizations() {
     }
   };
 
-  const handleRemoveMember = async (memberId: number) => {
+  const handleRemoveMember = async (userId: number) => {
     if (!selectedOrg || !confirm('Remove this member from the organization?')) return;
 
     try {
-      await api.removeOrganizationMember(selectedOrg.id, memberId);
-      await loadOrgDetails(selectedOrg.id);
+      await api.removeOrganizationMember(selectedOrg.slug, userId);
+      await loadOrgDetails(selectedOrg.slug);
       toast.success('Member removed');
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove member');
     }
   };
 
-  const handleUpdateMemberRole = async (memberId: number, newRole: OrganizationRole) => {
+  const handleUpdateMemberRole = async (userId: number, newRole: OrganizationRole) => {
     if (!selectedOrg) return;
 
     try {
-      await api.updateOrganizationMemberRole(selectedOrg.id, memberId, newRole);
-      await loadOrgDetails(selectedOrg.id);
+      await api.updateOrganizationMemberRole(selectedOrg.slug, userId, newRole);
+      await loadOrgDetails(selectedOrg.slug);
       toast.success('Role updated');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update role');
@@ -119,7 +119,7 @@ export default function Organizations() {
     if (!selectedOrg || !confirm('Delete this organization? This cannot be undone.')) return;
 
     try {
-      await api.deleteOrganization(selectedOrg.id);
+      await api.deleteOrganization(selectedOrg.slug);
       setOrganizations(prev => prev.filter(o => o.id !== selectedOrg.id));
       setSelectedOrg(null);
       toast.success('Organization deleted');
@@ -179,8 +179,8 @@ export default function Organizations() {
             organizations.map(org => (
               <div
                 key={org.id}
-                className={`org-card ${selectedOrg?.id === org.id ? 'selected' : ''}`}
-                onClick={() => loadOrgDetails(org.id)}
+                className={`org-card ${selectedOrg?.slug === org.slug ? 'selected' : ''}`}
+                onClick={() => loadOrgDetails(org.slug)}
               >
                 <div className="org-avatar">
                   {org.avatar_url ? (
@@ -250,14 +250,14 @@ export default function Organizations() {
                       <div className="member-actions">
                         <select
                           value={member.role}
-                          onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as OrganizationRole)}
+                          onChange={(e) => handleUpdateMemberRole(member.user_id, e.target.value as OrganizationRole)}
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
                         </select>
                         <button
                           className="btn btn-sm btn-danger"
-                          onClick={() => handleRemoveMember(member.id)}
+                          onClick={() => handleRemoveMember(member.user_id)}
                         >
                           Remove
                         </button>

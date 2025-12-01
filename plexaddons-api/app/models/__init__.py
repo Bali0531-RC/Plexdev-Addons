@@ -32,13 +32,13 @@ class AddonTag(str, enum.Enum):
     UTILITY = "utility"           # General utility tools
     MEDIA = "media"               # Media management
     AUTOMATION = "automation"     # Automated tasks
+    MODERATION = "moderation"     # Server moderation tools
+    FUN = "fun"                   # Games and entertainment
+    ECONOMY = "economy"           # Virtual currency systems
+    MUSIC = "music"               # Music playback features
+    LEVELING = "leveling"         # XP and level systems
+    LOGGING = "logging"           # Event and action logging
     INTEGRATION = "integration"   # Third-party integrations
-    SECURITY = "security"         # Security-related
-    UI = "ui"                     # User interface enhancements
-    LIBRARY = "library"           # Library management
-    METADATA = "metadata"         # Metadata handling
-    SYNC = "sync"                 # Syncing features
-    NOTIFICATION = "notification" # Notifications
     OTHER = "other"               # Miscellaneous
 
 

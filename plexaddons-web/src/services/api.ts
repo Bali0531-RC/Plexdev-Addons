@@ -579,8 +579,8 @@ class ApiClient {
     return this.fetch('/v1/organizations');
   }
 
-  async getOrganization(orgId: number): Promise<OrganizationDetail> {
-    return this.fetch(`/v1/organizations/${orgId}`);
+  async getOrganization(orgSlug: string): Promise<OrganizationDetail> {
+    return this.fetch(`/v1/organizations/${orgSlug}`);
   }
 
   async createOrganization(data: OrganizationCreate): Promise<Organization> {
@@ -590,33 +590,33 @@ class ApiClient {
     });
   }
 
-  async updateOrganization(orgId: number, data: OrganizationUpdate): Promise<Organization> {
-    return this.fetch(`/v1/organizations/${orgId}`, {
+  async updateOrganization(orgSlug: string, data: OrganizationUpdate): Promise<Organization> {
+    return this.fetch(`/v1/organizations/${orgSlug}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteOrganization(orgId: number): Promise<void> {
-    return this.fetch(`/v1/organizations/${orgId}`, { method: 'DELETE' });
+  async deleteOrganization(orgSlug: string): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgSlug}`, { method: 'DELETE' });
   }
 
-  async inviteOrganizationMember(orgId: number, discordUsername: string, role: OrganizationRole = 'member'): Promise<OrganizationMember> {
-    return this.fetch(`/v1/organizations/${orgId}/members`, {
+  async inviteOrganizationMember(orgSlug: string, discordUsername: string, role: OrganizationRole = 'member'): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members`, {
       method: 'POST',
       body: JSON.stringify({ discord_username: discordUsername, role }),
     });
   }
 
-  async updateOrganizationMemberRole(orgId: number, memberId: number, role: OrganizationRole): Promise<OrganizationMember> {
-    return this.fetch(`/v1/organizations/${orgId}/members/${memberId}`, {
+  async updateOrganizationMemberRole(orgSlug: string, userId: number, role: OrganizationRole): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, {
       method: 'PATCH',
       body: JSON.stringify({ role }),
     });
   }
 
-  async removeOrganizationMember(orgId: number, memberId: number): Promise<void> {
-    return this.fetch(`/v1/organizations/${orgId}/members/${memberId}`, { method: 'DELETE' });
+  async removeOrganizationMember(orgSlug: string, userId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, { method: 'DELETE' });
   }
 }
 
