@@ -109,16 +109,15 @@
 }
 
 .dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
+  position: fixed;
+  top: 60px;
+  right: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
   padding: var(--space-xs);
   min-width: 180px;
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 70px);
   overflow-y: auto;
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
