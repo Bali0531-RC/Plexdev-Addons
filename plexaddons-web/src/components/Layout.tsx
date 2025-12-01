@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Layout.css';
@@ -6,24 +5,6 @@ import './Layout.css';
 export default function Layout() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close dropdown on route change
-  useEffect(() => {
-    setDropdownOpen(false);
-  }, [location.pathname]);
 
   const getDiscordAvatar = () => {
     if (!user?.discord_avatar) {
@@ -68,24 +49,22 @@ export default function Layout() {
 
           <div className="header-actions">
             {isAuthenticated ? (
-              <div className="user-menu-wrapper" ref={dropdownRef}>
-                <div className="user-menu" onClick={() => setDropdownOpen(!dropdownOpen)}>
+              <div className="user-menu-wrapper">
+                <div className="user-menu">
                   <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
                   <span className="username">{user?.discord_username}</span>
-                  <svg className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </div>
-                {dropdownOpen && (
-                  <div className="dropdown">
-                    <Link to="/dashboard">Dashboard</Link>
-                    <Link to="/dashboard/analytics">Analytics</Link>
-                    <Link to="/dashboard/support">Support</Link>
-                    <Link to="/dashboard/settings">Settings</Link>
-                    {isAdmin && <Link to="/admin">Admin Panel</Link>}
-                    <button onClick={logout}>Logout</button>
-                  </div>
-                )}
+                <div className="dropdown">
+                  <Link to="/dashboard">Dashboard</Link>
+                  <Link to="/dashboard/analytics">Analytics</Link>
+                  <Link to="/dashboard/support">Support</Link>
+                  <Link to="/dashboard/settings">Settings</Link>
+                  {isAdmin && <Link to="/admin">Admin Panel</Link>}
+                  <button onClick={logout}>Logout</button>
+                </div>
               </div>
             ) : (
               <button onClick={() => login()} className="btn btn-primary">
