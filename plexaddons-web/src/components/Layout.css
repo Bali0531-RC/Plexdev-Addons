@@ -58,20 +58,17 @@
 }
 
 .header-actions {
-  position: static;
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-md);
 }
 
-.user-menu-container {
-  position: static;
-  display: flex;
-  align-items: center;
+.user-menu-wrapper {
+  position: relative;
 }
 
 .user-menu {
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -107,35 +104,24 @@
   flex-shrink: 0;
 }
 
-.user-menu-container:hover .dropdown-arrow {
+.dropdown-arrow.open {
   transform: rotate(180deg);
 }
 
 .dropdown {
-  position: fixed;
-  top: 65px;
-  right: var(--space-md);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
   padding: var(--space-xs);
   min-width: 180px;
-  max-height: calc(100vh - 70px);
+  max-height: calc(100vh - 80px);
   overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--transition), visibility var(--transition);
   z-index: 9999;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-/* Show dropdown when hovering user-menu-container or the dropdown itself */
-.header-actions:has(.user-menu-container:hover) .dropdown,
-.dropdown:hover {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
 }
 
 .dropdown a,
