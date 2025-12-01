@@ -146,6 +146,16 @@
   font-weight: 500;
 }
 
+.feature-yes {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.feature-no {
+  color: #ef4444;
+  opacity: 0.7;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .subscription-header {

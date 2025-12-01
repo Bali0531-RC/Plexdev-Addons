@@ -143,27 +143,81 @@ export default function Subscription() {
           <tbody>
             <tr>
               <td>Storage</td>
-              <td>50 MB</td>
-              <td>500 MB</td>
-              <td>5 GB</td>
+              <td>5 MB</td>
+              <td>100 MB</td>
+              <td>1 GB</td>
             </tr>
             <tr>
               <td>Version History</td>
-              <td>5 versions</td>
+              <td>3 versions</td>
               <td>10 versions</td>
               <td>Unlimited</td>
             </tr>
             <tr>
               <td>API Rate Limit</td>
-              <td>30/min</td>
-              <td>60/min</td>
-              <td>120/min</td>
+              <td>100/min</td>
+              <td>300/min</td>
+              <td>1000/min</td>
+            </tr>
+            <tr>
+              <td>Custom Profile URL</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Profile Banner</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Private Addons</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Usage Analytics</td>
+              <td className="feature-no">✗</td>
+              <td>30 days</td>
+              <td>90 days</td>
+            </tr>
+            <tr>
+              <td>Scheduled Releases</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Gradual Rollouts (A/B)</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Team Organizations</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>API Key Access</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Webhook Notifications</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
             </tr>
             <tr>
               <td>Priority Support</td>
-              <td>-</td>
-              <td>✓</td>
-              <td>✓</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
             </tr>
           </tbody>
         </table>
