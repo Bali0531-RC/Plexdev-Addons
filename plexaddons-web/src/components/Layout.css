@@ -119,6 +119,8 @@
   border-radius: var(--radius-m);
   padding: var(--space-xs);
   min-width: 180px;
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
