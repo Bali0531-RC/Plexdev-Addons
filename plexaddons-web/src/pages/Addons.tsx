@@ -14,12 +14,12 @@ export default function Addons() {
 
   useEffect(() => {
     loadAddons();
-  }, [selectedTag]);
+  }, []);
 
   const loadAddons = async () => {
     try {
       setLoading(true);
-      const response = await api.listAddons(1, 100, undefined, selectedTag || undefined);
+      const response = await api.listAddons(1, 100);
       setAddons(response.addons);
     } catch (err) {
       setError('Failed to load addons');
@@ -29,10 +29,15 @@ export default function Addons() {
     }
   };
 
-  const filteredAddons = addons.filter(addon =>
-    addon.name.toLowerCase().includes(search.toLowerCase()) ||
-    addon.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAddons = addons.filter((addon) => {
+    const matchesSearch =
+      addon.name.toLowerCase().includes(search.toLowerCase()) ||
+      addon.description?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesTag = !selectedTag || (addon.tags?.includes(selectedTag) ?? false);
+
+    return matchesSearch && matchesTag;
+  });
 
   if (loading) {
     return (
@@ -102,8 +107,8 @@ export default function Addons() {
               className="addon-card"
             >
               <div className="addon-card-header">
-                <h3>
-                  {addon.name}
+                <h3 className="addon-title">
+                  <span className="addon-title-text">{addon.name}</span>
                   {addon.verified && (
                     <span className="verified-badge" title="Verified by PlexDevelopment">✓</span>
                   )}
