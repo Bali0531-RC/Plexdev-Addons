@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -8,6 +8,12 @@ import Users from './pages/Users'
 import Pricing from './pages/Pricing'
 import Docs from './pages/Docs'
 import ApiDocs from './pages/ApiDocs'
+import TermsOfService from './pages/TermsOfService'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import BillingPolicy from './pages/BillingPolicy'
+import AcceptableUsePolicy from './pages/AcceptableUsePolicy'
+import TakedownPolicy from './pages/TakedownPolicy'
+import LegalNotice from './pages/LegalNotice'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Profile from './pages/Profile'
@@ -60,6 +66,16 @@ export default function App() {
         <Route path="pricing" element={<Pricing />} />
         <Route path="docs" element={<Docs />} />
         <Route path="redocs" element={<ApiDocs />} />
+        <Route path="terms" element={<TermsOfService />} />
+        <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="billing" element={<BillingPolicy />} />
+        <Route path="acceptable-use" element={<AcceptableUsePolicy />} />
+        <Route path="takedown" element={<TakedownPolicy />} />
+        <Route path="legal" element={<LegalNotice />} />
+        <Route path="tos" element={<Navigate to="/terms" replace />} />
+        <Route path="privacy-policy" element={<Navigate to="/privacy" replace />} />
+        <Route path="aup" element={<Navigate to="/acceptable-use" replace />} />
+        <Route path="impressum" element={<Navigate to="/legal" replace />} />
         <Route path="login" element={<Login />} />
         <Route path="auth/callback" element={<AuthCallback />} />
 

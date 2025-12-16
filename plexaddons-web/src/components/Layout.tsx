@@ -87,6 +87,12 @@ export default function Layout() {
             <span className="build-info">v0.2.1 · Build {__BUILD_TIME__}</span>
           </div>
           <div className="footer-right">
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/billing">Billing</Link>
+            <Link to="/acceptable-use">Acceptable Use</Link>
+            <Link to="/takedown">Takedown</Link>
+            <Link to="/legal">Legal</Link>
             <a href="/redocs" target="_blank" rel="noopener noreferrer">
               API Docs
             </a>

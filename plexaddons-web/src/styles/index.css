@@ -5,6 +5,7 @@
   --bg-hover: #111520;
   --text: #f0f0f0;
   --text-muted: #a0a0a0;
+  --text-secondary: var(--text-muted);
   --accent: #53b9ff;
   --accent-hover: #7accff;
   --success: #22c55e;
