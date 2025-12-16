@@ -184,6 +184,7 @@ class AddonService:
                 "description": addon.description,
                 "homepage": addon.homepage,
                 "external": addon.external,
+                "tags": addon.tags or [],
                 "is_active": addon.is_active,
                 "is_public": addon.is_public,
                 "verified": addon.verified,
