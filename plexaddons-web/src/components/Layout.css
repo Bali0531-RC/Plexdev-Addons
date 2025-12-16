@@ -123,6 +123,16 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+/* Hover bridge to prevent the menu from closing while moving from the trigger to the dropdown */
+.user-menu .dropdown::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+
 .user-menu:hover .dropdown {
   opacity: 1;
   visibility: visible;
