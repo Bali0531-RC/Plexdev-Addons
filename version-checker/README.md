@@ -4,16 +4,12 @@ A version checker library for addons registered on [addons.plexdev.live](https:/
 
 ## Installation
 
-```bash
-npm install plexaddons-version-checker
-```
-
-Or copy `VersionChecker.js` directly into your project.
+Copy `VersionChecker.js` directly into your project.
 
 ## Quick Start
 
 ```javascript
-const VersionChecker = require('plexaddons-version-checker');
+const VersionChecker = require('./VersionChecker.js');
 
 // Basic usage - automatically tracks analytics
 const checker = new VersionChecker('MyAddon', '1.0.0');
@@ -39,7 +35,7 @@ await checker.checkAndLog();
 ## Basic Usage
 
 ```javascript
-const VersionChecker = require('plexaddons-version-checker');
+const VersionChecker = require('./VersionChecker.js');
 
 const checker = new VersionChecker('MyAddon', '1.0.0');
 
@@ -135,7 +131,7 @@ interface VersionCheckResult {
 
 ```javascript
 const { Client } = require('discord.js');
-const VersionChecker = require('plexaddons-version-checker');
+const VersionChecker = require('./VersionChecker.js');
 
 const client = new Client({ intents: [...] });
 const checker = new VersionChecker(
