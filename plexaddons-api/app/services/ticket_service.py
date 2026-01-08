@@ -22,6 +22,7 @@ from app.models import (
     User, Ticket, TicketMessage, TicketAttachment, CannedResponse,
     TicketStatus, TicketPriority, TicketCategory, SubscriptionTier
 )
+from app.api.deps import get_effective_tier
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -57,11 +58,13 @@ class TicketService:
     
     def _get_priority_for_user(self, user: User) -> TicketPriority:
         """Determine ticket priority based on user's subscription tier"""
-        return self.TIER_PRIORITY_MAP.get(user.subscription_tier, TicketPriority.LOW)
+        effective_tier = get_effective_tier(user)
+        return self.TIER_PRIORITY_MAP.get(effective_tier, TicketPriority.LOW)
     
     def _is_paid_user(self, user: User) -> bool:
         """Check if user has a paid subscription"""
-        return user.subscription_tier in (SubscriptionTier.PRO, SubscriptionTier.PREMIUM)
+        effective_tier = get_effective_tier(user)
+        return effective_tier in (SubscriptionTier.PRO, SubscriptionTier.PREMIUM)
     
     # ============== TICKET CRUD ==============
     

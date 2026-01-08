@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models import User, Addon, SubscriptionTier
 from app.schemas import AddonAnalyticsResponse, AnalyticsSummary
 from app.services import AnalyticsService
-from app.api.deps import get_current_user, rate_limit_check_authenticated
+from app.api.deps import get_current_user, rate_limit_check_authenticated, get_effective_tier
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -26,14 +26,15 @@ async def get_my_analytics_summary(
     - Premium: 90 days of data
     - Free: Not available
     """
-    if user.subscription_tier == SubscriptionTier.FREE:
+    effective_tier = get_effective_tier(user)
+    if effective_tier == SubscriptionTier.FREE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Analytics require Pro or Premium subscription"
         )
     
     # Determine days based on tier
-    days = 90 if user.subscription_tier == SubscriptionTier.PREMIUM else 30
+    days = 90 if effective_tier == SubscriptionTier.PREMIUM else 30
     
     summary = await AnalyticsService.get_user_analytics_summary(
         db, user.id, days
@@ -59,7 +60,8 @@ async def get_addon_analytics(
     
     Only the addon owner can view analytics.
     """
-    if user.subscription_tier == SubscriptionTier.FREE:
+    effective_tier = get_effective_tier(user)
+    if effective_tier == SubscriptionTier.FREE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Analytics require Pro or Premium subscription"
@@ -83,8 +85,8 @@ async def get_addon_analytics(
             detail="You can only view analytics for your own addons"
         )
     
-    # Determine days based on tier
-    days = 90 if user.subscription_tier == SubscriptionTier.PREMIUM else 30
+    # Determine days based on effective tier
+    days = 90 if effective_tier == SubscriptionTier.PREMIUM else 30
     
     analytics = await AnalyticsService.get_addon_analytics(
         db, addon_id, days

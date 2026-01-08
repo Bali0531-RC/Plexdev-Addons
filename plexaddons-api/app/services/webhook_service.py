@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import User, Addon, Version, SubscriptionTier
 from app.config import get_settings
+from app.api.deps import get_effective_tier
 
 settings = get_settings()
 
@@ -143,7 +144,8 @@ class WebhookService:
             True if webhook was sent successfully, False otherwise
         """
         # Check if user is Premium and has webhooks enabled
-        if user.subscription_tier != SubscriptionTier.PREMIUM:
+        effective_tier = get_effective_tier(user)
+        if effective_tier != SubscriptionTier.PREMIUM:
             return False
         
         if not user.webhook_enabled or not user.webhook_url or not user.webhook_secret:

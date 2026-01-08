@@ -22,7 +22,7 @@ from app.schemas import (
     WebhookTestResponse,
 )
 from app.services import UserService, StripeService, PayPalService, WebhookService, webhook_service
-from app.api.deps import get_current_user, rate_limit_check_authenticated
+from app.api.deps import get_current_user, rate_limit_check_authenticated, get_effective_tier
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -211,10 +211,11 @@ async def update_my_profile(
     - accent_color: Pro and Premium only
     """
     update_data = data.model_dump(exclude_unset=True)
+    effective_tier = get_effective_tier(user)
     
     # Validate tier restrictions
     if "profile_slug" in update_data and update_data["profile_slug"] is not None:
-        if user.subscription_tier == SubscriptionTier.FREE:
+        if effective_tier == SubscriptionTier.FREE:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Custom profile URLs require Pro or Premium subscription"
@@ -233,14 +234,14 @@ async def update_my_profile(
             )
     
     if "banner_url" in update_data and update_data["banner_url"] is not None:
-        if user.subscription_tier != SubscriptionTier.PREMIUM:
+        if effective_tier != SubscriptionTier.PREMIUM:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Custom banners require Premium subscription"
             )
     
     if "accent_color" in update_data and update_data["accent_color"] is not None:
-        if user.subscription_tier == SubscriptionTier.FREE:
+        if effective_tier == SubscriptionTier.FREE:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Custom accent colors require Pro or Premium subscription"
@@ -289,7 +290,8 @@ async def create_my_api_key(
     
     The full API key is only shown once!
     """
-    if user.subscription_tier != SubscriptionTier.PREMIUM:
+    effective_tier = get_effective_tier(user)
+    if effective_tier != SubscriptionTier.PREMIUM:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="API keys require Premium subscription"
@@ -365,7 +367,8 @@ async def update_my_webhook_config(
     Requirements:
     - Premium subscription required
     """
-    if user.subscription_tier != SubscriptionTier.PREMIUM:
+    effective_tier = get_effective_tier(user)
+    if effective_tier != SubscriptionTier.PREMIUM:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Webhook notifications require Premium subscription"
@@ -416,7 +419,8 @@ async def regenerate_webhook_secret(
     
     The full secret is only shown once!
     """
-    if user.subscription_tier != SubscriptionTier.PREMIUM:
+    effective_tier = get_effective_tier(user)
+    if effective_tier != SubscriptionTier.PREMIUM:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Webhook notifications require Premium subscription"
@@ -443,7 +447,8 @@ async def test_my_webhook(
     - Premium subscription required
     - Webhook URL and secret must be configured
     """
-    if user.subscription_tier != SubscriptionTier.PREMIUM:
+    effective_tier = get_effective_tier(user)
+    if effective_tier != SubscriptionTier.PREMIUM:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Webhook notifications require Premium subscription"

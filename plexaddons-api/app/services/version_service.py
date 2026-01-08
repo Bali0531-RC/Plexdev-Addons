@@ -6,6 +6,7 @@ from app.models import Version, Addon, User, SubscriptionTier
 from app.schemas import VersionCreate, VersionUpdate
 from app.services.user_service import UserService
 from app.services.webhook_service import webhook_service
+from app.api.deps import get_effective_tier
 from app.core.exceptions import (
     NotFoundError,
     ForbiddenError,
@@ -66,7 +67,8 @@ class VersionService:
         user: User,
     ) -> bool:
         """Check if user can add another version."""
-        limit = UserService.get_version_limit_for_tier(user.subscription_tier)
+        effective_tier = get_effective_tier(user)
+        limit = UserService.get_version_limit_for_tier(effective_tier)
         if limit == -1:  # Unlimited
             return True
         
@@ -93,7 +95,8 @@ class VersionService:
         user: User,
     ) -> int:
         """Remove oldest versions beyond the limit. Returns number deleted."""
-        limit = UserService.get_version_limit_for_tier(user.subscription_tier)
+        effective_tier = get_effective_tier(user)
+        limit = UserService.get_version_limit_for_tier(effective_tier)
         if limit == -1:  # Unlimited
             return 0
         
