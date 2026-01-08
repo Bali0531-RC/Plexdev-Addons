@@ -257,6 +257,7 @@ class AddonService:
             if latest_version:
                 addon_data.append({
                     "name": addon.name,
+                    "slug": addon.slug,
                     "version": latest_version.version,
                     "release_date": latest_version.release_date.isoformat(),
                     "download_url": latest_version.download_url,

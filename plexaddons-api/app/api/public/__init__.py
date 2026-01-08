@@ -67,16 +67,20 @@ async def public_addon_list(
     return {"addons": addon_data, "count": len(addon_data)}
 
 
-@router.get("/api/addons/{name}/latest")
+@router.get("/api/addons/{identifier}/latest")
 async def public_addon_latest(
-    name: str,
+    identifier: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check),
     x_current_version: Optional[str] = Header(None, alias="X-Current-Version"),
 ):
     """
-    Get latest version info for a specific addon by name.
+    Get latest version info for a specific addon by name or slug.
+    
+    The identifier can be either:
+    - The addon's display name (e.g., "My Addon")
+    - The addon's URL-friendly slug (e.g., "my-addon")
     
     Optional X-Current-Version header:
     - If provided, the version will be logged for analytics
@@ -86,52 +90,66 @@ async def public_addon_latest(
     
     addon_data = await AddonService.get_all_public_addons_for_json(db)
     
+    # Try to find by name (case-insensitive) or slug (exact match)
+    found_addon = None
     for addon in addon_data:
-        if addon["name"].lower() == name.lower():
-            # Log version check for analytics if version header provided
-            if x_current_version:
-                try:
-                    # Get client IP
-                    client_ip = request.client.host if request.client else "unknown"
-                    
-                    # Find addon and version in database
-                    addon_result = await db.execute(
-                        select(Addon).where(Addon.name == addon["name"])
-                    )
-                    db_addon = addon_result.scalar_one_or_none()
-                    
-                    if db_addon:
-                        # Find the version if it exists
-                        version_result = await db.execute(
-                            select(Version).where(
-                                Version.addon_id == db_addon.id,
-                                Version.version == x_current_version
-                            )
-                        )
-                        version = version_result.scalar_one_or_none()
-                        version_id = version.id if version else None
-                        
-                        # Log the version check
-                        await AnalyticsService.log_version_check(
-                            db,
-                            addon_id=db_addon.id,
-                            version_id=version_id,
-                            checked_version=x_current_version,
-                            client_ip=client_ip,
-                        )
-                        
-                        # Update daily stats
-                        ip_hash = AnalyticsService.hash_ip(client_ip)
-                        await AnalyticsService.update_daily_stats(
-                            db,
-                            addon_id=db_addon.id,
-                            version_id=version_id,
-                            client_ip_hash=ip_hash,
-                        )
-                except Exception as e:
-                    # Don't fail the request if analytics logging fails
-                    print(f"Analytics logging error: {e}")
-            
-            return addon
+        # Check by name (case-insensitive)
+        if addon["name"].lower() == identifier.lower():
+            found_addon = addon
+            break
+        # Check by slug (case-insensitive for flexibility)
+        if addon.get("slug", "").lower() == identifier.lower():
+            found_addon = addon
+            break
     
-    raise NotFoundError(f"Addon '{name}' not found")
+    if found_addon:
+        # Log version check for analytics if version header provided
+        if x_current_version:
+            try:
+                # Get client IP
+                client_ip = request.client.host if request.client else "unknown"
+                
+                # Find addon in database by slug or name
+                addon_result = await db.execute(
+                    select(Addon).where(
+                        (Addon.name == found_addon["name"]) | 
+                        (Addon.slug == found_addon.get("slug", ""))
+                    )
+                )
+                db_addon = addon_result.scalar_one_or_none()
+                
+                if db_addon:
+                    # Find the version if it exists
+                    version_result = await db.execute(
+                        select(Version).where(
+                            Version.addon_id == db_addon.id,
+                            Version.version == x_current_version
+                        )
+                    )
+                    version = version_result.scalar_one_or_none()
+                    version_id = version.id if version else None
+                    
+                    # Log the version check
+                    await AnalyticsService.log_version_check(
+                        db,
+                        addon_id=db_addon.id,
+                        version_id=version_id,
+                        checked_version=x_current_version,
+                        client_ip=client_ip,
+                    )
+                    
+                    # Update daily stats
+                    ip_hash = AnalyticsService.hash_ip(client_ip)
+                    await AnalyticsService.update_daily_stats(
+                        db,
+                        addon_id=db_addon.id,
+                        version_id=version_id,
+                        client_ip_hash=ip_hash,
+                    )
+            except Exception as e:
+                # Don't fail the request if analytics logging fails
+                print(f"Analytics logging error: {e}")
+        
+        return found_addon
+    
+    raise NotFoundError(f"Addon '{identifier}' not found")

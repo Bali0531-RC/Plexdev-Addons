@@ -151,6 +151,9 @@ async def list_users(
             is_admin=u.is_admin,
             created_at=u.created_at,
             last_login_at=u.last_login_at,
+            badges=u.badges,
+            temp_tier=u.temp_tier,
+            temp_tier_expires_at=u.temp_tier_expires_at,
         ))
     
     return {

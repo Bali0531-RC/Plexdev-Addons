@@ -205,3 +205,59 @@
 .docs-table tr:hover td {
   background: rgba(255, 255, 255, 0.02);
 }
+
+/* Info box */
+.docs-info-box {
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.docs-info-box strong {
+  color: var(--text);
+}
+
+.docs-info-box a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.docs-info-box a:hover {
+  text-decoration: underline;
+}
+
+/* Console output styling */
+.docs-code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+}
+
+.console-output {
+  padding: 0.25rem 0;
+  white-space: pre;
+}
+
+.console-green {
+  color: #22c55e;
+}
+
+.console-red {
+  color: #ef4444;
+}
+
+.console-yellow {
+  color: #eab308;
+}
+
+.console-cyan {
+  color: #06b6d4;
+}

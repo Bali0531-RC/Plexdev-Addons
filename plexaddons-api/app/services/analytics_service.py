@@ -19,9 +19,9 @@ class AnalyticsService:
     @staticmethod
     def hash_ip(ip_address: str) -> str:
         """Hash an IP address for privacy-preserving unique user tracking."""
-        # Use SHA256 with a salt based on date to prevent cross-day tracking
-        today = date.today().isoformat()
-        salted = f"{ip_address}:{today}"
+        # Use SHA256 with a static salt for consistent user tracking across days
+        # This allows identifying returning users while preserving privacy
+        salted = f"{ip_address}:plexaddons-v2-salt"
         return hashlib.sha256(salted.encode()).hexdigest()[:32]
     
     @staticmethod
