@@ -158,8 +158,11 @@ class StripeService:
         """Handle subscription creation."""
         from app.services.email_service import email_service
         
-        customer_id = subscription_data["customer"]
-        subscription_id = subscription_data["id"]
+        customer_id = subscription_data.get("customer")
+        subscription_id = subscription_data.get("id")
+        
+        if not customer_id or not subscription_id:
+            return
         
         # Get user by customer metadata
         user = await StripeService._get_user_by_customer(db, customer_id)
@@ -168,7 +171,11 @@ class StripeService:
         
         # Determine tier from price
         tier = StripeService._get_tier_from_subscription(subscription_data)
-        status = StripeService._map_stripe_status(subscription_data["status"])
+        status = StripeService._map_stripe_status(subscription_data.get("status", "incomplete"))
+        
+        # Safely get period timestamps
+        period_start = subscription_data.get("current_period_start")
+        period_end = subscription_data.get("current_period_end")
         
         # Create subscription record
         sub = Subscription(
@@ -178,8 +185,8 @@ class StripeService:
             provider_customer_id=customer_id,
             tier=tier,
             status=status,
-            current_period_start=datetime.fromtimestamp(subscription_data["current_period_start"]),
-            current_period_end=datetime.fromtimestamp(subscription_data["current_period_end"]),
+            current_period_start=datetime.fromtimestamp(period_start) if period_start else datetime.utcnow(),
+            current_period_end=datetime.fromtimestamp(period_end) if period_end else None,
         )
         db.add(sub)
         
@@ -194,7 +201,7 @@ class StripeService:
             # Map tier to price (you may want to make this configurable)
             amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
             plan_name = tier.value.capitalize()
-            next_billing = datetime.fromtimestamp(subscription_data["current_period_end"])
+            next_billing = datetime.fromtimestamp(period_end) if period_end else datetime.utcnow()
             
             background_tasks.add_task(
                 email_service.send_subscription_confirmation,
@@ -212,7 +219,9 @@ class StripeService:
         background_tasks: Optional[BackgroundTasks] = None
     ):
         """Handle subscription updates."""
-        subscription_id = subscription_data["id"]
+        subscription_id = subscription_data.get("id")
+        if not subscription_id:
+            return
         
         result = await db.execute(
             select(Subscription)
@@ -223,11 +232,17 @@ class StripeService:
         if not sub:
             return
         
+        # Safely get period timestamps
+        period_start = subscription_data.get("current_period_start")
+        period_end = subscription_data.get("current_period_end")
+        
         # Update subscription
         sub.tier = StripeService._get_tier_from_subscription(subscription_data)
-        sub.status = StripeService._map_stripe_status(subscription_data["status"])
-        sub.current_period_start = datetime.fromtimestamp(subscription_data["current_period_start"])
-        sub.current_period_end = datetime.fromtimestamp(subscription_data["current_period_end"])
+        sub.status = StripeService._map_stripe_status(subscription_data.get("status", "incomplete"))
+        if period_start:
+            sub.current_period_start = datetime.fromtimestamp(period_start)
+        if period_end:
+            sub.current_period_end = datetime.fromtimestamp(period_end)
         
         if subscription_data.get("canceled_at"):
             sub.canceled_at = datetime.fromtimestamp(subscription_data["canceled_at"])
