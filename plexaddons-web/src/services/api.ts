@@ -526,6 +526,7 @@ class ApiClient {
 
   // ============== API KEYS ==============
 
+  // Legacy single-key methods (kept for backwards compatibility)
   async getMyApiKey(): Promise<ApiKeyInfo> {
     return this.fetch('/v1/users/me/api-key');
   }
@@ -536,6 +537,106 @@ class ApiClient {
 
   async revokeMyApiKey(): Promise<void> {
     return this.fetch('/v1/users/me/api-key', { method: 'DELETE' });
+  }
+
+  // New multi-key API
+  async listApiKeys(): Promise<{
+    keys: Array<{
+      id: number;
+      name: string;
+      key_prefix: string;
+      scopes: string[];
+      is_active: boolean;
+      expires_at: string | null;
+      last_used_at: string | null;
+      usage_count: number;
+      created_at: string;
+    }>;
+    count: number;
+    max_keys: number;
+  }> {
+    return this.fetch('/v1/api-keys');
+  }
+
+  async getAvailableScopes(): Promise<{
+    scopes: Array<{
+      scope: string;
+      name: string;
+      description: string;
+      min_tier: string;
+    }>;
+    tier: string;
+    max_keys: number;
+  }> {
+    return this.fetch('/v1/api-keys/scopes');
+  }
+
+  async createApiKey(data: {
+    name: string;
+    scopes: string[];
+    expires_at?: string;
+  }): Promise<{
+    key: {
+      id: number;
+      name: string;
+      key_prefix: string;
+      scopes: string[];
+      is_active: boolean;
+      expires_at: string | null;
+      last_used_at: string | null;
+      usage_count: number;
+      created_at: string;
+    };
+    api_key: string;
+    warning: string;
+  }> {
+    return this.fetch('/v1/api-keys', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getApiKey(keyId: number): Promise<{
+    id: number;
+    name: string;
+    key_prefix: string;
+    scopes: string[];
+    is_active: boolean;
+    expires_at: string | null;
+    last_used_at: string | null;
+    usage_count: number;
+    created_at: string;
+  }> {
+    return this.fetch(`/v1/api-keys/${keyId}`);
+  }
+
+  async updateApiKey(keyId: number, data: {
+    name?: string;
+    scopes?: string[];
+    expires_at?: string;
+  }): Promise<{
+    id: number;
+    name: string;
+    key_prefix: string;
+    scopes: string[];
+    is_active: boolean;
+    expires_at: string | null;
+    last_used_at: string | null;
+    usage_count: number;
+    created_at: string;
+  }> {
+    return this.fetch(`/v1/api-keys/${keyId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async revokeApiKey(keyId: number): Promise<void> {
+    return this.fetch(`/v1/api-keys/${keyId}/revoke`, { method: 'POST' });
+  }
+
+  async deleteApiKey(keyId: number): Promise<void> {
+    return this.fetch(`/v1/api-keys/${keyId}`, { method: 'DELETE' });
   }
 
   // ============== ANALYTICS ==============

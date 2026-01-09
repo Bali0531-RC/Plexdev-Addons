@@ -437,14 +437,62 @@ Response:
           <section id="automation-api">
             <h2>CI/CD Automation API</h2>
             <p>
-              Premium users can automate version publishing using the Automation API.
-              This allows you to automatically publish new versions when you create GitHub releases.
+              Pro and Premium users can automate version management using the Automation API.
+              Create API keys with specific permissions to safely automate your workflows.
             </p>
             <div className="docs-info-box">
-              <strong>🔑 Premium Feature:</strong> API keys and automation endpoints require a Premium subscription.
+              <strong>🔑 API Keys:</strong> Available for Pro (read-only) and Premium (full access) subscribers.
               <br />
-              <a href="/dashboard/settings">Generate your API key →</a>
+              <a href="/dashboard/settings">Manage your API keys →</a>
             </div>
+
+            <h3>API Key Permissions (Scopes)</h3>
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Description</th>
+                  <th>Tier</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>addons:read</code></td>
+                  <td>View addon information</td>
+                  <td>Pro+</td>
+                </tr>
+                <tr>
+                  <td><code>versions:read</code></td>
+                  <td>View version details</td>
+                  <td>Pro+</td>
+                </tr>
+                <tr>
+                  <td><code>analytics:read</code></td>
+                  <td>Access download analytics</td>
+                  <td>Pro+</td>
+                </tr>
+                <tr>
+                  <td><code>versions:write</code></td>
+                  <td>Publish new versions</td>
+                  <td>Premium</td>
+                </tr>
+                <tr>
+                  <td><code>addons:write</code></td>
+                  <td>Create/update addons</td>
+                  <td>Premium</td>
+                </tr>
+                <tr>
+                  <td><code>webhooks:manage</code></td>
+                  <td>Manage webhooks</td>
+                  <td>Premium</td>
+                </tr>
+                <tr>
+                  <td><code>full:access</code></td>
+                  <td>All permissions</td>
+                  <td>Premium</td>
+                </tr>
+              </tbody>
+            </table>
 
             <h3>Authentication</h3>
             <p>All automation endpoints require an API key passed in the <code>X-API-Key</code> header:</p>
@@ -452,6 +500,7 @@ Response:
   https://addons.plexdev.live/api/v1/automation/addons`}</code></pre>
 
             <h3>Publish a New Version</h3>
+            <p><strong>Required scope:</strong> <code>versions:write</code> (Premium)</p>
             <pre><code>{`POST /api/v1/automation/addons/{slug}/publish
 
 Headers:
@@ -478,6 +527,7 @@ Response:
 }`}</code></pre>
 
             <h3>Get Latest Version</h3>
+            <p><strong>Required scope:</strong> <code>versions:read</code> (Pro+)</p>
             <pre><code>{`GET /api/v1/automation/addons/{slug}/latest
 
 Headers:
@@ -493,6 +543,7 @@ Response:
 }`}</code></pre>
 
             <h3>List Your Addons</h3>
+            <p><strong>Required scope:</strong> <code>addons:read</code> (Pro+)</p>
             <pre><code>{`GET /api/v1/automation/addons
 
 Headers:

@@ -663,6 +663,66 @@ class TagListResponse(BaseModel):
     tags: List[AddonTag]
 
 
+# ============== API Key Schemas ==============
+
+class ApiKeyScopeInfo(BaseModel):
+    """Information about an API key scope."""
+    scope: str
+    name: str
+    description: str
+    min_tier: str  # "pro" or "premium"
+
+
+class ApiKeyCreate(BaseModel):
+    """Request to create a new API key."""
+    name: str = Field(..., min_length=1, max_length=100, description="Friendly name for the key")
+    scopes: List[str] = Field(..., min_items=1, description="List of permission scopes")
+    expires_at: Optional[datetime] = Field(None, description="Optional expiration date")
+
+
+class ApiKeyUpdate(BaseModel):
+    """Request to update an API key."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    scopes: Optional[List[str]] = Field(None, min_items=1)
+    expires_at: Optional[datetime] = None
+
+
+class ApiKeyResponse(BaseModel):
+    """API key information (without the actual key value)."""
+    id: int
+    name: str
+    key_prefix: str  # pa_xxxx... for identification
+    scopes: List[str]
+    is_active: bool
+    expires_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+    usage_count: int
+    created_at: datetime
+    
+    model_config = {"from_attributes": True}
+
+
+class ApiKeyCreatedResponse(BaseModel):
+    """Response when creating a new API key - includes the full key (shown only once!)."""
+    key: ApiKeyResponse
+    api_key: str  # The full key - SAVE THIS, it won't be shown again!
+    warning: str = "Save this API key now! It will not be shown again."
+
+
+class ApiKeyListResponse(BaseModel):
+    """List of user's API keys."""
+    keys: List[ApiKeyResponse]
+    count: int
+    max_keys: int  # Maximum allowed for user's tier
+
+
+class AvailableScopesResponse(BaseModel):
+    """Available scopes for the user's tier."""
+    scopes: List[ApiKeyScopeInfo]
+    tier: str
+    max_keys: int
+
+
 # Forward reference resolution
 AuthResponse.model_rebuild()
 UserPublicProfile.model_rebuild()

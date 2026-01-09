@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
-import { UserProfileUpdate, ApiKeyInfo, WebhookConfig } from '../../types';
+import { UserProfileUpdate, WebhookConfig } from '../../types';
+import ApiKeysManager from '../../components/ApiKeysManager';
 import './Settings.css';
 
 export default function Settings() {
@@ -27,12 +28,6 @@ export default function Settings() {
   });
   const [savingProfile, setSavingProfile] = useState(false);
   
-  // API key state
-  const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
-  const [newApiKey, setNewApiKey] = useState<string | null>(null);
-  const [generatingKey, setGeneratingKey] = useState(false);
-  const [revokingKey, setRevokingKey] = useState(false);
-  
   // Webhook state
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -47,11 +42,10 @@ export default function Settings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Fetch API key info on mount
+  // Fetch webhook config on mount (for premium users)
   useEffect(() => {
     if (user?.subscription_tier === 'premium') {
-      api.getMyApiKey().then(setApiKeyInfo).catch(() => {});
-      // Also fetch webhook config
+      // Fetch webhook config
       api.getMyWebhook().then((config) => {
         setWebhookConfig(config);
         setWebhookUrl(config.webhook_url || '');
@@ -120,49 +114,6 @@ export default function Settings() {
   const profileUrl = user?.profile_slug || user?.discord_id;
   const isPro = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
   const isPremium = user?.subscription_tier === 'premium';
-
-  const handleGenerateApiKey = async () => {
-    setGeneratingKey(true);
-    try {
-      const result = await api.createMyApiKey();
-      setNewApiKey(result.api_key);
-      setApiKeyInfo({
-        has_api_key: true,
-        created_at: result.created_at,
-        masked_key: `${result.api_key.slice(0, 6)}...${result.api_key.slice(-4)}`,
-      });
-      toast.success('API key generated! Make sure to copy it - it won\'t be shown again.');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to generate API key');
-    } finally {
-      setGeneratingKey(false);
-    }
-  };
-
-  const handleRevokeApiKey = async () => {
-    if (!confirm('Are you sure you want to revoke your API key? Any applications using it will stop working.')) {
-      return;
-    }
-    
-    setRevokingKey(true);
-    try {
-      await api.revokeMyApiKey();
-      setApiKeyInfo({ has_api_key: false, created_at: null, masked_key: null });
-      setNewApiKey(null);
-      toast.success('API key revoked');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to revoke API key');
-    } finally {
-      setRevokingKey(false);
-    }
-  };
-
-  const copyApiKey = () => {
-    if (newApiKey) {
-      navigator.clipboard.writeText(newApiKey);
-      toast.success('API key copied to clipboard');
-    }
-  };
 
   const handleSaveWebhook = async (e: FormEvent) => {
     e.preventDefault();
@@ -479,74 +430,20 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* API Key Section - Premium only */}
+      {/* API Keys Section - Pro+ */}
       <div className="settings-card">
         <h2>
-          API Key
-          {!isPremium && <span className="premium-badge">Premium</span>}
+          API Keys
+          {!isPro && <span className="pro-badge">Pro</span>}
         </h2>
         
-        {isPremium ? (
-          <>
-            <p className="section-description">
-              Use API keys to authenticate with the PlexAddons API without a browser.
-              Perfect for automation, CI/CD pipelines, and third-party integrations.
-            </p>
-            
-            {newApiKey && (
-              <div className="api-key-reveal">
-                <p className="warning-text">⚠️ Copy this key now - it won't be shown again!</p>
-                <div className="key-display">
-                  <code>{newApiKey}</code>
-                  <button className="btn btn-secondary btn-sm" onClick={copyApiKey}>
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {apiKeyInfo?.has_api_key ? (
-              <div className="api-key-info">
-                <div className="key-details">
-                  <span className="key-masked">{apiKeyInfo.masked_key}</span>
-                  {apiKeyInfo.created_at && (
-                    <span className="key-created">
-                      Created {new Date(apiKeyInfo.created_at).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-                <div className="key-actions">
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={handleGenerateApiKey}
-                    disabled={generatingKey}
-                  >
-                    {generatingKey ? 'Generating...' : 'Regenerate'}
-                  </button>
-                  <button 
-                    className="btn btn-danger" 
-                    onClick={handleRevokeApiKey}
-                    disabled={revokingKey}
-                  >
-                    {revokingKey ? 'Revoking...' : 'Revoke'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button 
-                className="btn btn-primary" 
-                onClick={handleGenerateApiKey}
-                disabled={generatingKey}
-              >
-                {generatingKey ? 'Generating...' : 'Generate API Key'}
-              </button>
-            )}
-          </>
+        {isPro ? (
+          <ApiKeysManager />
         ) : (
           <div className="upgrade-prompt-inline">
-            <p>API keys are available for Premium subscribers.</p>
+            <p>API keys are available for Pro and Premium subscribers.</p>
             <Link to="/dashboard/subscription" className="btn btn-primary">
-              Upgrade to Premium
+              Upgrade to Pro
             </Link>
           </div>
         )}

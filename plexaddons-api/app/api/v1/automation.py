@@ -1,20 +1,20 @@
 """
 Automation API endpoints for CI/CD integration.
 
-These endpoints allow Premium users to manage their addons programmatically
+These endpoints allow Pro/Premium users to manage their addons programmatically
 using API keys, perfect for GitHub Actions and other CI/CD pipelines.
 """
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, Tuple
 from pydantic import BaseModel, Field
 from datetime import date
 from app.database import get_db
-from app.models import User, SubscriptionTier
+from app.models import User, ApiKey, ApiKeyScope
 from app.schemas import VersionResponse
 from app.services import AddonService, VersionService
-from app.api.deps import get_user_from_api_key, get_effective_tier
+from app.api.deps import require_scope, get_user_and_api_key
 from app.core.exceptions import NotFoundError, ForbiddenError, UnauthorizedError
 
 router = APIRouter(prefix="/automation", tags=["Automation"])
@@ -41,38 +41,18 @@ class PublishVersionResponse(BaseModel):
     addon_name: str
 
 
-async def require_api_key(
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
-    db: AsyncSession = Depends(get_db),
-) -> User:
-    """Require valid API key authentication for automation endpoints."""
-    if not x_api_key:
-        raise UnauthorizedError("API key required. Set X-API-Key header.")
-    
-    user = await get_user_from_api_key(x_api_key, db)
-    if not user:
-        raise UnauthorizedError("Invalid API key")
-    
-    # Check if user has Premium (API keys are Premium-only)
-    effective_tier = get_effective_tier(user)
-    if effective_tier != SubscriptionTier.PREMIUM:
-        raise ForbiddenError("API key access requires Premium subscription")
-    
-    return user
-
-
 @router.post("/addons/{slug}/publish", response_model=PublishVersionResponse)
 async def publish_version(
     slug: str,
     data: PublishVersionRequest,
-    user: User = Depends(require_api_key),
+    auth: Tuple[User, Optional[ApiKey]] = Depends(require_scope(ApiKeyScope.VERSIONS_WRITE.value)),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Publish a new version for an addon.
     
     This endpoint is designed for CI/CD integration (e.g., GitHub Actions).
-    Requires a Premium API key.
+    Requires an API key with `versions:write` scope (Premium tier).
     
     ## Usage with GitHub Actions
     
@@ -94,7 +74,13 @@ async def publish_version(
     
     Pass your API key in the `X-API-Key` header.
     Generate an API key at https://addons.plexdev.live/dashboard/settings
+    
+    ## Required Scopes
+    
+    - `versions:write` - Publish new versions (Premium tier)
     """
+    user, api_key = auth
+    
     # Get addon by slug
     addon = await AddonService.get_addon_by_slug(db, slug)
     if not addon:
@@ -136,14 +122,20 @@ async def publish_version(
 @router.get("/addons/{slug}/latest")
 async def get_latest_version_api(
     slug: str,
-    user: User = Depends(require_api_key),
+    auth: Tuple[User, Optional[ApiKey]] = Depends(require_scope(ApiKeyScope.VERSIONS_READ.value)),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get the latest version of an addon.
     
     Useful for CI/CD scripts to check the current published version.
+    
+    ## Required Scopes
+    
+    - `versions:read` - Read version info (Pro+ tier)
     """
+    user, api_key = auth
+    
     addon = await AddonService.get_addon_by_slug(db, slug)
     if not addon:
         raise NotFoundError(f"Addon '{slug}' not found")
@@ -165,14 +157,20 @@ async def get_latest_version_api(
 
 @router.get("/addons")
 async def list_my_addons(
-    user: User = Depends(require_api_key),
+    auth: Tuple[User, Optional[ApiKey]] = Depends(require_scope(ApiKeyScope.ADDONS_READ.value)),
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all addons owned by the authenticated user.
     
     Useful for CI/CD scripts to discover addon slugs.
+    
+    ## Required Scopes
+    
+    - `addons:read` - Read addon info (Pro+ tier)
     """
+    user, api_key = auth
+    
     addons = await AddonService.get_addons_by_owner(db, user.id)
     
     return {

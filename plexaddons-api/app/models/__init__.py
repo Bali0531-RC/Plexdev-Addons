@@ -49,6 +49,22 @@ class OrganizationRole(str, enum.Enum):
     MEMBER = "member"     # Can create/edit addons
 
 
+# API Key Scopes - defines what each key can access
+class ApiKeyScope(str, enum.Enum):
+    # Read operations (Pro+)
+    ADDONS_READ = "addons:read"           # Read addon info
+    VERSIONS_READ = "versions:read"       # Read version info
+    ANALYTICS_READ = "analytics:read"     # Read usage analytics
+    
+    # Write operations (Premium)
+    VERSIONS_WRITE = "versions:write"     # Publish new versions
+    ADDONS_WRITE = "addons:write"         # Create/update addons
+    WEBHOOKS_MANAGE = "webhooks:manage"   # Manage webhook config
+    
+    # Full access (Premium)
+    FULL_ACCESS = "full:access"           # All permissions
+
+
 # Ticket System Enums
 class TicketStatus(str, enum.Enum):
     OPEN = "open"
@@ -578,4 +594,45 @@ class OrganizationMember(Base):
     __table_args__ = (
         Index("idx_org_members_org_user", "organization_id", "user_id", unique=True),
         Index("idx_org_members_user", "user_id"),
+    )
+
+
+# ============== API KEYS SYSTEM (Pro+) ==============
+
+class ApiKey(Base):
+    """API keys with granular permissions for automation."""
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Key identification
+    name = Column(String(100), nullable=False)  # User-friendly name
+    key_prefix = Column(String(10), nullable=False)  # First 8 chars for identification (pa_xxxx)
+    key_hash = Column(String(128), nullable=False, unique=True)  # SHA-256 hash of full key
+    
+    # Permissions - stored as JSON array of ApiKeyScope values
+    scopes = Column(JSON, nullable=False, default=list)  # ["addons:read", "versions:write"]
+    
+    # Usage tracking
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    last_used_ip = Column(String(45), nullable=True)
+    usage_count = Column(Integer, default=0)
+    
+    # Expiration (optional)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Status
+    is_active = Column(Boolean, default=True, index=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", backref="api_keys")
+    
+    __table_args__ = (
+        Index("idx_api_keys_user_id", "user_id"),
+        Index("idx_api_keys_key_hash", "key_hash"),
     )
