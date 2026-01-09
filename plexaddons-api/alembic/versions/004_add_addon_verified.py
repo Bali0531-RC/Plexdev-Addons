@@ -1,7 +1,7 @@
 """add verified field to addons
 
-Revision ID: 004
-Revises: 003
+Revision ID: 004_add_addon_verified
+Revises: 003_add_webhook_fields
 Create Date: 2025-11-30
 
 """
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '004'
-down_revision: Union[str, None] = '003'
+revision: str = '004_add_addon_verified'
+down_revision: Union[str, None] = '003_add_webhook_fields'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

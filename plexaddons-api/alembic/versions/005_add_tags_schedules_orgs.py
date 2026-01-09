@@ -1,6 +1,6 @@
 """Add tags, scheduled releases, rollouts, and organizations
 
-Revision ID: 005
+Revision ID: 005_add_tags_schedules_orgs
 Revises: 004_add_addon_verified
 Create Date: 2025-12-01
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '005'
+revision = '005_add_tags_schedules_orgs'
 down_revision = '004_add_addon_verified'
 branch_labels = None
 depends_on = None
