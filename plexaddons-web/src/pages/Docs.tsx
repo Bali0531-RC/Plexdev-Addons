@@ -474,7 +474,7 @@ Response:
                 <tr>
                   <td><code>versions:write</code></td>
                   <td>Publish new versions</td>
-                  <td>Premium</td>
+                  <td>Pro+</td>
                 </tr>
                 <tr>
                   <td><code>addons:write</code></td>

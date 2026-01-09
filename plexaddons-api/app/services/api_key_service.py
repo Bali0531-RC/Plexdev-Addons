@@ -15,11 +15,12 @@ from app.core.exceptions import ForbiddenError, BadRequestError, NotFoundError
 
 # Define which scopes are available for each tier
 TIER_SCOPES = {
-    SubscriptionTier.FREE: [],  # No API key access
+    SubscriptionTier.FREE: [],
     SubscriptionTier.PRO: [
         ApiKeyScope.ADDONS_READ,
         ApiKeyScope.VERSIONS_READ,
         ApiKeyScope.ANALYTICS_READ,
+        ApiKeyScope.VERSIONS_WRITE,  # Pro can publish versions via CI/CD
     ],
     SubscriptionTier.PREMIUM: [
         ApiKeyScope.ADDONS_READ,

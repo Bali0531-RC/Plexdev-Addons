@@ -44,7 +44,7 @@ SCOPE_INFO = {
     ApiKeyScope.VERSIONS_WRITE: {
         "name": "Publish Versions",
         "description": "Publish new addon versions (CI/CD)",
-        "min_tier": "premium"
+        "min_tier": "pro"
     },
     ApiKeyScope.ADDONS_WRITE: {
         "name": "Manage Addons",
