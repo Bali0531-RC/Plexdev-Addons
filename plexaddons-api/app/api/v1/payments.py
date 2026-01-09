@@ -88,8 +88,8 @@ async def create_stripe_checkout(
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """Create a Stripe Checkout session."""
-    success_url = data.success_url or f"{settings.frontend_url}/settings/subscription?success=true"
-    cancel_url = data.cancel_url or f"{settings.frontend_url}/settings/subscription?canceled=true"
+    success_url = data.success_url or f"{settings.frontend_url}/dashboard/subscription?success=true"
+    cancel_url = data.cancel_url or f"{settings.frontend_url}/dashboard/subscription?canceled=true"
     
     result = await StripeService.create_checkout_session(
         db, user, data.tier, success_url, cancel_url
@@ -103,7 +103,7 @@ async def create_stripe_portal(
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """Create a Stripe Billing Portal session."""
-    return_url = f"{settings.frontend_url}/settings/subscription"
+    return_url = f"{settings.frontend_url}/dashboard/subscription"
     portal_url = await StripeService.create_billing_portal_session(user, return_url)
     return {"portal_url": portal_url}
 
@@ -115,8 +115,8 @@ async def get_paypal_subscription_details(
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """Get PayPal subscription details for frontend."""
-    return_url = data.success_url or f"{settings.frontend_url}/settings/subscription"
-    cancel_url = data.cancel_url or f"{settings.frontend_url}/settings/subscription"
+    return_url = data.success_url or f"{settings.frontend_url}/dashboard/subscription"
+    cancel_url = data.cancel_url or f"{settings.frontend_url}/dashboard/subscription"
     
     details = await PayPalService.get_subscription_link(user, data.tier, return_url, cancel_url)
     return details
