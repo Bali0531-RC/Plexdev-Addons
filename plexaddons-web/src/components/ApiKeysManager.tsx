@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import { api } from '../services/api';
 import { toast } from 'sonner';
 import './ApiKeysManager.css';
 
@@ -22,12 +22,6 @@ interface ApiKey {
   created_at: string;
 }
 
-interface AvailableScopes {
-  scopes: ApiKeyScope[];
-  tier: string;
-  max_keys: number;
-}
-
 interface CreateKeyData {
   name: string;
   scopes: string[];
@@ -38,7 +32,7 @@ export default function ApiKeysManager() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [availableScopes, setAvailableScopes] = useState<ApiKeyScope[]>([]);
   const [maxKeys, setMaxKeys] = useState(0);
-  const [tier, setTier] = useState('');
+  const [_tier, setTier] = useState('');  // eslint-disable-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   
   // Create key modal state
