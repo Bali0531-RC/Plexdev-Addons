@@ -30,6 +30,11 @@ export default function Docs() {
               <li><a href="#analytics">Analytics</a></li>
               <li><a href="#best-practices">Best Practices</a></li>
             </ul>
+            <h3>CI/CD Automation</h3>
+            <ul>
+              <li><a href="#automation-api">Automation API</a></li>
+              <li><a href="#github-actions">GitHub Actions</a></li>
+            </ul>
             <h3>API Endpoints</h3>
             <ul>
               <li><a href="#api-endpoints">Public API</a></li>
@@ -427,6 +432,158 @@ Response:
   "addons": [...],
   "count": 42
 }`}</code></pre>
+          </section>
+
+          <section id="automation-api">
+            <h2>CI/CD Automation API</h2>
+            <p>
+              Premium users can automate version publishing using the Automation API.
+              This allows you to automatically publish new versions when you create GitHub releases.
+            </p>
+            <div className="docs-info-box">
+              <strong>🔑 Premium Feature:</strong> API keys and automation endpoints require a Premium subscription.
+              <br />
+              <a href="/dashboard/settings">Generate your API key →</a>
+            </div>
+
+            <h3>Authentication</h3>
+            <p>All automation endpoints require an API key passed in the <code>X-API-Key</code> header:</p>
+            <pre><code>{`curl -H "X-API-Key: pa_your_api_key_here" \\
+  https://addons.plexdev.live/api/v1/automation/addons`}</code></pre>
+
+            <h3>Publish a New Version</h3>
+            <pre><code>{`POST /api/v1/automation/addons/{slug}/publish
+
+Headers:
+  X-API-Key: pa_your_api_key
+  Content-Type: application/json
+
+Body:
+{
+  "version": "1.2.0",
+  "download_url": "https://github.com/.../releases/download/v1.2.0/addon.zip",
+  "description": "New features and bug fixes",
+  "changelog": "- Added feature X\\n- Fixed bug Y",
+  "breaking": false,
+  "urgent": false
+}
+
+Response:
+{
+  "success": true,
+  "message": "Version 1.2.0 published successfully",
+  "addon_slug": "my-addon",
+  "addon_name": "My Addon",
+  "version": { ... }
+}`}</code></pre>
+
+            <h3>Get Latest Version</h3>
+            <pre><code>{`GET /api/v1/automation/addons/{slug}/latest
+
+Headers:
+  X-API-Key: pa_your_api_key
+
+Response:
+{
+  "addon_slug": "my-addon",
+  "addon_name": "My Addon",
+  "latest_version": "1.2.0",
+  "release_date": "2025-01-15",
+  "download_url": "https://..."
+}`}</code></pre>
+
+            <h3>List Your Addons</h3>
+            <pre><code>{`GET /api/v1/automation/addons
+
+Headers:
+  X-API-Key: pa_your_api_key
+
+Response:
+{
+  "addons": [
+    { "id": 1, "name": "My Addon", "slug": "my-addon", "is_public": true }
+  ],
+  "count": 1
+}`}</code></pre>
+          </section>
+
+          <section id="github-actions">
+            <h2>GitHub Actions Integration</h2>
+            <p>
+              Automatically publish new versions to PlexAddons whenever you create a GitHub release.
+              Add this workflow to your repository:
+            </p>
+
+            <h3>Setup</h3>
+            <ol>
+              <li>Go to your repository → Settings → Secrets and variables → Actions</li>
+              <li>Add a new secret named <code>PLEXADDONS_API_KEY</code> with your API key</li>
+              <li>Create <code>.github/workflows/plexaddons-publish.yml</code> with the content below</li>
+            </ol>
+
+            <h3>Workflow File</h3>
+            <pre><code>{`# .github/workflows/plexaddons-publish.yml
+name: Publish to PlexAddons
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish to PlexAddons
+        run: |
+          # Extract version from tag (removes 'v' prefix if present)
+          VERSION=\${{ github.event.release.tag_name }}
+          VERSION=\${VERSION#v}
+          
+          curl -X POST "https://addons.plexdev.live/api/v1/automation/addons/\${{ github.event.repository.name }}/publish" \\
+            -H "X-API-Key: \${{ secrets.PLEXADDONS_API_KEY }}" \\
+            -H "Content-Type: application/json" \\
+            -d "{
+              \\"version\\": \\"\${VERSION}\\",
+              \\"download_url\\": \\"\${{ github.event.release.zipball_url }}\\",
+              \\"description\\": \\"\${{ github.event.release.name }}\\",
+              \\"changelog\\": $(echo '\${{ github.event.release.body }}' | jq -Rs .)
+            }"
+`}</code></pre>
+
+            <h3>Alternative: Simple Workflow</h3>
+            <p>If you prefer a simpler approach without changelog:</p>
+            <pre><code>{`# .github/workflows/plexaddons-publish.yml
+name: Publish to PlexAddons
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish to PlexAddons
+        env:
+          PLEXADDONS_API_KEY: \${{ secrets.PLEXADDONS_API_KEY }}
+        run: |
+          VERSION="\${{ github.event.release.tag_name }}"
+          VERSION="\${VERSION#v}"
+          
+          curl -X POST "https://addons.plexdev.live/api/v1/automation/addons/YOUR-ADDON-SLUG/publish" \\
+            -H "X-API-Key: \$PLEXADDONS_API_KEY" \\
+            -H "Content-Type: application/json" \\
+            -d '{
+              "version": "'\$VERSION'",
+              "download_url": "\${{ github.event.release.zipball_url }}",
+              "description": "\${{ github.event.release.name }}"
+            }'
+`}</code></pre>
+
+            <div className="docs-info-box">
+              <strong>💡 Tip:</strong> Make sure your addon slug matches your GitHub repository name, 
+              or replace <code>YOUR-ADDON-SLUG</code> with your actual addon slug.
+            </div>
           </section>
         </main>
       </div>
