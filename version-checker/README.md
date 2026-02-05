@@ -1,6 +1,6 @@
 # PlexAddons Version Checker (pavc)
 
-A version checker library for addons registered on [addons.plexdev.live](https://addons.plexdev.live).
+A version checker library for addons registered on [addons.plexdev.xyz](https://addons.plexdev.xyz).
 
 ## Installation
 
@@ -59,10 +59,10 @@ if (result.isOutdated) {
 ```javascript
 const checker = new VersionChecker('AddonName', '1.0.0', {
   // Base URL for the PlexAddons API
-  apiUrl: 'https://addons.plexdev.live',
+  apiUrl: 'https://addons.plexdev.xyz',
   
   // Legacy versions.json URL (fallback)
-  repositoryUrl: 'https://addons.plexdev.live/versions.json',
+  repositoryUrl: 'https://addons.plexdev.xyz/versions.json',
   
   // Request timeout in milliseconds
   timeout: 10000,
@@ -178,7 +178,7 @@ const checker = new VersionChecker('MyAddon', '1.0.0', {
 
 ## Publishing Your Addon
 
-1. Create an account at [addons.plexdev.live](https://addons.plexdev.live) using Discord OAuth
+1. Create an account at [addons.plexdev.xyz](https://addons.plexdev.xyz) using Discord OAuth
 2. Register your addon in the dashboard
 3. Add versions with changelogs
 4. Integrate this version checker in your addon
@@ -190,6 +190,6 @@ AGPL-3.0 - See [LICENSE](LICENSE) for details.
 
 ## Links
 
-- 🌐 **Website**: [addons.plexdev.live](https://addons.plexdev.live)
-- 📚 **API Docs**: [addons.plexdev.live/api/docs](https://addons.plexdev.live/api/docs)
+- 🌐 **Website**: [addons.plexdev.xyz](https://addons.plexdev.xyz)
+- 📚 **API Docs**: [addons.plexdev.xyz/api/docs](https://addons.plexdev.xyz/api/docs)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Bali0531-RC/PlexAddons/issues)

@@ -59,7 +59,7 @@ async def publish_version(
     ```yaml
     - name: Publish to PlexAddons
       run: |
-        curl -X POST "https://addons.plexdev.live/api/v1/automation/addons/${{ github.event.repository.name }}/publish" \\
+        curl -X POST "https://addons.plexdev.xyz/api/v1/automation/addons/${{ github.event.repository.name }}/publish" \\
           -H "X-API-Key: ${{ secrets.PLEXADDONS_API_KEY }}" \\
           -H "Content-Type: application/json" \\
           -d '{
@@ -73,7 +73,7 @@ async def publish_version(
     ## Authentication
     
     Pass your API key in the `X-API-Key` header.
-    Generate an API key at https://addons.plexdev.live/dashboard/settings
+    Generate an API key at https://addons.plexdev.xyz/dashboard/settings
     
     ## Required Scopes
     

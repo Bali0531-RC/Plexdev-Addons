@@ -2,7 +2,7 @@
 
 A full SaaS platform for managing Plex addons with version tracking, Discord OAuth2 authentication, and tiered subscriptions.
 
-**Live at:** [addons.plexdev.live](https://addons.plexdev.live)
+**Live at:** [addons.plexdev.xyz](https://addons.plexdev.xyz)
 
 ## Table of Contents
 
@@ -76,7 +76,7 @@ A full SaaS platform for managing Plex addons with version tracking, Discord OAu
 ## Prerequisites
 
 - **Docker** (20.10+) and **Docker Compose** (2.0+)
-- **Domain name** pointed to your server (e.g., `addons.plexdev.live`)
+- **Domain name** pointed to your server (e.g., `addons.plexdev.xyz`)
 - **Discord Application** for OAuth2
 - **Stripe Account** (optional, for payments)
 - **PayPal Business Account** (optional, for payments)
@@ -157,7 +157,7 @@ SECRET_KEY=your_64_character_hex_secret_key_here
 # =============================================================================
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_REDIRECT_URI=https://addons.plexdev.live/auth/callback
+DISCORD_REDIRECT_URI=https://addons.plexdev.xyz/auth/callback
 
 # =============================================================================
 # STRIPE (Optional - for payments)
@@ -179,8 +179,8 @@ PAYPAL_PREMIUM_PLAN_ID=P-your_paypal_premium_plan_id
 # =============================================================================
 # APPLICATION
 # =============================================================================
-FRONTEND_URL=https://addons.plexdev.live
-API_URL=https://addons.plexdev.live/api
+FRONTEND_URL=https://addons.plexdev.xyz
+API_URL=https://addons.plexdev.xyz/api
 
 # =============================================================================
 # ADMIN BOOTSTRAP
@@ -201,7 +201,7 @@ INITIAL_ADMIN_DISCORD_ID=your_discord_user_id
 
 5. Add a **Redirect URI**:
    ```
-   https://addons.plexdev.live/auth/callback
+   https://addons.plexdev.xyz/auth/callback
    ```
    For local development:
    ```
@@ -229,7 +229,7 @@ INITIAL_ADMIN_DISCORD_ID=your_discord_user_id
 
 4. Set up Webhooks:
    - Go to **Developers** → **Webhooks**
-   - Add endpoint: `https://addons.plexdev.live/api/webhooks/stripe`
+   - Add endpoint: `https://addons.plexdev.xyz/api/webhooks/stripe`
    - Select events:
      - `checkout.session.completed`
      - `customer.subscription.updated`
@@ -257,7 +257,7 @@ INITIAL_ADMIN_DISCORD_ID=your_discord_user_id
 
 5. Set up Webhooks:
    - Go to **Webhooks** in your app settings
-   - Add webhook URL: `https://addons.plexdev.live/api/webhooks/paypal`
+   - Add webhook URL: `https://addons.plexdev.xyz/api/webhooks/paypal`
    - Select events:
      - `BILLING.SUBSCRIPTION.ACTIVATED`
      - `BILLING.SUBSCRIPTION.CANCELLED`
@@ -302,7 +302,7 @@ docker-compose restart api
 If you're running nginx on the host to proxy to Docker, use this configuration:
 
 ```nginx
-# /etc/nginx/sites-available/addons.plexdev.live
+# /etc/nginx/sites-available/addons.plexdev.xyz
 
 # Rate limiting zone
 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
@@ -318,7 +318,7 @@ upstream plexaddons_api {
 
 server {
     listen 80;
-    server_name addons.plexdev.live;
+    server_name addons.plexdev.xyz;
     
     # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
@@ -326,11 +326,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name addons.plexdev.live;
+    server_name addons.plexdev.xyz;
 
     # SSL Configuration (managed by Certbot)
-    ssl_certificate /etc/letsencrypt/live/addons.plexdev.live/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/addons.plexdev.live/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/addons.plexdev.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/addons.plexdev.xyz/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -394,7 +394,7 @@ server {
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/addons.plexdev.live /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/addons.plexdev.xyz /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -409,7 +409,7 @@ sudo apt update
 sudo apt install certbot python3-certbot-nginx
 
 # Obtain certificate
-sudo certbot --nginx -d addons.plexdev.live
+sudo certbot --nginx -d addons.plexdev.xyz
 
 # Test auto-renewal
 sudo certbot renew --dry-run
@@ -477,7 +477,7 @@ Once the API is running, interactive documentation is available at:
 
 - **Swagger UI:** http://localhost:3311/docs (dev only)
 - **ReDoc:** http://localhost:3311/redoc (dev only)
-- **ReDoc (production):** https://addons.plexdev.live/redocs
+- **ReDoc (production):** https://addons.plexdev.xyz/redocs
 
 ### Key Endpoints
 
@@ -718,4 +718,4 @@ GNU Affero General Public License v3.0 - see [LICENSE](LICENSE) file for details
 
 - **Issues:** [GitHub Issues](https://github.com/Bali0531-RC/Plexdev-Addons/issues)
 - **Discord:** [PlexDevelopment Discord](https://discord.gg/plexdev)
-- **Email:** bali0531@plexdev.live
+- **Email:** bali0531@plexdev.xyz

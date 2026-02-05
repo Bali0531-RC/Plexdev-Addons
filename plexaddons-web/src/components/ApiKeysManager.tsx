@@ -373,7 +373,7 @@ export default function ApiKeysManager() {
         <h4>Using API Keys</h4>
         <p>Include your API key in the <code>X-API-Key</code> header:</p>
         <pre>
-{`curl -X GET "https://addons.plexdev.live/api/v1/automation/addons" \\
+{`curl -X GET "https://addons.plexdev.xyz/api/v1/automation/addons" \\
   -H "X-API-Key: pa_your_key_here"`}
         </pre>
         <p>

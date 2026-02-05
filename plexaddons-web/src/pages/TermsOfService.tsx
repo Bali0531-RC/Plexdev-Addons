@@ -5,7 +5,7 @@ const CONTENT = `# Terms of Service
 
 _Last updated: 2025-12-16_
 
-These Terms of Service (\"Terms\") govern your access to and use of PlexAddons (the \"Service\"), available at https://addons.plexdev.live.
+These Terms of Service (\"Terms\") govern your access to and use of PlexAddons (the \"Service\"), available at https://addons.plexdev.xyz.
 
 By accessing or using the Service, you agree to these Terms. If you do not agree, do not use the Service.
 
@@ -86,7 +86,7 @@ We may update these Terms from time to time. Continued use of the Service after 
 
 ## 12. Contact
 
-If you have questions about these Terms, contact: **contact@plexdev.live**.
+If you have questions about these Terms, contact: **contact@plexdev.xyz**.
 
 ---
 

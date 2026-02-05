@@ -5,18 +5,18 @@ const CONTENT = `# Legal Notice (Impressum)
 
 _Last updated: 2025-12-16_
 
-This page provides operator information for PlexAddons (https://addons.plexdev.live).
+This page provides operator information for PlexAddons (https://addons.plexdev.xyz).
 
 ## Operator
 
 - Country: **Hungary**
 - Name / entity: **Turi Balázs ("Bali0531")**
 - Address: Not publicly listed.
-- Email: **contact@plexdev.live**
+- Email: **contact@plexdev.xyz**
 
 ## Legal correspondence
 
-If you need to send formal legal correspondence, contact us at **contact@plexdev.live** and we will provide an address or alternative delivery method where appropriate.
+If you need to send formal legal correspondence, contact us at **contact@plexdev.xyz** and we will provide an address or alternative delivery method where appropriate.
 
 ---
 

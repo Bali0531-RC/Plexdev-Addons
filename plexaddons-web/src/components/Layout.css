@@ -4,6 +4,23 @@
   flex-direction: column;
 }
 
+/* Migration Banner */
+.migration-banner {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.migration-banner strong {
+  font-weight: 600;
+}
+
 /* Header */
 .header {
   background: var(--bg-card);

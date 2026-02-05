@@ -151,8 +151,8 @@ class EmailTemplates:
                         <p>PlexAddons - Enhance your Plex experience</p>
                         <p>© {datetime.now().year} PlexAddons. All rights reserved.</p>
                         <p>
-                            <a href="https://addons.plexdev.live" style="color: #e9a426;">Visit Website</a> |
-                            <a href="https://addons.plexdev.live/docs" style="color: #e9a426;">Documentation</a>
+                            <a href="https://addons.plexdev.xyz" style="color: #e9a426;">Visit Website</a> |
+                            <a href="https://addons.plexdev.xyz/docs" style="color: #e9a426;">Documentation</a>
                         </p>
                     </div>
                 </div>
@@ -186,7 +186,7 @@ class EmailTemplates:
         </ul>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="https://addons.plexdev.live/dashboard" class="button">Go to Dashboard</a>
+            <a href="https://addons.plexdev.xyz/dashboard" class="button">Go to Dashboard</a>
         </div>
         
         <p>If you have any questions, feel free to reach out to our support team or check out our documentation.</p>
@@ -246,7 +246,7 @@ class EmailTemplates:
         </ul>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="https://addons.plexdev.live/dashboard" class="button">View Subscription</a>
+            <a href="https://addons.plexdev.xyz/dashboard" class="button">View Subscription</a>
         </div>
         
         <p>Thank you for supporting PlexAddons!</p>
@@ -291,7 +291,7 @@ class EmailTemplates:
         </ul>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="https://addons.plexdev.live/pricing" class="button">Resubscribe</a>
+            <a href="https://addons.plexdev.xyz/pricing" class="button">Resubscribe</a>
         </div>
         
         <p>Thank you for being a part of PlexAddons!</p>
@@ -374,7 +374,7 @@ class EmailTemplates:
         </div>
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/admin/users" class="button">View in Admin</a>
+            <a href="https://addons.plexdev.xyz/admin/users" class="button">View in Admin</a>
         </div>
         """
         return cls._base_template(content)
@@ -425,7 +425,7 @@ class EmailTemplates:
         </table>
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/admin/subscriptions" class="button">View Subscriptions</a>
+            <a href="https://addons.plexdev.xyz/admin/subscriptions" class="button">View Subscriptions</a>
         </div>
         """
         return cls._base_template(content)
@@ -467,7 +467,7 @@ class EmailTemplates:
         </table>
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/admin/addons" class="button">View in Admin</a>
+            <a href="https://addons.plexdev.xyz/admin/addons" class="button">View in Admin</a>
         </div>
         """
         return cls._base_template(content)
@@ -526,7 +526,7 @@ class EmailTemplates:
         </table>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="https://addons.plexdev.live/admin" class="button">View Admin Dashboard</a>
+            <a href="https://addons.plexdev.xyz/admin" class="button">View Admin Dashboard</a>
         </div>
         
         <p style="font-size: 12px; color: #888;">
@@ -594,7 +594,7 @@ class EmailTemplates:
         {"<div class='info-box' style='border-color: #dc3545; background: #fff5f5;'><strong>⚠️ Priority Support</strong><p style='margin-bottom: 0;'>This ticket is from a paid subscriber and requires priority attention.</p></div>" if is_paid_user else ""}
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/admin/tickets/{ticket_id}" class="button">View Ticket</a>
+            <a href="https://addons.plexdev.xyz/admin/tickets/{ticket_id}" class="button">View Ticket</a>
         </div>
         """
         return cls._base_template(content)
@@ -636,7 +636,7 @@ class EmailTemplates:
         </div>
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/support/tickets/{ticket_id}" class="button">View Full Reply</a>
+            <a href="https://addons.plexdev.xyz/support/tickets/{ticket_id}" class="button">View Full Reply</a>
         </div>
         
         <p style="font-size: 12px; color: #888;">
@@ -689,7 +689,7 @@ class EmailTemplates:
         <p>{message}</p>
         
         <div style="text-align: center; margin: 20px 0;">
-            <a href="https://addons.plexdev.live/support/tickets/{ticket_id}" class="button">View Ticket</a>
+            <a href="https://addons.plexdev.xyz/support/tickets/{ticket_id}" class="button">View Ticket</a>
         </div>
         """
         return cls._base_template(content)
@@ -768,7 +768,7 @@ class EmailTemplates:
         </ul>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="https://addons.plexdev.live/dashboard" class="button">Explore Your New Features</a>
+            <a href="https://addons.plexdev.xyz/dashboard" class="button">Explore Your New Features</a>
         </div>
         
         <p style="font-size: 12px; color: #888;">

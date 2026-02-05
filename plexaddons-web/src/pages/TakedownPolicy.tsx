@@ -5,7 +5,7 @@ const CONTENT = `# Copyright & Takedown Policy
 
 _Last updated: 2025-12-16_
 
-PlexAddons (the \"Service\"), available at https://addons.plexdev.live, allows users to publish addon listings and related metadata, including external links.
+PlexAddons (the \"Service\"), available at https://addons.plexdev.xyz, allows users to publish addon listings and related metadata, including external links.
 
 We respect intellectual property rights and expect users to do the same.
 
@@ -15,7 +15,7 @@ This Policy covers requests to remove or disable access to content on PlexAddons
 
 ## 2. How to Submit a Takedown Request
 
-Email **contact@plexdev.live** with the subject line \"Takedown Request\" and include:
+Email **contact@plexdev.xyz** with the subject line \"Takedown Request\" and include:
 
 - your full name and contact details
 - identification of the work you believe is infringed
@@ -36,7 +36,7 @@ We may also request additional details before acting.
 
 ## 4. Counter-Notice
 
-If your content was removed and you believe it was removed in error, contact **contact@plexdev.live** with the subject line \"Counter Notice\" and include:
+If your content was removed and you believe it was removed in error, contact **contact@plexdev.xyz** with the subject line \"Counter Notice\" and include:
 
 - the URL(s) involved
 - why you believe the content was removed in error

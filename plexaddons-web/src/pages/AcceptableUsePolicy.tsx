@@ -5,7 +5,7 @@ const CONTENT = `# Acceptable Use Policy
 
 _Last updated: 2025-12-16_
 
-This Acceptable Use Policy (\"AUP\") describes what is and is not allowed on PlexAddons (the \"Service\"), available at https://addons.plexdev.live.
+This Acceptable Use Policy (\"AUP\") describes what is and is not allowed on PlexAddons (the \"Service\"), available at https://addons.plexdev.xyz.
 
 This AUP applies to all users and all content you submit (including addon listings, descriptions, tags, changelogs, and external download links).
 
@@ -41,7 +41,7 @@ We may enforce this AUP at our discretion, including to protect users and the Se
 
 ## 4. Reporting Abuse
 
-To report abuse or suspicious content, email **contact@plexdev.live** and include:
+To report abuse or suspicious content, email **contact@plexdev.xyz** and include:
 
 - the listing URL (or addon slug)
 - what you observed

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import './ApiDocs.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://addons.plexdev.live/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://addons.plexdev.xyz/api';
 const OPENAPI_URL = API_BASE.replace(/\/api\/?$/, '/api/openapi.json');
 
 export default function ApiDocs() {

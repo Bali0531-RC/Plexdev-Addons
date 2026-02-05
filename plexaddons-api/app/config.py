@@ -74,10 +74,10 @@ class Settings(BaseSettings):
     email_enabled: bool = True
     smtp_host: str = "mail-eu.smtp2go.com"
     smtp_port: int = 587
-    smtp_username: str = "no-reply@m.plexdev.live"
+    smtp_username: str = "no-reply@m.plexdev.xyz"
     smtp_password: Optional[str] = None
     smtp_use_tls: bool = True
-    email_from_address: str = "no-reply@m.plexdev.live"
+    email_from_address: str = "no-reply@m.plexdev.xyz"
     email_from_name: str = "PlexAddons"
     admin_notification_email: Optional[str] = None
     

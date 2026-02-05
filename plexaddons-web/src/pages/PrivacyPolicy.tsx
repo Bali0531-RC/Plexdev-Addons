@@ -5,7 +5,7 @@ const CONTENT = `# Privacy Policy
 
 _Last updated: 2025-12-16_
 
-This Privacy Policy explains how PlexAddons (the \"Service\"), available at https://addons.plexdev.live, collects, uses, and shares information.
+This Privacy Policy explains how PlexAddons (the \"Service\"), available at https://addons.plexdev.xyz, collects, uses, and shares information.
 
 If you are located in the European Economic Area (EEA), the United Kingdom, or Switzerland, this Policy is intended to help you understand our processing under the GDPR/UK GDPR.
 
@@ -13,7 +13,7 @@ If you are located in the European Economic Area (EEA), the United Kingdom, or S
 
 The data controller for personal data processed via the Service is the operator of PlexAddons.
 
-- Contact email: **contact@plexdev.live**
+- Contact email: **contact@plexdev.xyz**
 
 ## 1. Information We Collect
 
@@ -120,7 +120,7 @@ We may update this Privacy Policy from time to time. Continued use of the Servic
 
 ## 10. Contact
 
-For privacy questions or requests, contact: **contact@plexdev.live**.
+For privacy questions or requests, contact: **contact@plexdev.xyz**.
 
 ---
 

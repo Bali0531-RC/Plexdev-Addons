@@ -15,6 +15,13 @@ export default function Layout() {
 
   return (
     <div className="layout">
+      <div className="migration-banner">
+        <span>🔄</span>
+        <span>
+          <strong>Domain Migration:</strong> We've moved from plexdev.live to plexdev.xyz! 
+          Update your bookmarks. The old domain will redirect here until it expires (~60 days).
+        </span>
+      </div>
       <header className="header">
         <div className="container header-content">
           <Link to="/" className="logo">

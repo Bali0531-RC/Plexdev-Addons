@@ -170,7 +170,7 @@ client.login(process.env.DISCORD_TOKEN);`}</code></pre>
                   <tr>
                     <td><code>apiUrl</code></td>
                     <td>string</td>
-                    <td>https://addons.plexdev.live</td>
+                    <td>https://addons.plexdev.xyz</td>
                     <td>Base API URL</td>
                   </tr>
                   <tr>
@@ -291,7 +291,7 @@ console.log(versions.versions);`}</code></pre>
           <section id="creating-addon">
             <h2>Creating an Addon</h2>
             <ol>
-              <li>Sign in with Discord at <a href="/login">addons.plexdev.live</a></li>
+              <li>Sign in with Discord at <a href="/login">addons.plexdev.xyz</a></li>
               <li>Go to your <a href="/dashboard/addons">Dashboard → My Addons</a></li>
               <li>Click "Create Addon"</li>
               <li>Fill in the addon details:
@@ -382,7 +382,7 @@ if (!result.success) {
             <p>These endpoints are available without authentication:</p>
             
             <h3>Get Latest Version for Addon (by name or slug)</h3>
-            <pre><code>{`GET https://addons.plexdev.live/api/addons/{name-or-slug}/latest
+            <pre><code>{`GET https://addons.plexdev.xyz/api/addons/{name-or-slug}/latest
 
 # Examples:
 GET /api/addons/MyAddon/latest      # by name
@@ -407,7 +407,7 @@ Response:
 }`}</code></pre>
 
             <h3>Get All Addon Versions (Legacy)</h3>
-            <pre><code>{`GET https://addons.plexdev.live/versions.json
+            <pre><code>{`GET https://addons.plexdev.xyz/versions.json
 
 Response:
 {
@@ -425,7 +425,7 @@ Response:
 }`}</code></pre>
 
             <h3>List All Public Addons</h3>
-            <pre><code>{`GET https://addons.plexdev.live/api/addons
+            <pre><code>{`GET https://addons.plexdev.xyz/api/addons
 
 Response:
 {
@@ -497,7 +497,7 @@ Response:
             <h3>Authentication</h3>
             <p>All automation endpoints require an API key passed in the <code>X-API-Key</code> header:</p>
             <pre><code>{`curl -H "X-API-Key: pa_your_api_key_here" \\
-  https://addons.plexdev.live/api/v1/automation/addons`}</code></pre>
+  https://addons.plexdev.xyz/api/v1/automation/addons`}</code></pre>
 
             <h3>Publish a New Version</h3>
             <p><strong>Required scope:</strong> <code>versions:write</code> (Premium)</p>
@@ -590,7 +590,7 @@ jobs:
           VERSION=\${{ github.event.release.tag_name }}
           VERSION=\${VERSION#v}
           
-          curl -X POST "https://addons.plexdev.live/api/v1/automation/addons/\${{ github.event.repository.name }}/publish" \\
+          curl -X POST "https://addons.plexdev.xyz/api/v1/automation/addons/\${{ github.event.repository.name }}/publish" \\
             -H "X-API-Key: \${{ secrets.PLEXADDONS_API_KEY }}" \\
             -H "Content-Type: application/json" \\
             -d "{
@@ -621,7 +621,7 @@ jobs:
           VERSION="\${{ github.event.release.tag_name }}"
           VERSION="\${VERSION#v}"
           
-          curl -X POST "https://addons.plexdev.live/api/v1/automation/addons/YOUR-ADDON-SLUG/publish" \\
+          curl -X POST "https://addons.plexdev.xyz/api/v1/automation/addons/YOUR-ADDON-SLUG/publish" \\
             -H "X-API-Key: \$PLEXADDONS_API_KEY" \\
             -H "Content-Type: application/json" \\
             -d '{

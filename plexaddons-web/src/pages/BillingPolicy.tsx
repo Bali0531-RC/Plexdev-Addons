@@ -5,7 +5,7 @@ const CONTENT = `# Billing & Subscriptions Policy
 
 _Last updated: 2025-12-16_
 
-This Billing & Subscriptions Policy explains how paid plans, renewals, cancellations, and billing issues work for PlexAddons (the \"Service\"), available at https://addons.plexdev.live.
+This Billing & Subscriptions Policy explains how paid plans, renewals, cancellations, and billing issues work for PlexAddons (the \"Service\"), available at https://addons.plexdev.xyz.
 
 ## 1. Paid Plans
 
@@ -53,7 +53,7 @@ We may update this Policy from time to time. Continued use of the Service after 
 
 ## 8. Contact
 
-Billing questions: **contact@plexdev.live**
+Billing questions: **contact@plexdev.xyz**
 
 ---
 
