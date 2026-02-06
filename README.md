@@ -35,12 +35,20 @@ A full SaaS platform for managing Plex addons with version tracking, Discord OAu
 - **Addon Management** - Create and manage addons with metadata (no file storage)
 - **Version Tracking** - Track versions with changelogs and semver sorting
 - **Tiered Subscriptions** - Free, Pro ($1/mo), and Premium ($5/mo) plans
-- **Storage Quotas** - 50MB / 500MB / 5GB by tier
-- **Version History Limits** - 5 / 10 / Unlimited by tier
+- **Storage Quotas** - 5MB / 100MB / 1GB by tier
+- **Version History Limits** - 3 / 10 / Unlimited by tier
 - **Rate Limiting** - Per-IP and per-user rate limiting with Redis
 - **Admin Dashboard** - User management, audit logs, system overview
+- **Support Ticket System** - Ticket management with attachments, canned responses, and auto-compression
+- **User Profiles** - Public profiles with badges, custom slugs, banners, and accent colors
+- **Analytics** - Per-addon download tracking and version distribution stats
+- **Organizations** - Premium multi-member addon management (Premium tier)
+- **API Keys** - Scoped API keys with tier-based limits
+- **Webhooks** - User-configurable webhook notifications for addon events
 - **Backward Compatible API** - `/versions.json` endpoint for existing integrations
-- **Dual Payment Providers** - Stripe and PayPal support
+- **Dual Payment Providers** - Stripe and PayPal support with webhook verification
+- **Email Notifications** - Welcome emails, subscription confirmations, admin alerts
+- **Discord DM Notifications** - Optional bot DM notifications for paid-tier tickets
 - **90-Day Audit Log Auto-Purge** - Automatic cleanup of old audit logs
 
 ---
@@ -513,11 +521,18 @@ Once the API is running, interactive documentation is available at:
 
 | Feature | Free | Pro ($1/mo) | Premium ($5/mo) |
 |---------|------|-------------|-----------------|
-| Storage Quota | 50 MB | 500 MB | 5 GB |
-| Version History | 5 versions | 10 versions | Unlimited |
-| Rate Limit | 30 req/min | 60 req/min | 120 req/min |
+| Storage Quota | 5 MB | 100 MB | 1 GB |
+| Version History | 3 versions | 10 versions | Unlimited |
+| Rate Limit | 100 req/min | 300 req/min | 1000 req/min |
 | Public Addons | ✓ | ✓ | ✓ |
 | Private Addons | ✗ | ✓ | ✓ |
+| Analytics | ✗ | 30-day | 90-day |
+| Custom Profile Slug | ✗ | ✓ | ✓ |
+| Custom Banner | ✗ | ✗ | ✓ |
+| Accent Color | ✗ | ✓ | ✓ |
+| Organizations | ✗ | ✗ | ✓ |
+| Webhooks | ✗ | ✓ | ✓ |
+| API Keys | 1 key | 3 keys | 10 keys |
 | Priority Support | ✗ | ✗ | ✓ |
 
 ---

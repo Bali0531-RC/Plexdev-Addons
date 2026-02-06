@@ -11,7 +11,7 @@ Usage:
 import asyncio
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -136,9 +136,9 @@ async def import_versions(json_path: str, admin_discord_id: str | None = None):
                     try:
                         release_date = datetime.fromisoformat(release_date_str.replace('Z', '+00:00'))
                     except:
-                        release_date = datetime.utcnow()
+                        release_date = datetime.now(timezone.utc)
                 else:
-                    release_date = datetime.utcnow()
+                    release_date = datetime.now(timezone.utc)
                 
                 # Create version
                 version = Version(

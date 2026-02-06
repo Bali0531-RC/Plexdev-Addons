@@ -170,15 +170,12 @@ async def list_my_tickets(
         offset=offset,
     )
     
-    # Count total (simplified - could optimize with count query)
-    all_tickets = await ticket_service.get_user_tickets(
+    # Count total with a proper COUNT query
+    total = await ticket_service.count_user_tickets(
         db=db,
         user_id=user.id,
         status=status,
-        limit=1000,
-        offset=0,
     )
-    total = len(all_tickets)
     
     return TicketListResponse(
         tickets=[_ticket_to_response(t) for t in tickets],
@@ -367,11 +364,14 @@ async def download_attachment(
     except FileNotFoundError:
         raise NotFoundError("Attachment file not found")
     
+    # Sanitize filename for Content-Disposition header to prevent header injection
+    safe_filename = attachment.original_filename.replace('"', '\\"').replace('\r', '').replace('\n', '')
+
     return Response(
         content=content,
         media_type=attachment.mime_type or "application/octet-stream",
         headers={
-            "Content-Disposition": f'attachment; filename="{attachment.original_filename}"'
+            "Content-Disposition": f'attachment; filename="{safe_filename}"'
         }
     )
 

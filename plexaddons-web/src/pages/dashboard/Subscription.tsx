@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { api, safeRedirect } from '../../services/api';
 import type { Subscription } from '../../types';
 import './Subscription.css';
 
@@ -36,7 +36,7 @@ export default function Subscription() {
     try {
       setManaging(true);
       const { portal_url } = await api.createStripePortal();
-      window.location.href = portal_url;
+      safeRedirect(portal_url);
     } catch (err) {
       console.error('Failed to create portal:', err);
       toast.error('Failed to open billing portal. Please try again.');
@@ -204,7 +204,7 @@ export default function Subscription() {
             <tr>
               <td>API Key Access</td>
               <td className="feature-no">✗</td>
-              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
               <td className="feature-yes">✓</td>
             </tr>
             <tr>

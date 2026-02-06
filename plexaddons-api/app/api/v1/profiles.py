@@ -81,7 +81,7 @@ async def list_public_users(
             import json
             try:
                 badges = json.loads(user.badges) if isinstance(user.badges, str) else user.badges
-            except:
+            except Exception:
                 badges = []
         
         # Get effective tier (temp_tier if active)

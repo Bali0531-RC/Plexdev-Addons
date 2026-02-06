@@ -1,5 +1,7 @@
 import httpx
-from datetime import datetime, timedelta
+import logging
+from cryptography.fernet import Fernet
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +12,23 @@ from app.core.security import create_access_token
 from app.core.exceptions import UnauthorizedError, BadRequestError
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+# Derive a Fernet key from the app secret_key (must be 32 url-safe base64-encoded bytes)
+import base64
+import hashlib
+_fernet_key = base64.urlsafe_b64encode(hashlib.sha256(settings.secret_key.encode()).digest())
+_fernet = Fernet(_fernet_key)
+
+
+def _encrypt_token(token: str) -> str:
+    """Encrypt a token for storage at rest."""
+    return _fernet.encrypt(token.encode()).decode()
+
+
+def _decrypt_token(encrypted: str) -> str:
+    """Decrypt a stored token."""
+    return _fernet.decrypt(encrypted.encode()).decode()
 
 
 class AuthService:
@@ -50,7 +69,8 @@ class AuthService:
             )
             
             if response.status_code != 200:
-                raise BadRequestError(f"Failed to exchange code: {response.text}")
+                logger.error(f"Discord code exchange failed: {response.status_code} {response.text}")
+                raise BadRequestError("Failed to exchange authorization code")
             
             return response.json()
     
@@ -107,7 +127,7 @@ class AuthService:
         )
         user = result.scalar_one_or_none()
         
-        token_expires_at = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 604800))
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=tokens.get("expires_in", 604800))
         is_new_user = False
         
         if user:
@@ -115,29 +135,29 @@ class AuthService:
             user.discord_username = discord_user["username"]
             user.discord_avatar = discord_user.get("avatar")
             user.email = discord_user.get("email")
-            user.discord_access_token = tokens["access_token"]
-            user.discord_refresh_token = tokens.get("refresh_token")
+            user.discord_access_token = _encrypt_token(tokens["access_token"])
+            user.discord_refresh_token = _encrypt_token(tokens["refresh_token"]) if tokens.get("refresh_token") else None
             user.discord_token_expires_at = token_expires_at
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
         else:
             # Create new user
             is_initial_admin = (
-                settings.initial_admin_discord_id and 
+                settings.initial_admin_discord_id and
                 discord_user["id"] == settings.initial_admin_discord_id
             )
-            
+
             user = User(
                 discord_id=discord_user["id"],
                 discord_username=discord_user["username"],
                 discord_avatar=discord_user.get("avatar"),
                 email=discord_user.get("email"),
-                discord_access_token=tokens["access_token"],
-                discord_refresh_token=tokens.get("refresh_token"),
+                discord_access_token=_encrypt_token(tokens["access_token"]),
+                discord_refresh_token=_encrypt_token(tokens["refresh_token"]) if tokens.get("refresh_token") else None,
                 discord_token_expires_at=token_expires_at,
                 subscription_tier=SubscriptionTier.FREE,
                 storage_quota_bytes=settings.storage_quota_free,
                 is_admin=is_initial_admin,
-                last_login_at=datetime.utcnow(),
+                last_login_at=datetime.now(timezone.utc),
             )
             db.add(user)
             is_new_user = True
@@ -175,14 +195,14 @@ class AuthService:
         
         # Check if token expires within 25% of the 7-day lifetime (~1.75 days)
         refresh_threshold = timedelta(days=1, hours=18)
-        if user.discord_token_expires_at - datetime.utcnow() > refresh_threshold:
+        if user.discord_token_expires_at - datetime.now(timezone.utc) > refresh_threshold:
             return user
         
         try:
             new_tokens = await cls.refresh_discord_token(user.discord_refresh_token)
             user.discord_access_token = new_tokens["access_token"]
             user.discord_refresh_token = new_tokens.get("refresh_token", user.discord_refresh_token)
-            user.discord_token_expires_at = datetime.utcnow() + timedelta(
+            user.discord_token_expires_at = datetime.now(timezone.utc) + timedelta(
                 seconds=new_tokens.get("expires_in", 604800)
             )
             await db.commit()

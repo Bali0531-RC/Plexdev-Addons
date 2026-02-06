@@ -79,7 +79,7 @@ async def get_addon_analytics(
             detail="Addon not found"
         )
     
-    if addon.user_id != user.id and not user.is_admin:
+    if addon.owner_id != user.id and not user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view analytics for your own addons"

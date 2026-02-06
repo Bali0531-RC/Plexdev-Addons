@@ -45,6 +45,39 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+const ALLOWED_REDIRECT_DOMAINS = [
+  'checkout.stripe.com',
+  'billing.stripe.com',
+  'discord.com',
+  'www.paypal.com',
+  'paypal.com',
+];
+
+/**
+ * Validates that a URL is safe to redirect to.
+ * Only allows HTTPS URLs on known, trusted domains.
+ */
+export function isAllowedRedirectUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    return ALLOWED_REDIRECT_DOMAINS.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely redirect to a URL, but only if it's on an allowed domain.
+ * Throws an error if the URL is not allowed.
+ */
+export function safeRedirect(url: string): void {
+  if (!isAllowedRedirectUrl(url)) {
+    throw new Error('Redirect blocked: untrusted URL');
+  }
+  window.location.href = url;
+}
+
 class ApiClient {
   private token: string | null = null;
 

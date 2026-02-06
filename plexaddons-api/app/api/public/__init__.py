@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from app.database import get_db
 from app.services import AddonService, AnalyticsService
@@ -51,7 +51,7 @@ async def get_versions_json(
     
     return PublicVersionsJson(
         addons=addons_dict,
-        lastUpdated=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        lastUpdated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         repository="https://github.com/Bali0531-RC/PlexAddons",
         supportContact="https://discord.com/users/yourDiscordId",
     )

@@ -324,9 +324,6 @@ async def delete_organization(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the owner can delete the organization")
     
     # Transfer all org addons to owner's personal account
-    await db.execute(
-        select(Addon).where(Addon.organization_id == org.id)
-    )
     addons_result = await db.execute(
         select(Addon).where(Addon.organization_id == org.id)
     )
@@ -358,18 +355,23 @@ async def invite_member(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     
     # Check permission (owner or admin)
-    membership = await db.execute(
+    membership_result = await db.execute(
         select(OrganizationMember)
         .where(OrganizationMember.organization_id == org.id)
         .where(OrganizationMember.user_id == current_user.id)
         .where(OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN]))
     )
-    if not membership.scalar_one_or_none():
+    inviter_membership = membership_result.scalar_one_or_none()
+    if not inviter_membership:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to invite members")
-    
+
     # Can't grant OWNER role
     if data.role == OrganizationRole.OWNER:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot grant owner role")
+
+    # Admins can only invite as MEMBER; only owner can grant ADMIN role
+    if data.role == OrganizationRole.ADMIN and inviter_membership.role != OrganizationRole.OWNER:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the owner can grant admin role")
     
     # Find user by Discord username
     user_result = await db.execute(

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from typing import Optional
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models import User, Subscription, SubscriptionStatus, PaymentProvider, SubscriptionTier, Addon
 from app.schemas import (
@@ -239,6 +239,13 @@ async def update_my_profile(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Custom banners require Premium subscription"
             )
+        # Validate banner URL format
+        banner = update_data["banner_url"]
+        if not banner.startswith(("https://", "http://")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Banner URL must start with https:// or http://"
+            )
     
     if "accent_color" in update_data and update_data["accent_color"] is not None:
         if effective_tier == SubscriptionTier.FREE:
@@ -299,7 +306,7 @@ async def create_my_api_key(
     
     # Generate new API key with pa_ prefix
     api_key = f"pa_{secrets.token_hex(32)}"
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     user.api_key = api_key
     user.api_key_created_at = now

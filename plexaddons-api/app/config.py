@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     
     # Audit Log
     audit_log_retention_days: int = 90
+
+    # Analytics
+    analytics_ip_salt: str = "plexaddons-v2-salt"  # Override in .env for production
     
     # Email (SMTP)
     email_enabled: bool = True

@@ -1,5 +1,8 @@
 import re
+import logging
 from typing import Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def parse_version(version: str) -> Optional[Tuple[int, int, int]]:
@@ -27,11 +30,12 @@ def compare_versions(version1: str, version2: str) -> int:
     v2 = parse_version(version2)
     
     if v1 is None or v2 is None:
-        # Fallback to string comparison if parsing fails
-        if version1 < version2:
-            return -1
-        elif version1 > version2:
-            return 1
+        # Log warning and return 0 (equal) for unparseable versions instead of
+        # using string comparison which gives incorrect results (e.g. "9.0.0" > "10.0.0")
+        logger.warning(
+            f"Unable to parse semver versions for comparison: '{version1}' vs '{version2}'. "
+            "Treating as equal."
+        )
         return 0
     
     if v1 < v2:

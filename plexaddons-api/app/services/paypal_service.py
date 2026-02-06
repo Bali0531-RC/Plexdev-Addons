@@ -1,15 +1,18 @@
 import httpx
 import base64
 import json
+import logging
 from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from app.config import get_settings
 from app.models import User, Subscription, SubscriptionTier, SubscriptionStatus, PaymentProvider, SubscriptionEvent
 from app.services.user_service import UserService
 from app.core.exceptions import PaymentError, BadRequestError
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -23,7 +26,7 @@ class PayPalService:
     @classmethod
     async def _get_access_token(cls) -> str:
         """Get PayPal API access token."""
-        if cls._access_token and cls._token_expires_at and datetime.utcnow() < cls._token_expires_at:
+        if cls._access_token and cls._token_expires_at and datetime.now(timezone.utc) < cls._token_expires_at:
             return cls._access_token
         
         auth = base64.b64encode(
@@ -45,7 +48,8 @@ class PayPalService:
             
             data = response.json()
             cls._access_token = data["access_token"]
-            cls._token_expires_at = datetime.utcnow()
+            expires_in = data.get("expires_in", 3600)
+            cls._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in - 60)
             
             return cls._access_token
     
@@ -143,7 +147,7 @@ class PayPalService:
             provider_subscription_id=subscription_id,
             tier=tier,
             status=SubscriptionStatus.ACTIVE,
-            current_period_start=datetime.utcnow(),
+            current_period_start=datetime.now(timezone.utc),
             current_period_end=current_period_end,
         )
         db.add(sub)
@@ -174,14 +178,52 @@ class PayPalService:
             return response.status_code == 204
     
     @classmethod
+    async def verify_webhook_signature(cls, headers: dict, payload: dict) -> bool:
+        """Verify PayPal webhook signature using PayPal's verification API."""
+        token = await cls._get_access_token()
+
+        verification_body = {
+            "auth_algo": headers.get("paypal-auth-algo", ""),
+            "cert_url": headers.get("paypal-cert-url", ""),
+            "transmission_id": headers.get("paypal-transmission-id", ""),
+            "transmission_sig": headers.get("paypal-transmission-sig", ""),
+            "transmission_time": headers.get("paypal-transmission-time", ""),
+            "webhook_id": settings.paypal_webhook_id,
+            "webhook_event": payload,
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.paypal_api_base}/v1/notifications/verify-webhook-signature",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json=verification_body,
+            )
+
+            if response.status_code != 200:
+                logger.error(f"PayPal webhook verification request failed: {response.status_code}")
+                return False
+
+            result = response.json()
+            return result.get("verification_status") == "SUCCESS"
+
+    @classmethod
     async def handle_webhook_event(
-        cls, 
-        db: AsyncSession, 
-        payload: dict, 
+        cls,
+        db: AsyncSession,
+        payload: dict,
         headers: dict,
         background_tasks: Optional[BackgroundTasks] = None
     ) -> dict:
         """Handle PayPal webhook events."""
+        # Verify webhook signature
+        is_valid = await cls.verify_webhook_signature(headers, payload)
+        if not is_valid:
+            logger.warning("PayPal webhook signature verification failed")
+            raise BadRequestError("Invalid webhook signature")
+
         event_type = payload.get("event_type")
         resource = payload.get("resource", {})
         
@@ -249,7 +291,7 @@ class PayPalService:
             provider_subscription_id=subscription_id,
             tier=tier,
             status=SubscriptionStatus.ACTIVE,
-            current_period_start=datetime.utcnow(),
+            current_period_start=datetime.now(timezone.utc),
         )
         db.add(sub)
         
@@ -293,7 +335,7 @@ class PayPalService:
         
         old_tier = sub.tier
         sub.status = SubscriptionStatus.CANCELED
-        sub.canceled_at = datetime.utcnow()
+        sub.canceled_at = datetime.now(timezone.utc)
         
         # Downgrade user
         result = await db.execute(select(User).where(User.id == sub.user_id))

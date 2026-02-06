@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { User } from '../../types';
@@ -33,8 +33,19 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('');
   const perPage = 20;
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Debounce search input
+  useEffect(() => {
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(searchTimeoutRef.current);
+  }, [search]);
 
   // Temp tier modal state
   const [tempTierModal, setTempTierModal] = useState<TempTierModal | null>(null);
@@ -48,15 +59,15 @@ export default function AdminUsers() {
 
   useEffect(() => {
     loadUsers();
-  }, [page, search, tierFilter]);
+  }, [page, debouncedSearch, tierFilter]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       const response = await api.listUsers(
-        page, 
-        perPage, 
-        search || undefined, 
+        page,
+        perPage,
+        debouncedSearch || undefined,
         tierFilter || undefined
       );
       setUsers(response.users);
@@ -228,7 +239,7 @@ export default function AdminUsers() {
           type="text"
           placeholder="Search users..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => setSearch(e.target.value)}
           className="search-input"
         />
         <select 

@@ -1,9 +1,10 @@
 import stripe
+import logging
 from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, timezone
 from app.config import get_settings
 from app.models import User, Subscription, SubscriptionTier, SubscriptionStatus, PaymentProvider, SubscriptionEvent
 from app.services.user_service import UserService
@@ -11,6 +12,7 @@ from app.core.exceptions import PaymentError, BadRequestError
 import json
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 # Initialize Stripe
 stripe.api_key = settings.stripe_secret_key
@@ -31,11 +33,12 @@ class StripeService:
         if tier == SubscriptionTier.FREE:
             raise BadRequestError("Cannot create checkout for free tier")
         
-        # Check if user already has an active subscription
+        # Check if user already has an active subscription (with row-level lock to prevent race condition)
         result = await db.execute(
             select(Subscription)
             .where(Subscription.user_id == user.id)
             .where(Subscription.status.in_([SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]))
+            .with_for_update()
         )
         existing_sub = result.scalar_one_or_none()
         if existing_sub:
@@ -68,7 +71,8 @@ class StripeService:
                 "session_id": session.id,
             }
         except stripe.error.StripeError as e:
-            raise PaymentError(f"Failed to create checkout session: {str(e)}")
+            logger.error(f"Stripe checkout session creation failed: {e}")
+            raise PaymentError("Failed to create checkout session. Please try again.")
     
     @staticmethod
     async def create_billing_portal_session(user: User, return_url: str) -> str:
@@ -82,7 +86,8 @@ class StripeService:
             )
             return session.url
         except stripe.error.StripeError as e:
-            raise PaymentError(f"Failed to create billing portal: {str(e)}")
+            logger.error(f"Stripe billing portal creation failed: {e}")
+            raise PaymentError("Failed to create billing portal. Please try again.")
     
     @staticmethod
     async def _get_or_create_customer(user: User) -> str:
@@ -109,7 +114,8 @@ class StripeService:
             )
             return customer.id
         except stripe.error.StripeError as e:
-            raise PaymentError(f"Failed to create customer: {str(e)}")
+            logger.error(f"Stripe customer creation failed: {e}")
+            raise PaymentError("Failed to create payment profile. Please try again.")
     
     @staticmethod
     async def handle_webhook_event(
@@ -185,7 +191,7 @@ class StripeService:
             provider_customer_id=customer_id,
             tier=tier,
             status=status,
-            current_period_start=datetime.fromtimestamp(period_start) if period_start else datetime.utcnow(),
+            current_period_start=datetime.fromtimestamp(period_start) if period_start else datetime.now(timezone.utc),
             current_period_end=datetime.fromtimestamp(period_end) if period_end else None,
         )
         db.add(sub)
@@ -201,7 +207,7 @@ class StripeService:
             # Map tier to price (you may want to make this configurable)
             amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
             plan_name = tier.value.capitalize()
-            next_billing = datetime.fromtimestamp(period_end) if period_end else datetime.utcnow()
+            next_billing = datetime.fromtimestamp(period_end) if period_end else datetime.now(timezone.utc)
             
             background_tasks.add_task(
                 email_service.send_subscription_confirmation,
@@ -280,7 +286,7 @@ class StripeService:
         
         old_tier = sub.tier
         sub.status = SubscriptionStatus.CANCELED
-        sub.canceled_at = datetime.utcnow()
+        sub.canceled_at = datetime.now(timezone.utc)
         
         # Downgrade user to free
         result = await db.execute(select(User).where(User.id == sub.user_id))

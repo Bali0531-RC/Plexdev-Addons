@@ -111,6 +111,7 @@ export default function VersionEditor() {
   };
 
   const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this version? This action cannot be undone.')) return;
     toast.promise(
       api.deleteVersion(slug!, versionParam!).then(() => navigate(`/dashboard/addons/${slug}`)),
       {

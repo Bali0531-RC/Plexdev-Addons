@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from app.database import get_db
 from app.models import (
@@ -53,8 +53,15 @@ async def log_admin_action(
     target_id: Optional[int] = None,
     details: Optional[dict] = None,
     ip_address: Optional[str] = None,
+    request: Optional[Request] = None,
 ):
-    """Log an admin action."""
+    """Log an admin action. IP is extracted from request if not explicitly provided."""
+    if not ip_address and request:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            ip_address = forwarded.split(",")[-1].strip()
+        elif request.client:
+            ip_address = request.client.host
     log_entry = AdminAuditLog(
         admin_id=admin.id,
         action=action,
@@ -102,7 +109,7 @@ async def get_admin_stats(
         users_by_tier[tier.value] = count_result.scalar() or 0
     
     # Recent signups (last 7 days)
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     recent_result = await db.execute(
         select(func.count(User.id)).where(User.created_at >= week_ago)
     )
@@ -198,6 +205,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     data: AdminUserUpdate,
+    request: Request,
     admin: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check_authenticated),
@@ -228,6 +236,7 @@ async def update_user(
         target_type="user",
         target_id=user_id,
         details={"changes": data.model_dump(exclude_unset=True)},
+        request=request,
     )
     
     return updated_user
@@ -314,8 +323,6 @@ async def grant_temp_tier(
         raise BadRequestError(
             f"Temp tier must be higher than user's current tier ({user.subscription_tier.value})"
         )
-    
-    from datetime import datetime, timezone, timedelta
     
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=request.days)
@@ -825,7 +832,7 @@ async def cleanup_audit_log(
     from app.config import get_settings
     settings = get_settings()
     
-    cutoff = datetime.utcnow() - timedelta(days=settings.audit_log_retention_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=settings.audit_log_retention_days)
     
     result = await db.execute(
         delete(AdminAuditLog).where(AdminAuditLog.created_at < cutoff)
@@ -890,7 +897,7 @@ async def test_email(
         <div class="box">
             <h1>🎬 PlexAddons Email Test</h1>
             <p>This is a test email to verify your SMTP configuration is working correctly.</p>
-            <p><strong>Sent at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+            <p><strong>Sent at:</strong> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
             <p><strong>Triggered by:</strong> {admin.discord_username}</p>
             <hr>
             <p>If you received this email, your email configuration is working! ✅</p>
@@ -904,7 +911,7 @@ async def test_email(
             to_email=settings.admin_notification_email,
             subject=subject,
             html_content=html_content,
-            plain_content=f"PlexAddons Email Test - Sent at {datetime.utcnow()} by {admin.discord_username}"
+            plain_content=f"PlexAddons Email Test - Sent at {datetime.now(timezone.utc)} by {admin.discord_username}"
         )
         
         if result:
@@ -1549,7 +1556,7 @@ async def test_discord_dm(
     
     try:
         result = await discord_service.send_admin_dm(
-            content=f"🧪 **Test DM from PlexAddons**\n\nTriggered by: {admin.discord_username}\nTime: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n\nIf you received this, Discord DM notifications are working! ✅"
+            content=f"🧪 **Test DM from PlexAddons**\n\nTriggered by: {admin.discord_username}\nTime: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\nIf you received this, Discord DM notifications are working! ✅"
         )
         
         if result:

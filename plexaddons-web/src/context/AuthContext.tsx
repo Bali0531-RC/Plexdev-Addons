@@ -9,13 +9,31 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (token?: string, userData?: User) => void;
   logout: () => void;
-  setUser: (user: User | null) => void;
-  setToken: (token: string) => void;
+  /** @internal - only for use by AuthCallback */
+  _setUser: (user: User | null) => void;
+  /** @internal - only for use by AuthCallback */
+  _setToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'plexaddons_token';
+const OAUTH_STATE_KEY = 'plexaddons_oauth_state';
+
+function generateOAuthState(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  const state = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+  sessionStorage.setItem(OAUTH_STATE_KEY, state);
+  return state;
+}
+
+function validateOAuthState(state: string | null): boolean {
+  if (!state) return false;
+  const stored = sessionStorage.getItem(OAUTH_STATE_KEY);
+  sessionStorage.removeItem(OAUTH_STATE_KEY);
+  return stored === state;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -51,8 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setToken(token);
       setUser(userData);
     } else {
-      // Redirect to Discord OAuth
-      api.getAuthUrl().then(({ url }) => {
+      // Redirect to Discord OAuth with CSRF state parameter
+      api.getAuthUrl().then(({ url, state: serverState }) => {
+        // Store state for validation on callback
+        sessionStorage.setItem(OAUTH_STATE_KEY, serverState);
+        if (!/^https:\/\/(discord\.com|discordapp\.com)\//i.test(url)) {
+          console.error('Blocked redirect to untrusted OAuth URL');
+          return;
+        }
         window.location.href = url;
       }).catch((error) => {
         console.error('Failed to get auth URL:', error);
@@ -67,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/';
   };
 
-  const setToken = (token: string) => {
+  const _setToken = (token: string) => {
     localStorage.setItem(TOKEN_KEY, token);
     api.setToken(token);
   };
@@ -81,14 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: user?.is_admin || false,
         login,
         logout,
-        setUser,
-        setToken,
+        _setUser: setUser,
+        _setToken,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
+export { OAUTH_STATE_KEY, validateOAuthState };
 
 export function useAuth() {
   const context = useContext(AuthContext);

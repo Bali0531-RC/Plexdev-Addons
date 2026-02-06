@@ -9,7 +9,7 @@ import mimetypes
 import os
 import shutil
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -38,6 +38,15 @@ class TicketService:
         SubscriptionTier.PREMIUM: TicketPriority.HIGH,
     }
     
+    # Allowed file extensions for attachments
+    ALLOWED_EXTENSIONS = {
+        ".txt", ".log", ".json", ".xml", ".csv", ".yml", ".yaml", ".toml",
+        ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg",
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+        ".zip", ".gz", ".tar", ".7z", ".rar",
+        ".py", ".js", ".ts", ".lua", ".cfg", ".ini", ".conf",
+    }
+
     def __init__(self):
         self.attachments_path = Path(settings.ticket_attachments_path)
         self.max_attachment_size = settings.ticket_attachment_max_size_mb * 1024 * 1024  # Convert to bytes
@@ -170,6 +179,19 @@ class TicketService:
         result = await db.execute(query)
         return result.scalars().all()
     
+    async def count_user_tickets(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        status: Optional[TicketStatus] = None,
+    ) -> int:
+        """Count tickets for a user with optional status filter."""
+        query = select(func.count(Ticket.id)).where(Ticket.user_id == user_id)
+        if status:
+            query = query.where(Ticket.status == status)
+        result = await db.execute(query)
+        return result.scalar() or 0
+
     async def get_all_tickets(
         self,
         db: AsyncSession,
@@ -218,13 +240,13 @@ class TicketService:
         """Update ticket status with appropriate timestamp handling"""
         old_status = ticket.status
         ticket.status = new_status
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = datetime.now(timezone.utc)
         
         # Handle status-specific timestamps
         if new_status == TicketStatus.RESOLVED:
-            ticket.resolved_at = datetime.utcnow()
+            ticket.resolved_at = datetime.now(timezone.utc)
         elif new_status == TicketStatus.CLOSED:
-            ticket.closed_at = datetime.utcnow()
+            ticket.closed_at = datetime.now(timezone.utc)
         
         # Auto-assign admin if first interaction
         if admin and not ticket.assigned_admin_id:
@@ -256,7 +278,7 @@ class TicketService:
         """Assign ticket to an admin"""
         old_admin_id = ticket.assigned_admin_id
         ticket.assigned_admin_id = admin.id
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = datetime.now(timezone.utc)
         
         # Create system message
         if old_admin_id:
@@ -290,7 +312,7 @@ class TicketService:
         """Update ticket priority (admin only)"""
         old_priority = ticket.priority
         ticket.priority = new_priority
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = datetime.now(timezone.utc)
         
         # Create system message
         system_message = TicketMessage(
@@ -330,7 +352,7 @@ class TicketService:
         db.add(message)
         
         # Update ticket timestamp
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = datetime.now(timezone.utc)
         
         # Auto-assign admin on first staff reply
         if is_staff and not ticket.assigned_admin_id:
@@ -379,9 +401,13 @@ class TicketService:
         file_size = len(file_content)
         if not skip_size_check and file_size > self.max_attachment_size:
             raise ValueError(f"File size exceeds maximum allowed ({settings.ticket_attachment_max_size_mb}MB)")
-        
+
+        # Validate file extension
+        file_ext = Path(original_filename).suffix.lower()
+        if file_ext not in self.ALLOWED_EXTENSIONS:
+            raise ValueError(f"File type '{file_ext}' is not allowed. Allowed types: {', '.join(sorted(self.ALLOWED_EXTENSIONS))}")
+
         # Generate unique filename
-        file_ext = Path(original_filename).suffix
         unique_filename = f"{uuid.uuid4().hex}{file_ext}"
         
         # Create directory structure: /attachments/ticket_id/message_id/
@@ -473,7 +499,7 @@ class TicketService:
             attachment.file_path = str(compressed_path)
             attachment.compressed_size = len(compressed_content)
             attachment.is_compressed = True
-            attachment.compressed_at = datetime.utcnow()
+            attachment.compressed_at = datetime.now(timezone.utc)
             
             await db.commit()
             await db.refresh(attachment)
@@ -519,7 +545,7 @@ class TicketService:
     
     async def compress_old_attachments(self, db: AsyncSession) -> int:
         """Compress attachments older than configured days"""
-        cutoff_date = datetime.utcnow() - timedelta(days=self.compress_after_days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.compress_after_days)
         
         # Find uncompressed attachments older than cutoff
         result = await db.execute(
@@ -545,7 +571,7 @@ class TicketService:
     
     async def delete_old_attachments(self, db: AsyncSession) -> int:
         """Delete attachments older than configured days"""
-        cutoff_date = datetime.utcnow() - timedelta(days=self.delete_after_days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.delete_after_days)
         
         # Find attachments older than cutoff
         result = await db.execute(

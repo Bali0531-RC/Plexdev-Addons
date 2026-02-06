@@ -1,10 +1,12 @@
 import time
+import logging
 import redis.asyncio as redis
 from fastapi import Request, HTTPException, status
 from typing import Optional, Tuple
 from app.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -78,7 +80,10 @@ class RateLimitMiddleware:
         """Extract client IP from request, considering proxies."""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            # Use the rightmost IP (closest to our trusted reverse proxy)
+            # The leftmost can be spoofed by the client
+            ips = [ip.strip() for ip in forwarded.split(",")]
+            return ips[-1]
         return request.client.host if request.client else "unknown"
     
     async def check_rate_limit(
@@ -137,10 +142,13 @@ class RateLimitMiddleware:
             
             return headers
             
-        except redis.RedisError:
-            # If Redis is unavailable, allow the request but log the issue
-            # In production, you might want to use a fallback or fail closed
-            return {}
+        except redis.RedisError as e:
+            # Fail closed: if Redis is unavailable, reject the request
+            logger.error(f"Redis unavailable during rate limit check: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Rate limiting service unavailable. Please try again later.",
+            )
 
 
 # Global rate limiter instance (initialized in main.py)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
@@ -11,16 +11,27 @@ export default function AdminAddons() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const perPage = 20;
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Debounce search input
+  useEffect(() => {
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(searchTimeoutRef.current);
+  }, [search]);
 
   useEffect(() => {
     loadAddons();
-  }, [page, search]);
+  }, [page, debouncedSearch]);
 
   const loadAddons = async () => {
     try {
       setLoading(true);
-      const response = await api.listAllAddons(page, perPage, search || undefined);
+      const response = await api.listAllAddons(page, perPage, debouncedSearch || undefined);
       setAddons(response.addons);
       setTotal(response.total);
     } catch (err) {
@@ -31,6 +42,7 @@ export default function AdminAddons() {
   };
 
   const handleDelete = async (addonId: number, addonName: string) => {
+    if (!confirm(`Are you sure you want to delete "${addonName}"? This action cannot be undone.`)) return;
     toast.promise(
       api.adminDeleteAddon(addonId).then(() => loadAddons()),
       {
@@ -52,7 +64,7 @@ export default function AdminAddons() {
           type="text"
           placeholder="Search addons..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => setSearch(e.target.value)}
           className="search-input"
         />
       </div>

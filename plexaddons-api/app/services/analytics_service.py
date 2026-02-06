@@ -1,10 +1,11 @@
 """Analytics service for version check tracking and usage statistics."""
 
 import hashlib
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from app.config import get_settings
 from app.models import (
     VersionCheck, AddonUsageStats, Addon, Version, User, SubscriptionTier
 )
@@ -12,16 +13,16 @@ from app.schemas import (
     AddonAnalyticsResponse, DailyStats, VersionDistribution, AnalyticsSummary
 )
 
+settings = get_settings()
+
 
 class AnalyticsService:
     """Service for tracking and retrieving addon usage analytics."""
-    
+
     @staticmethod
     def hash_ip(ip_address: str) -> str:
         """Hash an IP address for privacy-preserving unique user tracking."""
-        # Use SHA256 with a static salt for consistent user tracking across days
-        # This allows identifying returning users while preserving privacy
-        salted = f"{ip_address}:plexaddons-v2-salt"
+        salted = f"{ip_address}:{settings.analytics_ip_salt}"
         return hashlib.sha256(salted.encode()).hexdigest()[:32]
     
     @staticmethod
@@ -249,7 +250,7 @@ class AnalyticsService:
         
         This should be run as a scheduled task.
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         
         # Delete old version checks (raw logs)
         from sqlalchemy import delete

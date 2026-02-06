@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, safeRedirect } from '../services/api';
 import type { PaymentPlan } from '../types';
 import './Pricing.css';
 
@@ -123,13 +123,13 @@ export default function Pricing() {
     try {
       if (provider === 'stripe') {
         const { checkout_url } = await api.createStripeCheckout(tier);
-        window.location.href = checkout_url;
+        safeRedirect(checkout_url);
       } else {
         // PayPal - get subscription details and redirect
         const { plan_id, custom_id } = await api.getPayPalSubscriptionDetails(tier);
         // Open PayPal subscription page
         const paypalUrl = `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${plan_id}&custom_id=${custom_id}`;
-        window.location.href = paypalUrl;
+        safeRedirect(paypalUrl);
       }
     } catch (err) {
       console.error('Failed to create checkout:', err);

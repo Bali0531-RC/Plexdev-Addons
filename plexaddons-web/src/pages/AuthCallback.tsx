@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, validateOAuthState } from '../context/AuthContext';
 import { api } from '../services/api';
 import './AuthCallback.css';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login, setToken, setUser } = useAuth();
+  const { login, _setToken, _setUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,7 +15,6 @@ export default function AuthCallback() {
   }, []);
 
   const handleCallback = async () => {
-    const token = searchParams.get('token');
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const errorParam = searchParams.get('error');
@@ -25,22 +24,14 @@ export default function AuthCallback() {
       return;
     }
 
-    // If we have a token directly (from API redirect), use it
-    if (token) {
-      try {
-        setToken(token);
-        const user = await api.getMe();
-        setUser(user);
-        navigate('/dashboard', { replace: true });
-      } catch (err) {
-        console.error('Token validation error:', err);
-        setError('Failed to validate authentication token. Please try again.');
-      }
-      return;
-    }
-
-    // If we have a code, exchange it for a token
+    // Exchange authorization code for token (H1: use code exchange, not direct token in URL)
     if (code) {
+      // Validate OAuth state parameter to prevent CSRF (M2)
+      if (!validateOAuthState(state)) {
+        setError('Invalid OAuth state. This may be a CSRF attack. Please try again.');
+        return;
+      }
+
       try {
         const response = await api.handleCallback(code, state || undefined);
         login(response.access_token, response.user);
@@ -52,7 +43,7 @@ export default function AuthCallback() {
       return;
     }
 
-    setError('No authorization code or token received');
+    setError('No authorization code received');
   };
 
   if (error) {

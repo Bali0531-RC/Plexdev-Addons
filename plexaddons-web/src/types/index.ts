@@ -149,13 +149,6 @@ export interface AuditLogEntry {
 }
 
 // API Response Types
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  per_page: number;
-}
-
 export interface AddonListResponse {
   addons: Addon[];
   total: number;

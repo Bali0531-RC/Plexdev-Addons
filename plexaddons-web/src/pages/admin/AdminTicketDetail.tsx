@@ -46,7 +46,8 @@ export default function AdminTicketDetail() {
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
 
   useEffect(() => {
-    if (ticketId) {
+    const id = Number(ticketId);
+    if (ticketId && Number.isFinite(id) && id > 0) {
       loadTicket();
       loadCannedResponses();
     }
@@ -432,9 +433,9 @@ export default function AdminTicketDetail() {
               </label>
               <button
                 className="btn btn-secondary"
-                onClick={() => {
-                  handleSendReply();
-                  handleStatusChange('resolved');
+                onClick={async () => {
+                  await handleSendReply();
+                  await handleStatusChange('resolved');
                 }}
                 disabled={!reply.trim() || sending}
               >
@@ -442,9 +443,9 @@ export default function AdminTicketDetail() {
               </button>
               <button
                 className="btn btn-secondary"
-                onClick={() => {
-                  handleSendReply();
-                  handleStatusChange('closed');
+                onClick={async () => {
+                  await handleSendReply();
+                  await handleStatusChange('closed');
                 }}
                 disabled={!reply.trim() || sending}
               >

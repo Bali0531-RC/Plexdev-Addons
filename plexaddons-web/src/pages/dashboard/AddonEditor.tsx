@@ -103,6 +103,7 @@ export default function AddonEditor() {
   };
 
   const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this addon? This action cannot be undone.')) return;
     toast.promise(
       api.deleteAddon(slug!).then(() => navigate('/dashboard/addons')),
       {

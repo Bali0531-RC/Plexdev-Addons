@@ -37,7 +37,8 @@ export default function AdminAddonDetail() {
   });
 
   useEffect(() => {
-    if (addonId) {
+    const id = Number(addonId);
+    if (addonId && Number.isFinite(id) && id > 0) {
       loadAddon();
     }
   }, [addonId]);
@@ -96,7 +97,8 @@ export default function AdminAddonDetail() {
 
   const handleDelete = async () => {
     if (!addon) return;
-    
+    if (!confirm(`Are you sure you want to delete "${addon.name}"? This action cannot be undone.`)) return;
+
     toast.promise(
       api.adminDeleteAddon(addon.id).then(() => navigate('/admin/addons')),
       {
@@ -148,7 +150,8 @@ export default function AdminAddonDetail() {
 
   const handleDeleteVersion = async (version: Version) => {
     if (!addon) return;
-    
+    if (!confirm(`Are you sure you want to delete version ${version.version}? This action cannot be undone.`)) return;
+
     toast.promise(
       api.adminDeleteVersion(addon.id, version.id).then(() => {
         setSuccessMessage('Version deleted successfully');

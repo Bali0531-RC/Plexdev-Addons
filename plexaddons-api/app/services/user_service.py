@@ -39,24 +39,33 @@ def _calculate_string_size(s: Optional[str]) -> int:
 
 class UserService:
     """Service for user management operations."""
-    
+
+    # Allowlist of fields that can be updated via update_user
+    UPDATABLE_FIELDS = {
+        "discord_username", "discord_avatar", "email", "bio", "website",
+        "github_username", "twitter_username", "profile_slug", "profile_public",
+        "show_addons", "banner_url", "accent_color",
+    }
+
     @staticmethod
     async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
         """Get user by ID."""
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
-    
+
     @staticmethod
     async def get_user_by_discord_id(db: AsyncSession, discord_id: str) -> Optional[User]:
         """Get user by Discord ID."""
         result = await db.execute(select(User).where(User.discord_id == discord_id))
         return result.scalar_one_or_none()
-    
+
     @staticmethod
     async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
-        """Update user fields."""
+        """Update user fields. Only allows fields in UPDATABLE_FIELDS."""
         for key, value in kwargs.items():
-            if hasattr(user, key) and value is not None:
+            if key not in UserService.UPDATABLE_FIELDS:
+                continue
+            if value is not None:
                 setattr(user, key, value)
         await db.commit()
         await db.refresh(user)

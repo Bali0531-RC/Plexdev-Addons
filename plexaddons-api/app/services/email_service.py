@@ -4,7 +4,7 @@ Handles all email sending via SMTP with async support
 """
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional, List, Dict, Any
@@ -342,7 +342,7 @@ class EmailService:
         
         # Calculate week range
         if week_start is None:
-            week_start = datetime.utcnow() - timedelta(days=7)
+            week_start = datetime.now(timezone.utc) - timedelta(days=7)
         week_end = week_start + timedelta(days=7)
         
         # Gather statistics

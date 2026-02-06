@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import redis.asyncio as redis
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.config import get_settings
 from app.database import engine, Base, AsyncSessionLocal
@@ -26,7 +26,7 @@ async def cleanup_audit_logs():
     from sqlalchemy import delete
     
     async with AsyncSessionLocal() as db:
-        cutoff = datetime.utcnow() - timedelta(days=settings.audit_log_retention_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=settings.audit_log_retention_days)
         await db.execute(
             delete(AdminAuditLog).where(AdminAuditLog.created_at < cutoff)
         )
@@ -40,7 +40,7 @@ async def cleanup_api_request_logs():
     from sqlalchemy import delete
     
     async with AsyncSessionLocal() as db:
-        cutoff = datetime.utcnow() - timedelta(days=30)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
         await db.execute(
             delete(ApiRequestLog).where(ApiRequestLog.timestamp < cutoff)
         )
@@ -83,8 +83,6 @@ async def publish_scheduled_versions():
     """Scheduled task to publish versions that have reached their scheduled release time."""
     from app.models import Version
     from sqlalchemy import select, and_
-    from datetime import datetime, timezone
-    
     async with AsyncSessionLocal() as db:
         now = datetime.now(timezone.utc)
         
@@ -217,13 +215,16 @@ app = FastAPI(
 )
 
 # CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        settings.frontend_url,
+cors_origins = [settings.frontend_url]
+if settings.environment != "production":
+    cors_origins.extend([
         "http://localhost:3000",
         "http://localhost:5173",
-    ],
+    ])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -272,7 +273,11 @@ async def add_security_headers(request: Request, call_next):
     
     # Permissions policy (disable unnecessary browser features)
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    
+
+    # HSTS - enforce HTTPS in production
+    if settings.environment == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
     return response
 
 
