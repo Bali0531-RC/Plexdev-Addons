@@ -199,9 +199,16 @@ class AuthService:
             return user
         
         try:
-            new_tokens = await cls.refresh_discord_token(user.discord_refresh_token)
-            user.discord_access_token = new_tokens["access_token"]
-            user.discord_refresh_token = new_tokens.get("refresh_token", user.discord_refresh_token)
+            # Decrypt the stored refresh token before sending to Discord
+            decrypted_refresh = _decrypt_token(user.discord_refresh_token)
+            new_tokens = await cls.refresh_discord_token(decrypted_refresh)
+            # Encrypt new tokens before storing
+            user.discord_access_token = _encrypt_token(new_tokens["access_token"])
+            user.discord_refresh_token = (
+                _encrypt_token(new_tokens["refresh_token"])
+                if new_tokens.get("refresh_token")
+                else user.discord_refresh_token
+            )
             user.discord_token_expires_at = datetime.now(timezone.utc) + timedelta(
                 seconds=new_tokens.get("expires_in", 604800)
             )

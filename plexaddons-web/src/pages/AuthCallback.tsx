@@ -7,7 +7,7 @@ import './AuthCallback.css';
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login, _setToken, _setUser } = useAuth();
+  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

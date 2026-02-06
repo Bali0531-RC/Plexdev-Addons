@@ -9,8 +9,7 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (token?: string, userData?: User) => void;
   logout: () => void;
-  /** @internal - only for use by AuthCallback */
-  _setUser: (user: User | null) => void;
+  setUser: (user: User | null) => void;
   /** @internal - only for use by AuthCallback */
   _setToken: (token: string) => void;
 }
@@ -19,14 +18,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'plexaddons_token';
 const OAUTH_STATE_KEY = 'plexaddons_oauth_state';
-
-function generateOAuthState(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  const state = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-  sessionStorage.setItem(OAUTH_STATE_KEY, state);
-  return state;
-}
 
 function validateOAuthState(state: string | null): boolean {
   if (!state) return false;
@@ -105,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: user?.is_admin || false,
         login,
         logout,
-        _setUser: setUser,
+        setUser,
         _setToken,
       }}
     >
