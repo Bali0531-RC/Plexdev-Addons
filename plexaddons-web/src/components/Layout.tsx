@@ -113,7 +113,7 @@ export default function Layout() {
             <span className="separator">•</span>
             <span className="version-badge alpha">Alpha</span>
             <span className="separator">•</span>
-            <span className="build-info">v0.2.1 · Build {__BUILD_TIME__}</span>
+            <span className="build-info">v0.3.0 · Build {__BUILD_TIME__}</span>
           </div>
           <div className="footer-right">
             <Link to="/terms">Terms</Link>
