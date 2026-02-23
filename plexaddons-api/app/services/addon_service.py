@@ -283,11 +283,12 @@ class AddonService:
         # Collect addon IDs
         addon_ids = [row[0].id for row in addon_rows]
         
-        # Fetch all published versions for these addons in a single query
+        # Fetch all published, non-deprecated versions for these addons in a single query
         versions_result = await db.execute(
             select(Version)
             .where(Version.addon_id.in_(addon_ids))
             .where(Version.is_published == True)
+            .where(Version.is_deprecated == False)
             .order_by(Version.addon_id, Version.release_date.desc(), Version.created_at.desc())
         )
         all_versions = versions_result.scalars().all()

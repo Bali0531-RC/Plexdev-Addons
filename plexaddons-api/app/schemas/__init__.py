@@ -4,7 +4,8 @@ from datetime import datetime, date
 import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
-    TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole
+    TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
+    ReleaseChannel,
 )
 
 
@@ -298,6 +299,7 @@ class VersionCreate(VersionBase):
     release_date: Optional[date] = None
     scheduled_release_at: Optional[datetime] = None  # Pro+ feature
     rollout_percentage: int = Field(default=100, ge=0, le=100)  # Premium feature
+    channel: ReleaseChannel = ReleaseChannel.STABLE  # Pro+ feature
 
 
 class VersionUpdate(BaseModel):
@@ -309,6 +311,12 @@ class VersionUpdate(BaseModel):
     rollout_percentage: Optional[int] = Field(default=None, ge=0, le=100)  # Premium feature
     breaking: Optional[bool] = None
     urgent: Optional[bool] = None
+    channel: Optional[ReleaseChannel] = None  # Pro+ feature
+
+
+class VersionDeprecate(BaseModel):
+    """Schema for deprecating a version."""
+    reason: str = Field(..., min_length=1, max_length=500)
 
 
 class VersionResponse(BaseModel):
@@ -327,6 +335,11 @@ class VersionResponse(BaseModel):
     # Pro+ features
     scheduled_release_at: Optional[datetime] = None
     is_published: bool = True
+    channel: ReleaseChannel = ReleaseChannel.STABLE
+    # Deprecation
+    is_deprecated: bool = False
+    deprecation_reason: Optional[str] = None
+    deprecated_at: Optional[datetime] = None
     # Premium features
     rollout_percentage: int = 100
 

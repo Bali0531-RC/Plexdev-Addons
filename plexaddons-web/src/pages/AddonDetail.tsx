@@ -149,6 +149,10 @@ export default function AddonDetail() {
                     {index === 0 && <span className="badge badge-latest">Latest</span>}
                     {version.breaking && <span className="badge badge-breaking">Breaking</span>}
                     {version.urgent && <span className="badge badge-urgent">Urgent</span>}
+                    {version.channel && version.channel !== 'stable' && (
+                      <span className={`badge badge-channel-${version.channel}`}>{version.channel}</span>
+                    )}
+                    {version.is_deprecated && <span className="badge badge-deprecated">Deprecated</span>}
                   </div>
                   <span className="version-date">{formatDate(version.release_date)}</span>
                 </div>

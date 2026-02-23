@@ -144,6 +144,8 @@ export interface TrendingAddon {
   recent_unique_users: number;
 }
 
+export type ReleaseChannel = 'stable' | 'beta' | 'alpha';
+
 export interface Version {
   id: number;
   addon_id: number;
@@ -159,6 +161,10 @@ export interface Version {
   scheduled_release_at: string | null;
   is_published: boolean;
   rollout_percentage: number | null;
+  channel: ReleaseChannel;
+  is_deprecated: boolean;
+  deprecation_reason: string | null;
+  deprecated_at: string | null;
   created_at: string;
 }
 
@@ -256,6 +262,7 @@ export interface VersionCreate {
   release_date?: string;
   scheduled_release_at?: string;
   rollout_percentage?: number;
+  channel?: ReleaseChannel;
 }
 
 export interface VersionUpdate {
@@ -267,6 +274,7 @@ export interface VersionUpdate {
   urgent?: boolean;
   scheduled_release_at?: string;
   rollout_percentage?: number;
+  channel?: ReleaseChannel;
 }
 
 // Ticket Types

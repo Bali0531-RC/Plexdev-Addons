@@ -42,6 +42,13 @@ class AddonTag(str, enum.Enum):
     OTHER = "other"               # Miscellaneous
 
 
+# Release Channels (Pro+ feature)
+class ReleaseChannel(str, enum.Enum):
+    STABLE = "stable"
+    BETA = "beta"
+    ALPHA = "alpha"
+
+
 # Organization member roles
 class OrganizationRole(str, enum.Enum):
     OWNER = "owner"       # Full control, billing
@@ -273,6 +280,14 @@ class Version(Base):
     # Premium Feature: A/B Rollouts
     rollout_percentage = Column(Integer, default=100)  # 0-100, percentage of users who see this version
     
+    # Pro+ Feature: Release Channels
+    channel = Column(SQLEnum(ReleaseChannel), default=ReleaseChannel.STABLE, nullable=False)
+    
+    # Pro+ Feature: Version Deprecation
+    is_deprecated = Column(Boolean, default=False)
+    deprecation_reason = Column(Text, nullable=True)
+    deprecated_at = Column(DateTime(timezone=True), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
@@ -282,6 +297,7 @@ class Version(Base):
         Index("idx_versions_addon_version", "addon_id", "version", unique=True),
         Index("idx_versions_release_date", "release_date"),
         Index("idx_versions_scheduled_release", "scheduled_release_at"),
+        Index("idx_versions_channel", "addon_id", "channel"),
     )
 
 

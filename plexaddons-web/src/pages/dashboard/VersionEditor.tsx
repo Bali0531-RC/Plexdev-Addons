@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import type { Version, VersionCreate, VersionUpdate } from '../../types';
+import type { Version, VersionCreate, VersionUpdate, ReleaseChannel } from '../../types';
 import './VersionEditor.css';
 
 export default function VersionEditor() {
@@ -28,11 +28,13 @@ export default function VersionEditor() {
   const [releaseDate, setReleaseDate] = useState('');
   const [scheduledReleaseAt, setScheduledReleaseAt] = useState('');
   const [rolloutPercentage, setRolloutPercentage] = useState<number | ''>('');
+  const [channel, setChannel] = useState<ReleaseChannel>('stable');
 
   // Tier checks
   const effectiveTier = user?.effective_tier || user?.subscription_tier || 'free';
   const canSchedule = effectiveTier === 'pro' || effectiveTier === 'premium';
   const canRollout = effectiveTier === 'premium';
+  const canUseChannels = effectiveTier === 'pro' || effectiveTier === 'premium';
 
   useEffect(() => {
     if (!isNew && slug && versionParam) {
@@ -61,6 +63,9 @@ export default function VersionEditor() {
       if (data.rollout_percentage !== null) {
         setRolloutPercentage(data.rollout_percentage);
       }
+      if (data.channel) {
+        setChannel(data.channel);
+      }
     } catch (err) {
       setError('Failed to load version');
       console.error(err);
@@ -87,6 +92,7 @@ export default function VersionEditor() {
           release_date: releaseDate || undefined,
           scheduled_release_at: canSchedule && scheduledReleaseAt ? scheduledReleaseAt : undefined,
           rollout_percentage: canRollout && rolloutPercentage !== '' ? rolloutPercentage : undefined,
+          channel: canUseChannels ? channel : undefined,
         };
         await api.createVersion(slug!, data);
       } else {
@@ -99,6 +105,7 @@ export default function VersionEditor() {
           urgent,
           scheduled_release_at: canSchedule ? (scheduledReleaseAt || undefined) : undefined,
           rollout_percentage: canRollout ? (rolloutPercentage !== '' ? rolloutPercentage : undefined) : undefined,
+          channel: canUseChannels ? channel : undefined,
         };
         await api.updateVersion(slug!, versionParam!, data);
       }
@@ -281,9 +288,100 @@ export default function VersionEditor() {
                   {existingVersion.rollout_percentage}% rollout
                 </span>
               )}
+              {existingVersion.is_deprecated && (
+                <span className="rollout-indicator deprecated">
+                  ⚠ Deprecated
+                </span>
+              )}
             </div>
           )}
         </div>
+
+        <div className="form-section">
+          <h2>
+            Release Channel
+            {!canUseChannels && <span className="tier-badge pro">Pro+</span>}
+          </h2>
+          
+          <div className="form-group">
+            <label htmlFor="channel">Channel</label>
+            <select
+              id="channel"
+              value={channel}
+              onChange={(e) => setChannel(e.target.value as ReleaseChannel)}
+              disabled={!canUseChannels}
+            >
+              <option value="stable">Stable</option>
+              <option value="beta">Beta</option>
+              <option value="alpha">Alpha</option>
+            </select>
+            <small>
+              {canUseChannels 
+                ? 'Choose which channel this version targets. Users can opt in to beta/alpha channels.'
+                : 'Upgrade to Pro or Premium to use release channels.'}
+            </small>
+          </div>
+        </div>
+
+        {!isNew && existingVersion && canUseChannels && (
+          <div className="form-section">
+            <h2>Version Actions <span className="tier-badge pro">Pro+</span></h2>
+            
+            <div className="version-actions-grid">
+              {!existingVersion.is_deprecated ? (
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={async () => {
+                    const reason = prompt('Enter deprecation reason:');
+                    if (!reason) return;
+                    toast.promise(
+                      api.deprecateVersion(slug!, versionParam!, reason).then(v => setExistingVersion(v)),
+                      { loading: 'Deprecating...', success: 'Version deprecated', error: (e: any) => e.message }
+                    );
+                  }}
+                >
+                  ⚠ Deprecate Version
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    toast.promise(
+                      api.undeprecateVersion(slug!, versionParam!).then(v => setExistingVersion(v)),
+                      { loading: 'Removing deprecation...', success: 'Deprecation removed', error: (e: any) => e.message }
+                    );
+                  }}
+                >
+                  ↩ Undeprecate Version
+                </button>
+              )}
+              
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (!confirm(`Promote v${existingVersion.version} as the latest version?`)) return;
+                  toast.promise(
+                    api.rollbackToVersion(slug!, versionParam!).then(() => navigate(`/dashboard/addons/${slug}`)),
+                    { loading: 'Rolling back...', success: 'Version promoted as latest', error: (e: any) => e.message }
+                  );
+                }}
+              >
+                ⏪ Make Latest (Rollback)
+              </button>
+            </div>
+
+            {existingVersion.is_deprecated && existingVersion.deprecation_reason && (
+              <div className="deprecation-notice">
+                <strong>Deprecation reason:</strong> {existingVersion.deprecation_reason}
+                <br />
+                <small>Deprecated on {new Date(existingVersion.deprecated_at!).toLocaleDateString()}</small>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="form-section">
           <h2>Flags</h2>

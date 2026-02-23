@@ -4,7 +4,7 @@ from sqlalchemy import select, func, and_, case, desc
 from typing import Optional, List, Literal
 from datetime import date, timedelta
 from app.database import get_db
-from app.models import User, Addon, AddonUsageStats, AddonStar, AddonReview, Version
+from app.models import User, Addon, AddonUsageStats, AddonStar, AddonReview, Version, ReleaseChannel
 from app.schemas import (
     AddonCreate,
     AddonUpdate,
@@ -365,11 +365,12 @@ async def list_addon_versions(
     slug: str,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    channel: Optional[ReleaseChannel] = Query(None, description="Filter by release channel"),
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_current_user_optional),
     _: None = Depends(rate_limit_check),
 ):
-    """List versions for an addon."""
+    """List versions for an addon, optionally filtered by release channel."""
     addon = await AddonService.get_addon_by_slug(db, slug)
     if not addon:
         raise NotFoundError("Addon not found")
@@ -379,7 +380,7 @@ async def list_addon_versions(
         if not user or (addon.owner_id != user.id and not user.is_admin):
             raise NotFoundError("Addon not found")
     
-    versions, total = await VersionService.list_versions(db, addon.id, skip=skip, limit=limit)
+    versions, total = await VersionService.list_versions(db, addon.id, skip=skip, limit=limit, channel=channel)
     
     return VersionListResponse(
         versions=[VersionResponse.model_validate(v) for v in versions],

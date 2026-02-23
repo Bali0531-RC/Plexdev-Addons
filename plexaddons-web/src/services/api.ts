@@ -13,6 +13,7 @@ import {
   AddonUpdate,
   VersionCreate,
   VersionUpdate,
+  ReleaseChannel,
   Ticket,
   TicketDetail,
   TicketListResponse,
@@ -248,8 +249,9 @@ class ApiClient {
   }
 
   // Versions
-  async listVersions(slug: string, skip = 0, limit = 50): Promise<VersionListResponse> {
+  async listVersions(slug: string, skip = 0, limit = 50, channel?: ReleaseChannel): Promise<VersionListResponse> {
     const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+    if (channel) params.set('channel', channel);
     return this.fetch(`/v1/addons/${slug}/versions?${params}`);
   }
 
@@ -277,6 +279,25 @@ class ApiClient {
 
   async deleteVersion(slug: string, version: string): Promise<void> {
     return this.fetch(`/v1/addons/${slug}/versions/${version}`, { method: 'DELETE' });
+  }
+
+  async deprecateVersion(slug: string, version: string, reason: string): Promise<Version> {
+    return this.fetch(`/v1/addons/${slug}/versions/${version}/deprecate`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async undeprecateVersion(slug: string, version: string): Promise<Version> {
+    return this.fetch(`/v1/addons/${slug}/versions/${version}/undeprecate`, {
+      method: 'POST',
+    });
+  }
+
+  async rollbackToVersion(slug: string, version: string): Promise<Version> {
+    return this.fetch(`/v1/addons/${slug}/versions/${version}/rollback`, {
+      method: 'POST',
+    });
   }
 
   // Payments
