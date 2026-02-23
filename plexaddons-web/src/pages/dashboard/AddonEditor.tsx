@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
+import SecurityManager from '../../components/SecurityManager';
 import RolloutManager from '../../components/RolloutManager';
 import FeatureFlagManager from '../../components/FeatureFlagManager';
 import './AddonEditor.css';
@@ -362,6 +363,9 @@ export default function AddonEditor() {
         <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
       )}
 
+      {/* Security Suite (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <SecurityManager addonId={addon.id} versions={versions} />
       {/* Staged Rollouts (Premium feature) */}
       {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
         <RolloutManager addonId={addon.id} versions={versions} />

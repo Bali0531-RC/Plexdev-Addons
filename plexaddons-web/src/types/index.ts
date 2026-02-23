@@ -597,6 +597,102 @@ export interface NotificationListResponse {
   unread_count: number;
 }
 
+// ============== Code Signing Types (PREM-5) ==============
+
+export interface SigningKey {
+  id: number;
+  addon_id: number;
+  created_by_id: number | null;
+  name: string;
+  public_key: string;
+  key_fingerprint: string;
+  algorithm: string;
+  is_active: boolean;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SigningKeyCreate {
+  name: string;
+  public_key: string;
+  algorithm?: string;
+}
+
+export interface SigningKeyListResponse {
+  keys: SigningKey[];
+  total: number;
+}
+
+export interface VersionSignature {
+  id: number;
+  version_id: number;
+  signing_key_id: number | null;
+  signature: string;
+  signed_hash: string;
+  verified: boolean;
+  verified_at: string | null;
+  created_at: string;
+}
+
+// ============== Vulnerability Scanning Types (PREM-6) ==============
+
+export type ScanStatus = 'pending' | 'scanning' | 'completed' | 'failed';
+
+export interface VulnerabilityScan {
+  id: number;
+  version_id: number;
+  initiated_by_id: number | null;
+  status: ScanStatus;
+  vulnerabilities: Array<Record<string, unknown>> | null;
+  total_vulnerabilities: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  scan_started_at: string | null;
+  scan_completed_at: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface VulnerabilityScanListResponse {
+  scans: VulnerabilityScan[];
+  total: number;
+}
+
+// ============== SBOM Types (PREM-7) ==============
+
+export interface SBOMEntry {
+  id: number;
+  version_id: number;
+  uploaded_by_id: number | null;
+  format: string;
+  dependencies: Array<{ name: string; version: string; license: string; is_direct: boolean }> | null;
+  total_dependencies: number;
+  direct_dependencies: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SBOMListResponse {
+  sboms: SBOMEntry[];
+  total: number;
+}
+
+// ============== 2FA Types (PREM-9) ==============
+
+export interface TwoFactorChallengeResponse {
+  challenge_id: number;
+  action: string;
+  expires_at: string;
+  message: string;
+}
+
+export interface TwoFactorVerifyResponse {
+  verified: boolean;
+  message: string;
+}
 // ============== Staged Rollout Types ==============
 
 export type RolloutStage = 'canary' | 'early' | 'partial' | 'majority' | 'full' | 'paused';

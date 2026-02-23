@@ -973,6 +973,70 @@ class ApiClient {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
   }
 
+  // ============== Code Signing (PREM-5) ==============
+
+  async listSigningKeys(addonId: number): Promise<import('../types').SigningKeyListResponse> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys`);
+  }
+
+  async createSigningKey(addonId: number, data: import('../types').SigningKeyCreate): Promise<import('../types').SigningKey> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async revokeSigningKey(addonId: number, keyId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  async listVersionSignatures(versionId: number): Promise<import('../types').VersionSignature[]> {
+    return this.fetch(`/v1/versions/${versionId}/signatures`);
+  }
+
+  async createVersionSignature(versionId: number, data: { signing_key_id: number; signature: string; signed_hash: string }): Promise<import('../types').VersionSignature> {
+    return this.fetch(`/v1/versions/${versionId}/signatures`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  // ============== Vulnerability Scanning (PREM-6) ==============
+
+  async initiateScan(versionId: number): Promise<import('../types').VulnerabilityScan> {
+    return this.fetch(`/v1/versions/${versionId}/scans`, { method: 'POST' });
+  }
+
+  async listScans(versionId: number): Promise<import('../types').VulnerabilityScanListResponse> {
+    return this.fetch(`/v1/versions/${versionId}/scans`);
+  }
+
+  async getScan(versionId: number, scanId: number): Promise<import('../types').VulnerabilityScan> {
+    return this.fetch(`/v1/versions/${versionId}/scans/${scanId}`);
+  }
+
+  // ============== SBOM (PREM-7) ==============
+
+  async uploadSBOM(versionId: number, data: { format: string; raw_content: string }): Promise<import('../types').SBOMEntry> {
+    return this.fetch(`/v1/versions/${versionId}/sbom`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async listSBOMs(versionId: number): Promise<import('../types').SBOMListResponse> {
+    return this.fetch(`/v1/versions/${versionId}/sbom`);
+  }
+
+  // ============== IP Allowlist (PREM-8) ==============
+
+  async getIPAllowlist(keyId: number): Promise<{ ip_allowlist: string[] | null }> {
+    return this.fetch(`/v1/api-keys/${keyId}/ip-allowlist`);
+  }
+
+  async updateIPAllowlist(keyId: number, ipAllowlist: string[] | null): Promise<{ ip_allowlist: string[] | null }> {
+    return this.fetch(`/v1/api-keys/${keyId}/ip-allowlist`, { method: 'PUT', body: JSON.stringify({ ip_allowlist: ipAllowlist }) });
+  }
+
+  // ============== 2FA (PREM-9) ==============
+
+  async create2FAChallenge(action: string): Promise<import('../types').TwoFactorChallengeResponse> {
+    return this.fetch('/v1/security/2fa/challenge', { method: 'POST', body: JSON.stringify({ action }) });
+  }
+
+  async verify2FAChallenge(challengeId: number, code: string): Promise<import('../types').TwoFactorVerifyResponse> {
+    return this.fetch('/v1/security/2fa/verify', { method: 'POST', body: JSON.stringify({ challenge_id: challengeId, code }) });
   // ============== Staged Rollouts ==============
 
   async listRollouts(addonId: number, status?: string): Promise<import('../types').StagedRolloutListResponse> {
