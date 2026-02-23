@@ -7,6 +7,8 @@ import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../t
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
 import SecurityManager from '../../components/SecurityManager';
+import RolloutManager from '../../components/RolloutManager';
+import FeatureFlagManager from '../../components/FeatureFlagManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -364,6 +366,14 @@ export default function AddonEditor() {
       {/* Security Suite (Premium feature) */}
       {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
         <SecurityManager addonId={addon.id} versions={versions} />
+      {/* Staged Rollouts (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <RolloutManager addonId={addon.id} versions={versions} />
+      )}
+
+      {/* Feature Flags (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <FeatureFlagManager addonId={addon.id} />
       )}
 
       {/* Transfer Ownership (Pro+ feature) */}

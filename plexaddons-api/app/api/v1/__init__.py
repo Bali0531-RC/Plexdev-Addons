@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, security
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, rollouts, feature_flags
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, webhooks
 
 router = APIRouter(prefix="/v1")
 
@@ -28,3 +30,6 @@ router.include_router(security.scan_router)
 router.include_router(security.sbom_router)
 router.include_router(security.ip_router)
 router.include_router(security.twofa_router)
+router.include_router(rollouts.router)
+router.include_router(feature_flags.router)
+router.include_router(webhooks.router)
