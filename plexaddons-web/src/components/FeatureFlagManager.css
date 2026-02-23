@@ -1,0 +1,115 @@
+.flag-manager {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.flag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.flag-header h3 {
+  margin: 0;
+}
+
+.flag-create-form {
+  background: var(--bg-secondary, #16162a);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flag-card {
+  background: var(--bg-secondary, #16162a);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.flag-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.flag-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flag-key {
+  font-family: monospace;
+  background: var(--card-bg, #1a1a2e);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.flag-name {
+  font-weight: 500;
+}
+
+.flag-toggle {
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.flag-toggle-on {
+  background: #10b981;
+  color: white;
+}
+
+.flag-toggle-off {
+  background: var(--border-color, #2a2a4a);
+  color: var(--text-secondary, #a0a0c0);
+}
+
+.flag-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #a0a0c0);
+  margin: 0 0 0.5rem 0;
+}
+
+.flag-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0c0);
+  flex-wrap: wrap;
+}
+
+.flag-percentage-slider {
+  width: 100px;
+  cursor: pointer;
+}
+
+.flag-date {
+  margin-left: auto;
+}
+
+.no-flags {
+  color: var(--text-secondary, #a0a0c0);
+  font-style: italic;
+}
