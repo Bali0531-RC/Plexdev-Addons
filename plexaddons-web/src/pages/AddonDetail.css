@@ -19,6 +19,14 @@
   gap: 0.75rem;
 }
 
+.addon-detail-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .addon-detail-title h1 {
   font-size: 2rem;
   margin: 0;
@@ -198,6 +206,23 @@
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
+}
+
+/* README Section */
+.addon-readme-section {
+  margin-bottom: 2rem;
+}
+
+.addon-readme-section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.addon-readme {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
 }
 
 /* Responsive */
