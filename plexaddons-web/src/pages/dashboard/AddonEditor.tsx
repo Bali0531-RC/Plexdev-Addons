@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
+import RolloutManager from '../../components/RolloutManager';
+import FeatureFlagManager from '../../components/FeatureFlagManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -358,6 +360,16 @@ export default function AddonEditor() {
       {/* Collaborators (Pro+ feature) */}
       {!isNew && addon && (
         <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
+      )}
+
+      {/* Staged Rollouts (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <RolloutManager addonId={addon.id} versions={versions} />
+      )}
+
+      {/* Feature Flags (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <FeatureFlagManager addonId={addon.id} />
       )}
 
       {/* Transfer Ownership (Pro+ feature) */}

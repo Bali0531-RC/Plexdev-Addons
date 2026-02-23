@@ -973,6 +973,58 @@ class ApiClient {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
   }
 
+  // ============== Staged Rollouts ==============
+
+  async listRollouts(addonId: number, status?: string): Promise<import('../types').StagedRolloutListResponse> {
+    const params = status ? `?status_filter=${status}` : '';
+    return this.fetch(`/v1/addons/${addonId}/rollouts${params}`);
+  }
+
+  async createRollout(addonId: number, data: import('../types').StagedRolloutCreate): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async getRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}`);
+  }
+
+  async updateRollout(addonId: number, rolloutId: number, data: import('../types').StagedRolloutUpdate): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async activateRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/activate`, { method: 'POST' });
+  }
+
+  async promoteRollout(addonId: number, rolloutId: number, targetStage?: string): Promise<import('../types').StagedRollout> {
+    const body = targetStage ? JSON.stringify({ target_stage: targetStage }) : '{}';
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/promote`, { method: 'POST', body });
+  }
+
+  async pauseRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/pause`, { method: 'POST' });
+  }
+
+  async cancelRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/cancel`, { method: 'POST' });
+  }
+
+  // ============== Feature Flags ==============
+
+  async listFlags(addonId: number): Promise<import('../types').FeatureFlagListResponse> {
+    return this.fetch(`/v1/addons/${addonId}/flags`);
+  }
+
+  async createFlag(addonId: number, data: import('../types').FeatureFlagCreate): Promise<import('../types').FeatureFlag> {
+    return this.fetch(`/v1/addons/${addonId}/flags`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateFlag(addonId: number, flagId: number, data: import('../types').FeatureFlagUpdate): Promise<import('../types').FeatureFlag> {
+    return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async deleteFlag(addonId: number, flagId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'DELETE' });
   // Webhook Endpoints (Premium)
   async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
     return this.fetch('/v1/webhooks/endpoints');

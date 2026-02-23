@@ -62,6 +62,24 @@ class CollaboratorRole(str, enum.Enum):
     VIEWER = "viewer"     # Read-only access to private addons
 
 
+# Rollout stages
+class RolloutStage(str, enum.Enum):
+    CANARY = "canary"       # 1%
+    EARLY = "early"         # 5%
+    PARTIAL = "partial"     # 25%
+    MAJORITY = "majority"   # 50%
+    FULL = "full"           # 100%
+    PAUSED = "paused"       # manually paused
+
+
+class RolloutStatus(str, enum.Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
 # API Key Scopes - defines what each key can access
 class ApiKeyScope(str, enum.Enum):
     # Read operations (Pro+)
@@ -781,6 +799,92 @@ class AddonCollaborator(Base):
     )
 
 
+# ============== STAGED ROLLOUTS ==============
+
+class StagedRollout(Base):
+    """Staged rollout configuration for a version."""
+    __tablename__ = "staged_rollouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # Current stage & percentage
+    stage = Column(SQLEnum(RolloutStage, values_callable=lambda x: [e.value for e in x]),
+                   nullable=False, default=RolloutStage.CANARY)
+    percentage = Column(Integer, nullable=False, default=1)  # 0-100
+
+    status = Column(SQLEnum(RolloutStatus, values_callable=lambda x: [e.value for e in x]),
+                    nullable=False, default=RolloutStatus.DRAFT)
+
+    # Targeting rules (JSON: {"server_ids": [...], "user_ids": [...], "metadata": {...}})
+    targeting_rules = Column(JSON, nullable=True)
+
+    # Auto-promotion settings
+    auto_promote = Column(Boolean, default=False)
+    auto_promote_after_hours = Column(Integer, default=24)  # hours without issues before auto-promoting
+
+    # Metrics
+    total_checks = Column(Integer, default=0)
+    error_reports = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    promoted_at = Column(DateTime(timezone=True), nullable=True)  # Last promotion timestamp
+
+    # Relationships
+    addon = relationship("Addon", backref="rollouts")
+    version = relationship("Version", backref="rollouts")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_staged_rollouts_addon", "addon_id"),
+        Index("idx_staged_rollouts_version", "version_id"),
+        Index("idx_staged_rollouts_addon_status", "addon_id", "status"),
+    )
+
+
+class RolloutEvent(Base):
+    """Tracks rollout stage transitions."""
+    __tablename__ = "rollout_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rollout_id = Column(Integer, ForeignKey("staged_rollouts.id", ondelete="CASCADE"), nullable=False)
+    from_stage = Column(String(20), nullable=True)
+    to_stage = Column(String(20), nullable=False)
+    from_percentage = Column(Integer, nullable=True)
+    to_percentage = Column(Integer, nullable=False)
+    triggered_by = Column(String(20), nullable=False, default="manual")  # "manual" or "auto"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    rollout = relationship("StagedRollout", backref="events")
+
+    __table_args__ = (
+        Index("idx_rollout_events_rollout", "rollout_id"),
+    )
+
+
+# ============== FEATURE FLAGS ==============
+
+class FeatureFlag(Base):
+    """Feature flags linked to addons for toggling functionality without releases."""
+    __tablename__ = "feature_flags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    key = Column(String(100), nullable=False)  # e.g. "dark_mode", "new_ui"
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    enabled = Column(Boolean, default=False)
+    percentage = Column(Integer, default=100)  # % of users who see it when enabled
+
+    # Targeting (JSON: {"server_ids": [...], "user_ids": [...]})
+    targeting = Column(JSON, nullable=True)
 # ============== ORGANIZATION ENHANCEMENTS ==============
 
 class OrgAuditLog(Base):
@@ -852,6 +956,12 @@ class WebhookEndpoint(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    addon = relationship("Addon", backref="feature_flags")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_feature_flags_addon", "addon_id"),
+        Index("idx_feature_flags_addon_key", "addon_id", "key", unique=True),
     user = relationship("User", backref="webhook_endpoints")
     deliveries = relationship("WebhookDelivery", back_populates="endpoint", cascade="all, delete-orphan")
 
