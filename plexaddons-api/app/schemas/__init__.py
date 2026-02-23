@@ -948,6 +948,94 @@ class TransferOwnershipRequest(BaseModel):
     new_owner_id: int
 
 
+# ============ Webhook Endpoint Schemas (Premium) ============
+
+VALID_WEBHOOK_EVENTS = [
+    "version.released", "version.updated", "version.deleted",
+    "addon.created", "addon.updated", "addon.deleted",
+]
+
+class WebhookEndpointCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    url: str = Field(..., max_length=500)
+    is_active: bool = True
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = Field(None, max_length=5000)
+
+    @field_validator('url')
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+
+    @field_validator('event_filter')
+    @classmethod
+    def validate_events(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            for e in v:
+                if e not in VALID_WEBHOOK_EVENTS:
+                    raise ValueError(f'Invalid event type: {e}')
+        return v
+
+
+class WebhookEndpointUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    url: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = Field(None, max_length=5000)
+
+    @field_validator('url')
+    @classmethod
+    def validate_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+
+    @field_validator('event_filter')
+    @classmethod
+    def validate_events(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            for e in v:
+                if e not in VALID_WEBHOOK_EVENTS:
+                    raise ValueError(f'Invalid event type: {e}')
+        return v
+
+
+class WebhookEndpointResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    is_active: bool
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = None
+    has_secret: bool = True
+    masked_secret: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class WebhookDeliveryResponse(BaseModel):
+    id: int
+    endpoint_id: int
+    event_type: str
+    status: str
+    status_code: Optional[int] = None
+    error_message: Optional[str] = None
+    attempt: int
+    max_attempts: int
+    next_retry_at: Optional[datetime] = None
+    created_at: datetime
+    delivered_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Forward reference resolution
 AuthResponse.model_rebuild()
 UserPublicProfile.model_rebuild()

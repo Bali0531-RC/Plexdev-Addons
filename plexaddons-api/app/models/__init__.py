@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON, SmallInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -828,4 +828,66 @@ class OrgApiKey(Base):
     __table_args__ = (
         Index("idx_org_api_keys_org", "organization_id"),
         Index("idx_org_api_keys_hash", "key_hash"),
+    )
+
+
+class WebhookEndpoint(Base):
+    """Multiple webhook endpoints per user (Premium feature)."""
+    __tablename__ = "webhook_endpoints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    url = Column(String(500), nullable=False)
+    secret = Column(String(64), nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    # Per-event filtering (JSON array of event types, null = all events)
+    event_filter = Column(JSON, nullable=True)
+
+    # Custom payload template (Jinja2-style, null = default format)
+    payload_template = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="webhook_endpoints")
+    deliveries = relationship("WebhookDelivery", back_populates="endpoint", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_webhook_endpoints_user", "user_id"),
+    )
+
+
+class WebhookDelivery(Base):
+    """Delivery log for webhook events with retry tracking."""
+    __tablename__ = "webhook_deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint_id = Column(Integer, ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    payload = Column(Text, nullable=False)
+
+    # Delivery status
+    status = Column(String(20), nullable=False, default="pending")  # pending, success, failed
+    status_code = Column(Integer, nullable=True)
+    response_body = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    # Retry tracking
+    attempt = Column(SmallInteger, default=1)
+    max_attempts = Column(SmallInteger, default=6)  # 1 initial + 5 retries
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    endpoint = relationship("WebhookEndpoint", back_populates="deliveries")
+
+    __table_args__ = (
+        Index("idx_webhook_deliveries_endpoint", "endpoint_id"),
+        Index("idx_webhook_deliveries_status", "status"),
+        Index("idx_webhook_deliveries_retry", "status", "next_retry_at"),
     )

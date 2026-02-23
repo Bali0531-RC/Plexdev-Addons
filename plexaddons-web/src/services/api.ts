@@ -59,6 +59,10 @@ import {
   OrgApiKeyListResponse,
   OrgAnalyticsSummary,
   OrgPublicPage,
+  WebhookEndpoint,
+  WebhookEndpointCreate,
+  WebhookEndpointUpdate,
+  WebhookDelivery,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -967,6 +971,46 @@ class ApiClient {
 
   async deleteNotification(id: number): Promise<void> {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
+  }
+
+  // Webhook Endpoints (Premium)
+  async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
+    return this.fetch('/v1/webhooks/endpoints');
+  }
+
+  async createWebhookEndpoint(data: WebhookEndpointCreate): Promise<WebhookEndpoint> {
+    return this.fetch('/v1/webhooks/endpoints', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateWebhookEndpoint(id: number, data: WebhookEndpointUpdate): Promise<WebhookEndpoint> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWebhookEndpoint(id: number): Promise<void> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, { method: 'DELETE' });
+  }
+
+  async rotateWebhookEndpointSecret(id: number): Promise<{ secret: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/rotate-secret`, { method: 'POST' });
+  }
+
+  async testWebhookEndpoint(id: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/test`, { method: 'POST' });
+  }
+
+  async getWebhookDeliveries(endpointId: number, page = 1, perPage = 20): Promise<WebhookDelivery[]> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.fetch(`/v1/webhooks/endpoints/${endpointId}/deliveries?${params}`);
+  }
+
+  async retryWebhookDelivery(deliveryId: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
   }
 }
 
