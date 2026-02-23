@@ -211,6 +211,11 @@ export default function Addons() {
                   {addon.external && (
                     <span className="badge badge-external">External</span>
                   )}
+                  {addon.is_paid && (
+                    <span className="badge badge-paid">
+                      {addon.price_cents ? `$${(addon.price_cents / 100).toFixed(2)}` : 'Paid'}
+                    </span>
+                  )}
                   {addon.download_count > 0 && (
                     <span className="addon-downloads" title="Total downloads">
                       ⬇ {addon.download_count.toLocaleString()}

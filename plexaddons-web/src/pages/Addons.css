@@ -234,6 +234,12 @@
   color: var(--accent);
 }
 
+.badge-paid {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  font-weight: 600;
+}
+
 .addon-author {
   font-size: 0.85rem;
   color: var(--text-muted);

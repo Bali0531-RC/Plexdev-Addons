@@ -1,9 +1,10 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, marketplace
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, premium_analytics
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, security
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, rollouts, feature_flags
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, webhooks
+from app.api.v1 import (
+    auth, users, addons, versions, payments, admin, tickets, profiles,
+    analytics, tags, organizations, automation, api_keys, stars, reviews,
+    notifications, collaborators, marketplace, premium_analytics, security,
+    rollouts, feature_flags, webhooks,
+)
 
 router = APIRouter(prefix="/v1")
 

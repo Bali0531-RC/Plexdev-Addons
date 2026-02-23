@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
+import { useAuth } from '../context/AuthContext';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import ScreenshotGallery from '../components/ScreenshotGallery';
 import StarButton from '../components/StarButton';
@@ -14,7 +15,10 @@ export default function AddonDetail() {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchased, setPurchased] = useState(false);
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (slug) {
@@ -31,6 +35,17 @@ export default function AddonDetail() {
       ]);
       setAddon(addonData);
       setVersions(versionsData.versions);
+      // Check if current user already has a license for this paid addon
+      if (addonData.is_paid && isAuthenticated) {
+        try {
+          const licenses = await api.listMyLicenses(0, 200);
+          if (licenses.licenses.some(l => l.addon_id === addonData.id)) {
+            setPurchased(true);
+          }
+        } catch {
+          // Ignore — license check is best-effort
+        }
+      }
     } catch (err) {
       setError('Addon not found');
       console.error(err);
@@ -89,6 +104,11 @@ export default function AddonDetail() {
             )}
           </h1>
           {addon.external && <span className="badge badge-external">External</span>}
+          {addon.is_paid && (
+            <span className="badge badge-paid">
+              {addon.price_cents ? `$${(addon.price_cents / 100).toFixed(2)}` : 'Paid'}
+            </span>
+          )}
           <StarButton slug={addon.slug} />
         </div>
         {addon.latest_version && (
@@ -98,6 +118,38 @@ export default function AddonDetail() {
 
       {addon.description && (
         <p className="addon-detail-description">{addon.description}</p>
+      )}
+
+      {addon.is_paid && (
+        <div className="addon-purchase-section">
+          <div className="addon-price-display">
+            {addon.price_cents ? `$${(addon.price_cents / 100).toFixed(2)}` : 'Paid'}
+          </div>
+          {purchased ? (
+            <span className="btn btn-secondary addon-purchased-btn" aria-disabled>✓ Purchased</span>
+          ) : isAuthenticated && addon.owner_id !== user?.id ? (
+            <button
+              className="btn btn-primary addon-purchase-btn"
+              disabled={purchasing}
+              onClick={async () => {
+                setPurchasing(true);
+                try {
+                  await api.purchaseAddon(addon.id);
+                  setPurchased(true);
+                } catch (err) {
+                  console.error('Purchase failed:', err);
+                  alert('Purchase failed. Please try again.');
+                } finally {
+                  setPurchasing(false);
+                }
+              }}
+            >
+              {purchasing ? 'Processing…' : 'Purchase'}
+            </button>
+          ) : !isAuthenticated ? (
+            <Link to="/login" className="btn btn-primary addon-purchase-btn">Log in to Purchase</Link>
+          ) : null}
+        </div>
       )}
 
       <ScreenshotGallery
