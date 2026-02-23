@@ -21,6 +21,7 @@ from app.schemas import (
     SponsorUrlUpdate,
 )
 from app.api.deps import get_current_user, rate_limit_check_authenticated, get_effective_tier
+from app.core.cache import cache
 
 
 # ============== MARKETPLACE (PREM-13) ==============
@@ -70,6 +71,8 @@ async def update_addon_pricing(
     
     await db.commit()
     await db.refresh(addon)
+    
+    await cache.invalidate_addon(addon_id=addon.id, addon_slug=addon.slug)
     
     return {
         "addon_id": addon.id,
@@ -425,6 +428,8 @@ async def update_sponsor_url(
     
     addon.sponsor_url = body.sponsor_url
     await db.commit()
+    
+    await cache.invalidate_addon(addon_id=addon.id, addon_slug=addon.slug)
     
     return {
         "addon_id": addon.id,
