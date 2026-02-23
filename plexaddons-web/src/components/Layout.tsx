@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Layout.css';
@@ -5,6 +6,12 @@ import './Layout.css';
 export default function Layout() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const getDiscordAvatar = () => {
     if (!user?.discord_avatar) {
@@ -29,7 +36,17 @@ export default function Layout() {
             <span className="logo-text">PlexAddons</span>
           </Link>
 
-          <nav className="nav">
+          <button 
+            className={`hamburger ${menuOpen ? 'open' : ''}`} 
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <nav className={`nav ${menuOpen ? 'nav-open' : ''}`}>
             <Link to="/addons" className={location.pathname === '/addons' ? 'active' : ''}>
               Addons
             </Link>
