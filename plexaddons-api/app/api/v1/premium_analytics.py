@@ -640,16 +640,17 @@ async def get_hourly_breakdown(
     
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     
+    hour_col = func.date_trunc('hour', VersionCheck.timestamp).label("hour")
     result = await db.execute(
         select(
-            func.date_trunc('hour', VersionCheck.timestamp).label("hour"),
+            hour_col,
             func.count(VersionCheck.id).label("checks"),
             func.count(func.distinct(VersionCheck.client_ip_hash)).label("unique_users"),
         ).where(
             VersionCheck.addon_id == addon_id,
             VersionCheck.timestamp >= cutoff,
-        ).group_by(func.date_trunc('hour', VersionCheck.timestamp))
-        .order_by(func.date_trunc('hour', VersionCheck.timestamp))
+        ).group_by(hour_col)
+        .order_by(hour_col)
     )
     
     hourly = [
