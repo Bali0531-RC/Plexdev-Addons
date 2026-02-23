@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, literal_column
+from sqlalchemy import select, func, and_, literal_column, cast, String
 from sqlalchemy.orm import aliased
 from app.models import Addon, Version, User, AddonUsageStats
 from app.schemas import AddonCreate, AddonUpdate
@@ -145,13 +145,11 @@ class AddonService:
                 func.concat(Addon.name, ' ', func.coalesce(Addon.description, '')).ilike(f"%{safe_search}%")
             )
         if tag:
-            # Filter by tag - tags is stored as a PostgreSQL ARRAY/JSON column
-            filters.append(Addon.tags.contains([tag]))
+            # Filter by tag - tags is stored as a PostgreSQL JSON column, cast to text for LIKE
+            safe_tag = sanitize_ilike_pattern(tag)
+            filters.append(cast(Addon.tags, String).ilike(f'%"{safe_tag}"%'))
         if addon_ids is not None:
             filters.append(Addon.id.in_(addon_ids))
-        if tag:
-            # Filter addons that contain this tag in their JSON tags array
-            filters.append(Addon.tags.contains([tag]))
         
         # Get total count
         count_query = select(func.count(Addon.id))
