@@ -21,7 +21,7 @@ def upgrade() -> None:
     release_channel.create(op.get_bind(), checkfirst=True)
 
     # Add channel column (defaults to stable for existing versions)
-    op.add_column('versions', sa.Column('channel', sa.Enum('stable', 'beta', 'alpha', name='releasechannel'), server_default='stable', nullable=False))
+    op.add_column('versions', sa.Column('channel', sa.Enum('stable', 'beta', 'alpha', name='releasechannel', create_type=False), server_default=sa.text("'stable'"), nullable=False))
 
     # Add deprecation fields
     op.add_column('versions', sa.Column('is_deprecated', sa.Boolean(), server_default='false', nullable=False))
