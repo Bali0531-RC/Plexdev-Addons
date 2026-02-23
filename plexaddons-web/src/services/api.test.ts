@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { isAllowedRedirectUrl, safeRedirect } from '../services/api';
 
 describe('isAllowedRedirectUrl', () => {
