@@ -28,6 +28,9 @@ stripe==7.12.0
 # Scheduling
 apscheduler==3.10.4
 
+# Background task queue
+arq==0.26.1
+
 # Email
 aiosmtplib==3.0.1
 
