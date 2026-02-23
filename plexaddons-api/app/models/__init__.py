@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON, SmallInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -645,6 +645,7 @@ class Organization(Base):
     
     # Avatar/branding
     avatar_url = Column(String(500), nullable=True)
+    banner_url = Column(String(500), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -653,6 +654,8 @@ class Organization(Base):
     owner = relationship("User", back_populates="owned_organizations", foreign_keys=[owner_id])
     members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
     addons = relationship("Addon", back_populates="organization")
+    audit_logs = relationship("OrgAuditLog", back_populates="organization", cascade="all, delete-orphan")
+    api_keys = relationship("OrgApiKey", back_populates="organization", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index("idx_organizations_owner", "owner_id"),
@@ -669,6 +672,9 @@ class OrganizationMember(Base):
     
     # Role
     role = Column(SQLEnum(OrganizationRole), default=OrganizationRole.MEMBER, nullable=False)
+    
+    # Granular permissions (JSON: {"manage_versions": true, "view_analytics": true, ...})
+    permissions = Column(JSON, nullable=True)
     
     # Invitation tracking
     invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -879,6 +885,72 @@ class FeatureFlag(Base):
 
     # Targeting (JSON: {"server_ids": [...], "user_ids": [...]})
     targeting = Column(JSON, nullable=True)
+# ============== ORGANIZATION ENHANCEMENTS ==============
+
+class OrgAuditLog(Base):
+    """Audit log for organization actions."""
+    __tablename__ = "org_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False)  # e.g. "member.invited", "addon.created"
+    details = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="audit_logs")
+    user = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_audit_logs_org", "organization_id"),
+        Index("idx_org_audit_logs_created", "organization_id", "created_at"),
+    )
+
+
+class OrgApiKey(Base):
+    """API keys scoped to an organization."""
+    __tablename__ = "org_api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    name = Column(String(100), nullable=False)
+    key_hash = Column(String(128), nullable=False, unique=True)
+    key_prefix = Column(String(12), nullable=False)  # First 8 chars for identification
+    scopes = Column(JSON, nullable=True)  # ["read:addons", "read:analytics", "write:versions"]
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="api_keys")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_api_keys_org", "organization_id"),
+        Index("idx_org_api_keys_hash", "key_hash"),
+    )
+
+
+class WebhookEndpoint(Base):
+    """Multiple webhook endpoints per user (Premium feature)."""
+    __tablename__ = "webhook_endpoints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    url = Column(String(500), nullable=False)
+    secret = Column(String(64), nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    # Per-event filtering (JSON array of event types, null = all events)
+    event_filter = Column(JSON, nullable=True)
+
+    # Custom payload template (Jinja2-style, null = default format)
+    payload_template = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -890,4 +962,42 @@ class FeatureFlag(Base):
     __table_args__ = (
         Index("idx_feature_flags_addon", "addon_id"),
         Index("idx_feature_flags_addon_key", "addon_id", "key", unique=True),
+    user = relationship("User", backref="webhook_endpoints")
+    deliveries = relationship("WebhookDelivery", back_populates="endpoint", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_webhook_endpoints_user", "user_id"),
+    )
+
+
+class WebhookDelivery(Base):
+    """Delivery log for webhook events with retry tracking."""
+    __tablename__ = "webhook_deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint_id = Column(Integer, ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    payload = Column(Text, nullable=False)
+
+    # Delivery status
+    status = Column(String(20), nullable=False, default="pending")  # pending, success, failed
+    status_code = Column(Integer, nullable=True)
+    response_body = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    # Retry tracking
+    attempt = Column(SmallInteger, default=1)
+    max_attempts = Column(SmallInteger, default=6)  # 1 initial + 5 retries
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    endpoint = relationship("WebhookEndpoint", back_populates="deliveries")
+
+    __table_args__ = (
+        Index("idx_webhook_deliveries_endpoint", "endpoint_id"),
+        Index("idx_webhook_deliveries_status", "status"),
+        Index("idx_webhook_deliveries_retry", "status", "next_retry_at"),
     )

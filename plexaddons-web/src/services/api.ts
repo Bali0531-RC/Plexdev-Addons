@@ -53,6 +53,16 @@ import {
   ReviewUpdate,
   TrendingAddon,
   NotificationListResponse,
+  OrgAuditLogListResponse,
+  OrgApiKey,
+  OrgApiKeyCreateResponse,
+  OrgApiKeyListResponse,
+  OrgAnalyticsSummary,
+  OrgPublicPage,
+  WebhookEndpoint,
+  WebhookEndpointCreate,
+  WebhookEndpointUpdate,
+  WebhookDelivery,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -902,6 +912,44 @@ class ApiClient {
     return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, { method: 'DELETE' });
   }
 
+  async updateMemberPermissions(orgSlug: string, userId: number, permissions: Record<string, boolean>): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}/permissions`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions }),
+    });
+  }
+
+  // Organization Audit Logs
+  async getOrgAuditLogs(orgSlug: string, page = 1, perPage = 50): Promise<OrgAuditLogListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/audit-logs?page=${page}&per_page=${perPage}`);
+  }
+
+  // Organization API Keys
+  async createOrgApiKey(orgSlug: string, data: { name: string; scopes?: string[]; expires_at?: string }): Promise<OrgApiKeyCreateResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listOrgApiKeys(orgSlug: string): Promise<OrgApiKeyListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`);
+  }
+
+  async deleteOrgApiKey(orgSlug: string, keyId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  // Organization Analytics
+  async getOrgAnalytics(orgSlug: string): Promise<OrgAnalyticsSummary> {
+    return this.fetch(`/v1/organizations/${orgSlug}/analytics`);
+  }
+
+  // Public Organization Page
+  async getPublicOrgPage(orgSlug: string): Promise<OrgPublicPage> {
+    return this.fetch(`/v1/organizations/public/${orgSlug}`);
+  }
+
   // Notifications
   async getNotifications(page = 1, perPage = 20, unreadOnly = false): Promise<NotificationListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
@@ -977,6 +1025,44 @@ class ApiClient {
 
   async deleteFlag(addonId: number, flagId: number): Promise<void> {
     return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'DELETE' });
+  // Webhook Endpoints (Premium)
+  async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
+    return this.fetch('/v1/webhooks/endpoints');
+  }
+
+  async createWebhookEndpoint(data: WebhookEndpointCreate): Promise<WebhookEndpoint> {
+    return this.fetch('/v1/webhooks/endpoints', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateWebhookEndpoint(id: number, data: WebhookEndpointUpdate): Promise<WebhookEndpoint> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWebhookEndpoint(id: number): Promise<void> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, { method: 'DELETE' });
+  }
+
+  async rotateWebhookEndpointSecret(id: number): Promise<{ secret: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/rotate-secret`, { method: 'POST' });
+  }
+
+  async testWebhookEndpoint(id: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/test`, { method: 'POST' });
+  }
+
+  async getWebhookDeliveries(endpointId: number, page = 1, perPage = 20): Promise<WebhookDelivery[]> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.fetch(`/v1/webhooks/endpoints/${endpointId}/deliveries?${params}`);
+  }
+
+  async retryWebhookDelivery(deliveryId: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
   }
 }
 
