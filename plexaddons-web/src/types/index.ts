@@ -466,6 +466,27 @@ export interface AnalyticsSummary {
   addons: AddonAnalytics[];
 }
 
+export interface ApiKeyUsageSummary {
+  name: string;
+  key_prefix: string;
+  last_used_at: string | null;
+  usage_count: number;
+  is_active: boolean;
+}
+
+export interface ApiEndpointStat {
+  endpoint: string;
+  method: string;
+  count: number;
+}
+
+export interface ApiUsageAnalytics {
+  keys: ApiKeyUsageSummary[];
+  top_endpoints: ApiEndpointStat[];
+  daily_requests: { date: string; count: number }[];
+  period_days: number;
+}
+
 // Organization Types (Premium Feature)
 export type OrganizationRole = 'owner' | 'admin' | 'member';
 
