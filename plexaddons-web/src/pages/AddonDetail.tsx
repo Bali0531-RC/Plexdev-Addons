@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -11,6 +11,7 @@ export default function AddonDetail() {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (slug) {
@@ -87,7 +88,7 @@ export default function AddonDetail() {
       <div className="addon-detail-meta">
         <span 
           className="addon-author-link"
-          onClick={() => addon.owner_discord_id && (window.location.href = `/u/${addon.owner_discord_id}`)}
+          onClick={() => addon.owner_discord_id && navigate(`/u/${addon.owner_discord_id}`)}
           style={{ cursor: addon.owner_discord_id ? 'pointer' : 'default' }}
         >
           by {addon.owner_username || 'Unknown'}

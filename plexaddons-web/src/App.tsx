@@ -36,6 +36,7 @@ import AdminAuditLog from './pages/admin/AdminAuditLog'
 import AdminTickets from './pages/admin/AdminTickets'
 import AdminTicketDetail from './pages/admin/AdminTicketDetail'
 import AdminCannedResponses from './pages/admin/AdminCannedResponses'
+import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 
@@ -107,6 +108,9 @@ export default function App() {
           <Route path="tickets/:ticketId" element={<AdminTicketDetail />} />
           <Route path="canned-responses" element={<AdminCannedResponses />} />
         </Route>
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
     </>
