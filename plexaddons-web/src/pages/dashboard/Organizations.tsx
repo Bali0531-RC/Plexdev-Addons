@@ -4,7 +4,13 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Organization, OrganizationDetail, OrganizationRole } from '../../types';
+import { ORG_PERMISSIONS } from '../../types';
+import OrgAuditLogViewer from '../../components/OrgAuditLogViewer';
+import OrgApiKeyManager from '../../components/OrgApiKeyManager';
+import OrgAnalytics from '../../components/OrgAnalytics';
 import './Organizations.css';
+
+type OrgTab = 'members' | 'analytics' | 'api-keys' | 'audit-log' | 'settings';
 
 export default function Organizations() {
   const { user } = useAuth();
@@ -20,6 +26,7 @@ export default function Organizations() {
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<OrganizationRole>('member');
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<OrgTab>('members');
 
   const effectiveTier = user?.effective_tier || user?.subscription_tier || 'free';
   const canCreateOrgs = effectiveTier === 'premium';
@@ -128,6 +135,19 @@ export default function Organizations() {
     }
   };
 
+  const handleTogglePermission = async (userId: number, perm: string, current: Record<string, boolean> | null) => {
+    if (!selectedOrg) return;
+    const perms = { ...(current || {}) };
+    perms[perm] = !perms[perm];
+    try {
+      await api.updateMemberPermissions(selectedOrg.slug, userId, perms);
+      await loadOrgDetails(selectedOrg.slug);
+      toast.success('Permissions updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update permissions');
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-page">
@@ -214,61 +234,101 @@ export default function Organizations() {
                 <h2>{selectedOrg.name}</h2>
                 {selectedOrg.description && <p>{selectedOrg.description}</p>}
                 <span className="org-owner">Owner: {selectedOrg.owner_username}</span>
+                <Link to={`/org/${selectedOrg.slug}`} className="org-public-link" target="_blank">
+                  View public page →
+                </Link>
               </div>
             </div>
 
-            <div className="org-members">
-              <div className="members-header">
-                <h3>Members ({selectedOrg.members.length})</h3>
-                {selectedOrg.owner_id === user?.id && (
-                  <button className="btn btn-sm btn-primary" onClick={() => setShowInviteModal(true)}>
-                    + Invite
-                  </button>
-                )}
-              </div>
+            <div className="org-tabs">
+              <button className={activeTab === 'members' ? 'active' : ''} onClick={() => setActiveTab('members')}>Members</button>
+              <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>Analytics</button>
+              <button className={activeTab === 'api-keys' ? 'active' : ''} onClick={() => setActiveTab('api-keys')}>API Keys</button>
+              <button className={activeTab === 'audit-log' ? 'active' : ''} onClick={() => setActiveTab('audit-log')}>Audit Log</button>
+              <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
+            </div>
 
-              <div className="members-list">
-                {selectedOrg.members.map(member => (
-                  <div key={member.id} className="member-row">
-                    <div className="member-avatar">
-                      {member.discord_avatar ? (
-                        <img
-                          src={`https://cdn.discordapp.com/avatars/${member.user_id}/${member.discord_avatar}.png`}
-                          alt={member.discord_username || ''}
-                        />
-                      ) : (
-                        <span>{(member.discord_username || '?').charAt(0).toUpperCase()}</span>
+            {activeTab === 'members' && (
+              <div className="org-members">
+                <div className="members-header">
+                  <h3>Members ({selectedOrg.members.length})</h3>
+                  {selectedOrg.owner_id === user?.id && (
+                    <button className="btn btn-sm btn-primary" onClick={() => setShowInviteModal(true)}>
+                      + Invite
+                    </button>
+                  )}
+                </div>
+
+                <div className="members-list">
+                  {selectedOrg.members.map(member => (
+                    <div key={member.id} className="member-row">
+                      <div className="member-avatar">
+                        {member.discord_avatar ? (
+                          <img
+                            src={`https://cdn.discordapp.com/avatars/${member.user_id}/${member.discord_avatar}.png`}
+                            alt={member.discord_username || ''}
+                          />
+                        ) : (
+                          <span>{(member.discord_username || '?').charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="member-info">
+                        <span className="member-name">{member.discord_username || 'Unknown'}</span>
+                        <span className={`member-role role-${member.role}`}>
+                          {member.role}
+                        </span>
+                      </div>
+                      {selectedOrg.owner_id === user?.id && member.role !== 'owner' && (
+                        <div className="member-actions">
+                          <select
+                            value={member.role}
+                            onChange={(e) => handleUpdateMemberRole(member.user_id, e.target.value as OrganizationRole)}
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleRemoveMember(member.user_id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                      {/* Permissions toggles for non-owner members */}
+                      {selectedOrg.owner_id === user?.id && member.role !== 'owner' && (
+                        <div className="member-permissions">
+                          {ORG_PERMISSIONS.map(perm => (
+                            <label key={perm} className="perm-toggle">
+                              <input
+                                type="checkbox"
+                                checked={!!(member.permissions && member.permissions[perm])}
+                                onChange={() => handleTogglePermission(member.user_id, perm, member.permissions)}
+                              />
+                              <span>{perm.replace(/_/g, ' ')}</span>
+                            </label>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <div className="member-info">
-                      <span className="member-name">{member.discord_username || 'Unknown'}</span>
-                      <span className={`member-role role-${member.role}`}>
-                        {member.role}
-                      </span>
-                    </div>
-                    {selectedOrg.owner_id === user?.id && member.role !== 'owner' && (
-                      <div className="member-actions">
-                        <select
-                          value={member.role}
-                          onChange={(e) => handleUpdateMemberRole(member.user_id, e.target.value as OrganizationRole)}
-                        >
-                          <option value="member">Member</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleRemoveMember(member.user_id)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {selectedOrg.owner_id === user?.id && (
+            {activeTab === 'analytics' && (
+              <OrgAnalytics orgSlug={selectedOrg.slug} />
+            )}
+
+            {activeTab === 'api-keys' && (
+              <OrgApiKeyManager orgSlug={selectedOrg.slug} />
+            )}
+
+            {activeTab === 'audit-log' && (
+              <OrgAuditLogViewer orgSlug={selectedOrg.slug} />
+            )}
+
+            {activeTab === 'settings' && selectedOrg.owner_id === user?.id && (
               <div className="org-danger-zone">
                 <h3>Danger Zone</h3>
                 <button className="btn btn-danger" onClick={handleDeleteOrg}>
