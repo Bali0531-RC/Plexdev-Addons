@@ -4,7 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
-from app.models import User, ApiKey
+from app.models import User, ApiKey, Addon, AddonLicense, LicenseStatus
 from app.core.security import decode_access_token
 from app.core.exceptions import UnauthorizedError, ForbiddenError
 from app.core.rate_limit import get_rate_limiter
@@ -77,6 +77,33 @@ def get_effective_tier(user: User):
         if user.temp_tier_expires_at > datetime.now(timezone.utc):
             return user.temp_tier
     return user.subscription_tier
+
+
+async def check_paid_addon_access(
+    db: AsyncSession, addon: Addon, user: Optional[User]
+) -> bool:
+    """
+    Check if a user has download access to a paid addon.
+    Returns True if:
+    - The addon is not paid
+    - The user is the addon owner
+    - The user is an admin
+    - The user has an active license
+    """
+    if not addon.is_paid:
+        return True
+    if not user:
+        return False
+    if addon.owner_id == user.id or user.is_admin:
+        return True
+    result = await db.execute(
+        select(AddonLicense.id).where(
+            AddonLicense.addon_id == addon.id,
+            AddonLicense.buyer_id == user.id,
+            AddonLicense.status == LicenseStatus.ACTIVE,
+        ).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def require_pro(

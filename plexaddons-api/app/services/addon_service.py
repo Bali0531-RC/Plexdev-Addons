@@ -291,12 +291,13 @@ class AddonService:
             client_ip_hash: Optional hashed IP for A/B rollout consistency.
                            If provided, respects rollout_percentage.
         """
-        # Fetch all public addons with owner info in a single query
+        # Fetch all public, non-paid addons with owner info in a single query
         addons_query = (
             select(Addon, User.discord_username.label("owner_username"))
             .join(User, User.id == Addon.owner_id, isouter=True)
             .where(Addon.is_public == True)
             .where(Addon.is_active == True)
+            .where(Addon.is_paid == False)
         )
         addons_result = await db.execute(addons_query)
         addon_rows = addons_result.all()

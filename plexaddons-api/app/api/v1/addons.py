@@ -14,7 +14,7 @@ from app.schemas import (
     VersionListResponse,
 )
 from app.services import AddonService, VersionService
-from app.api.deps import get_current_user, get_current_user_optional, get_effective_tier, rate_limit_check, rate_limit_check_authenticated
+from app.api.deps import get_current_user, get_current_user_optional, get_effective_tier, rate_limit_check, rate_limit_check_authenticated, check_paid_addon_access
 from app.core.exceptions import NotFoundError, ForbiddenError
 from app.core.cache import cache
 from app.models import SubscriptionTier
@@ -422,7 +422,15 @@ async def list_addon_versions(
     
     versions, total = await VersionService.list_versions(db, addon.id, skip=skip, limit=limit, channel=channel)
     
+    has_access = await check_paid_addon_access(db, addon, user)
+    version_responses = []
+    for v in versions:
+        resp = VersionResponse.model_validate(v)
+        if not has_access:
+            resp.download_url = ""
+        version_responses.append(resp)
+    
     return VersionListResponse(
-        versions=[VersionResponse.model_validate(v) for v in versions],
+        versions=version_responses,
         total=total,
     )

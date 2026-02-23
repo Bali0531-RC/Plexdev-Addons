@@ -11,7 +11,7 @@ from app.schemas import (
     VersionDeprecate,
 )
 from app.services import AddonService, VersionService
-from app.api.deps import get_current_user, get_current_user_optional, rate_limit_check, rate_limit_check_authenticated, get_effective_tier
+from app.api.deps import get_current_user, get_current_user_optional, rate_limit_check, rate_limit_check_authenticated, get_effective_tier, check_paid_addon_access
 from app.core.exceptions import NotFoundError, ForbiddenError
 
 router = APIRouter(tags=["Versions"])
@@ -60,7 +60,10 @@ async def get_version(
     if not version:
         raise NotFoundError("Version not found")
     
-    return VersionResponse.model_validate(version)
+    resp = VersionResponse.model_validate(version)
+    if not await check_paid_addon_access(db, addon, user):
+        resp.download_url = ""
+    return resp
 
 
 @router.get("/addons/{slug}/versions/latest", response_model=VersionResponse)
@@ -84,7 +87,10 @@ async def get_latest_version(
     if not version:
         raise NotFoundError("No versions found for this addon")
     
-    return VersionResponse.model_validate(version)
+    resp = VersionResponse.model_validate(version)
+    if not await check_paid_addon_access(db, addon, user):
+        resp.download_url = ""
+    return resp
 
 
 @router.patch("/addons/{slug}/versions/{version_str}", response_model=VersionResponse)
