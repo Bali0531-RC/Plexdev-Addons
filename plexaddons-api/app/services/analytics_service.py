@@ -120,6 +120,7 @@ class AnalyticsService:
             raise ValueError(f"Addon {addon_id} not found")
         
         start_date = date.today() - timedelta(days=days)
+        start_datetime = datetime.combine(start_date, datetime.min.time())
         
         # Get daily stats aggregated across all versions
         daily_query = select(
@@ -143,11 +144,10 @@ class AnalyticsService:
             for row in daily_rows
         ]
         
-        # Get version distribution
+        # Get version distribution (check_count from aggregated stats)
         version_query = select(
             AddonUsageStats.version_id,
             func.sum(AddonUsageStats.check_count).label("check_count"),
-            func.sum(AddonUsageStats.unique_users).label("unique_users"),
         ).where(
             AddonUsageStats.addon_id == addon_id,
             AddonUsageStats.date >= start_date,
@@ -156,6 +156,33 @@ class AnalyticsService:
         
         version_result = await db.execute(version_query)
         version_rows = version_result.all()
+        
+        # Get TRUE unique users per version from raw VersionCheck logs
+        # (counting distinct IP hashes over the full period, not summing daily counts)
+        version_unique_query = select(
+            VersionCheck.version_id,
+            func.count(func.distinct(VersionCheck.client_ip_hash)).label("unique_users"),
+        ).where(
+            VersionCheck.addon_id == addon_id,
+            VersionCheck.timestamp >= start_datetime,
+            VersionCheck.version_id.isnot(None),
+        ).group_by(VersionCheck.version_id)
+        
+        version_unique_result = await db.execute(version_unique_query)
+        version_unique_map = {
+            row.version_id: row.unique_users
+            for row in version_unique_result.all()
+        }
+        
+        # Get TRUE total unique users across ALL versions for this addon
+        total_unique_query = select(
+            func.count(func.distinct(VersionCheck.client_ip_hash)).label("unique_users"),
+        ).where(
+            VersionCheck.addon_id == addon_id,
+            VersionCheck.timestamp >= start_datetime,
+        )
+        total_unique_result = await db.execute(total_unique_query)
+        total_unique = total_unique_result.scalar() or 0
         
         # Get version names
         version_ids = [row.version_id for row in version_rows if row.version_id]
@@ -169,7 +196,6 @@ class AnalyticsService:
         
         # Calculate totals and percentages
         total_checks = sum(row.check_count or 0 for row in version_rows)
-        total_unique = sum(row.unique_users or 0 for row in version_rows)
         
         version_distribution = []
         for row in version_rows:
@@ -180,7 +206,7 @@ class AnalyticsService:
                         version=versions_map.get(row.version_id, "Unknown"),
                         version_id=row.version_id,
                         check_count=row.check_count or 0,
-                        unique_users=row.unique_users or 0,
+                        unique_users=version_unique_map.get(row.version_id, 0),
                         percentage=round(percentage, 2),
                     )
                 )
@@ -218,9 +244,10 @@ class AnalyticsService:
         )
         addons = addons_result.scalars().all()
         
+        addon_ids = [a.id for a in addons]
+        
         addon_analytics = []
         total_checks = 0
-        total_unique = 0
         
         for addon in addons:
             try:
@@ -229,9 +256,23 @@ class AnalyticsService:
                 )
                 addon_analytics.append(analytics)
                 total_checks += analytics.total_checks
-                total_unique += analytics.total_unique_users
             except ValueError:
                 continue
+        
+        # Get TRUE total unique users across ALL of the user's addons
+        # (a single user checking multiple addons should count as 1 unique user)
+        total_unique = 0
+        if addon_ids:
+            start_date = date.today() - timedelta(days=days)
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+            total_unique_query = select(
+                func.count(func.distinct(VersionCheck.client_ip_hash)),
+            ).where(
+                VersionCheck.addon_id.in_(addon_ids),
+                VersionCheck.timestamp >= start_datetime,
+            )
+            total_unique_result = await db.execute(total_unique_query)
+            total_unique = total_unique_result.scalar() or 0
         
         return AnalyticsSummary(
             total_addons=len(addons),
