@@ -216,6 +216,21 @@
   color: var(--accent);
 }
 
+.badge-channel-beta {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.badge-channel-alpha {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.badge-deprecated {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
 .version-date {
   color: var(--text-muted);
   font-size: 0.9rem;

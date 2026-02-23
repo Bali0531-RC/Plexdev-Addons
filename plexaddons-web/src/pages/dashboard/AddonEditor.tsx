@@ -272,6 +272,10 @@ export default function AddonEditor() {
                     {index === 0 && version.is_published && <span className="badge badge-latest">Latest</span>}
                     {!version.is_published && <span className="badge badge-scheduled">Scheduled</span>}
                     {version.breaking && <span className="badge badge-breaking">Breaking</span>}
+                    {version.channel && version.channel !== 'stable' && (
+                      <span className={`badge badge-channel-${version.channel}`}>{version.channel}</span>
+                    )}
+                    {version.is_deprecated && <span className="badge badge-deprecated">Deprecated</span>}
                     {version.rollout_percentage !== null && version.rollout_percentage < 100 && (
                       <span className="badge badge-rollout">{version.rollout_percentage}%</span>
                     )}

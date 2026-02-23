@@ -1,8 +1,8 @@
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
-from app.models import Version, Addon, User, SubscriptionTier
+from app.models import Version, Addon, User, SubscriptionTier, ReleaseChannel
 from app.schemas import VersionCreate, VersionUpdate
 from app.services.user_service import UserService
 from app.services.webhook_service import webhook_service
@@ -175,6 +175,7 @@ class VersionService:
             breaking=data.breaking,
             urgent=data.urgent,
             storage_size_bytes=content_size,
+            channel=data.channel,
         )
         db.add(version)
         await db.commit()
@@ -247,18 +248,23 @@ class VersionService:
         addon_id: int,
         skip: int = 0,
         limit: int = 50,
+        channel: Optional[ReleaseChannel] = None,
     ) -> tuple[List[Version], int]:
-        """List versions for an addon."""
+        """List versions for an addon, optionally filtered by release channel."""
+        base_filter = [Version.addon_id == addon_id]
+        if channel:
+            base_filter.append(Version.channel == channel)
+        
         # Get total count
         count_result = await db.execute(
-            select(func.count(Version.id)).where(Version.addon_id == addon_id)
+            select(func.count(Version.id)).where(*base_filter)
         )
         total = count_result.scalar() or 0
         
         # Get versions
         result = await db.execute(
             select(Version)
-            .where(Version.addon_id == addon_id)
+            .where(*base_filter)
             .order_by(Version.release_date.desc(), Version.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -266,3 +272,66 @@ class VersionService:
         versions = result.scalars().all()
         
         return list(versions), total
+    
+    @staticmethod
+    async def deprecate_version(
+        db: AsyncSession,
+        version: Version,
+        reason: str,
+    ) -> Version:
+        """Mark a version as deprecated with a reason."""
+        version.is_deprecated = True
+        version.deprecation_reason = reason
+        version.deprecated_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(version)
+        return version
+    
+    @staticmethod
+    async def undeprecate_version(
+        db: AsyncSession,
+        version: Version,
+    ) -> Version:
+        """Remove deprecation from a version."""
+        version.is_deprecated = False
+        version.deprecation_reason = None
+        version.deprecated_at = None
+        await db.commit()
+        await db.refresh(version)
+        return version
+    
+    @staticmethod
+    async def get_latest_version_by_channel(
+        db: AsyncSession,
+        addon_id: int,
+        channel: ReleaseChannel = ReleaseChannel.STABLE,
+    ) -> Optional[Version]:
+        """Get the latest non-deprecated, published version for a channel."""
+        result = await db.execute(
+            select(Version)
+            .where(
+                Version.addon_id == addon_id, 
+                Version.channel == channel,
+                Version.is_published == True,
+                Version.is_deprecated == False,
+            )
+            .order_by(Version.release_date.desc(), Version.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def rollback_to_version(
+        db: AsyncSession,
+        addon: Addon,
+        version: Version,
+    ) -> Version:
+        """
+        Make a specific version the 'latest' by updating its release_date to today.
+        This effectively promotes it as the newest version.
+        """
+        version.release_date = date.today()
+        addon.updated_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(version)
+        return version

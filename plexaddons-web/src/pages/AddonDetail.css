@@ -168,6 +168,21 @@
   color: #f59e0b;
 }
 
+.badge-channel-beta {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.badge-channel-alpha {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.badge-deprecated {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
 .version-description {
   color: var(--text-secondary);
   font-size: 0.95rem;
