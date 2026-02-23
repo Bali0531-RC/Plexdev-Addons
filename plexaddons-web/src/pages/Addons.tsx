@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, AddonTag } from '../types';
 import { ADDON_TAGS } from '../types';
@@ -11,6 +11,7 @@ export default function Addons() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<AddonTag | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadAddons();
@@ -142,7 +143,7 @@ export default function Addons() {
                     e.preventDefault();
                     e.stopPropagation();
                     if (addon.owner_discord_id) {
-                      window.location.href = `/u/${addon.owner_discord_id}`;
+                      navigate(`/u/${addon.owner_discord_id}`);
                     }
                   }}
                 >

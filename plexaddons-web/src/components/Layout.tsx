@@ -87,7 +87,7 @@ export default function Layout() {
       <footer className="footer">
         <div className="container footer-content">
           <div className="footer-left">
-            <span>© 2025 PlexAddons</span>
+            <span>© {new Date().getFullYear()} PlexAddons</span>
             <span className="separator">•</span>
             <span className="version-badge alpha">Alpha</span>
             <span className="separator">•</span>
