@@ -16,12 +16,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Release channel enum
-    release_channel = sa.Enum('stable', 'beta', 'alpha', name='releasechannel')
-    release_channel.create(op.get_bind(), checkfirst=True)
-
-    # Add channel column (defaults to stable for existing versions)
-    op.add_column('versions', sa.Column('channel', sa.Enum('stable', 'beta', 'alpha', name='releasechannel', create_type=False), server_default=sa.text("'stable'"), nullable=False))
+    # Release channel enum + column via raw SQL to avoid PostgreSQL enum cast issues
+    op.execute("CREATE TYPE releasechannel AS ENUM ('stable', 'beta', 'alpha')")
+    op.execute("ALTER TABLE versions ADD COLUMN channel releasechannel NOT NULL DEFAULT 'stable'::releasechannel")
 
     # Add deprecation fields
     op.add_column('versions', sa.Column('is_deprecated', sa.Boolean(), server_default='false', nullable=False))
