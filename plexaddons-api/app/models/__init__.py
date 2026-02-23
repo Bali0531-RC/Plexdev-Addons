@@ -294,7 +294,7 @@ class Version(Base):
     rollout_percentage = Column(Integer, default=100)  # 0-100, percentage of users who see this version
     
     # Pro+ Feature: Release Channels
-    channel = Column(SQLEnum(ReleaseChannel), default=ReleaseChannel.STABLE, nullable=False)
+    channel = Column(SQLEnum(ReleaseChannel, values_callable=lambda x: [e.value for e in x]), default=ReleaseChannel.STABLE, nullable=False)
     
     # Pro+ Feature: Version Deprecation
     is_deprecated = Column(Boolean, default=False)
@@ -755,7 +755,7 @@ class AddonCollaborator(Base):
     id = Column(Integer, primary_key=True, index=True)
     addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    role = Column(SQLEnum(CollaboratorRole), nullable=False, default=CollaboratorRole.EDITOR)
+    role = Column(SQLEnum(CollaboratorRole, values_callable=lambda x: [e.value for e in x]), nullable=False, default=CollaboratorRole.EDITOR)
     
     invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     accepted = Column(Boolean, default=False)
