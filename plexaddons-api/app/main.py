@@ -312,6 +312,10 @@ async def add_security_headers(request: Request, call_next):
     # Referrer policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
+    # Prevent browser caching of API responses (dynamic JSON data)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+
     # Permissions policy (disable unnecessary browser features)
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
