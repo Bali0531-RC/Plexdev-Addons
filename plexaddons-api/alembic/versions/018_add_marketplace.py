@@ -1,7 +1,7 @@
 """Add marketplace and sponsorship (addon licenses, paid addon fields, stripe connect)
 
-Revision ID: 013_add_marketplace
-Revises: 012_add_collaborators
+Revision ID: 018_add_marketplace
+Revises: 017_add_analytics_suite
 Create Date: 2025-01-01 00:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '013_add_marketplace'
-down_revision = '012_add_collaborators'
+revision = '018_add_marketplace'
+down_revision = '017_add_analytics_suite'
 branch_labels = None
 depends_on = None
 

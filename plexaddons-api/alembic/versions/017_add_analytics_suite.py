@@ -1,7 +1,7 @@
 """Add premium analytics suite tables (self-hosted config, alerts, cohort entries)
 
-Revision ID: 013_add_analytics_suite
-Revises: 012_add_collaborators
+Revision ID: 017_add_analytics_suite
+Revises: 016_add_security_suite
 Create Date: 2025-01-01 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSON
 
 # revision identifiers, used by Alembic.
-revision = '013_add_analytics_suite'
-down_revision = '012_add_collaborators'
+revision = '017_add_analytics_suite'
+down_revision = '016_add_security_suite'
 branch_labels = None
 depends_on = None
 

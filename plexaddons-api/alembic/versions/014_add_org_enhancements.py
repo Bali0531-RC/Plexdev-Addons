@@ -1,15 +1,15 @@
 """Add org enhancements: banner, permissions, audit log, org API keys.
 
-Revision ID: 013_add_org_enhancements
-Revises: 012
+Revision ID: 014_add_org_enhancements
+Revises: 013
 Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers
-revision = '013_add_org_enhancements'
-down_revision = '012'
+revision = '014_add_org_enhancements'
+down_revision = '013'
 branch_labels = None
 depends_on = None
 

@@ -1,15 +1,15 @@
 """Add missing database indexes for query optimization
 
-Revision ID: 013_add_db_indexes
-Revises: 012
+Revision ID: 019_add_db_indexes
+Revises: 018_add_marketplace
 Create Date: 2025-01-01 00:00:00.000000
 
 """
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "013_add_db_indexes"
-down_revision = "012"
+revision = "019_add_db_indexes"
+down_revision = "018_add_marketplace"
 branch_labels = None
 depends_on = None
 

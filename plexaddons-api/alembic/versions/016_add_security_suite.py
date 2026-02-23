@@ -1,14 +1,14 @@
 """Add security suite tables
 
-Revision ID: 013_add_security_suite
-Revises: 012
+Revision ID: 016_add_security_suite
+Revises: 015_add_rollouts_flags
 Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = '013_add_security_suite'
-down_revision = '012'
+revision = '016_add_security_suite'
+down_revision = '015_add_rollouts_flags'
 branch_labels = None
 depends_on = None
 
