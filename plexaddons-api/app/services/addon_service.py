@@ -182,6 +182,16 @@ class AddonService:
             .subquery("v_count")
         )
         
+        # Subquery for download count per addon (sum of check_count from usage stats)
+        download_count_sq = (
+            select(
+                AddonUsageStats.addon_id,
+                func.coalesce(func.sum(AddonUsageStats.check_count), 0).label("download_count")
+            )
+            .group_by(AddonUsageStats.addon_id)
+            .subquery("dl_count")
+        )
+        
         # Main query with JOINs
         query = (
             select(
@@ -192,6 +202,7 @@ class AddonService:
                 latest_version_sq.c.latest_version,
                 latest_version_sq.c.latest_release_date,
                 func.coalesce(version_count_sq.c.version_count, 0).label("version_count"),
+                func.coalesce(download_count_sq.c.download_count, 0).label("download_count"),
             )
             .join(User, User.id == Addon.owner_id, isouter=True)
             .join(
@@ -205,6 +216,11 @@ class AddonService:
             .join(
                 version_count_sq,
                 version_count_sq.c.addon_id == Addon.id,
+                isouter=True,
+            )
+            .join(
+                download_count_sq,
+                download_count_sq.c.addon_id == Addon.id,
                 isouter=True,
             )
         )
@@ -254,7 +270,7 @@ class AddonService:
                 "latest_version": row.latest_version,
                 "latest_release_date": row.latest_release_date,
                 "version_count": row.version_count,
-                "download_count": 0,
+                "download_count": row.download_count,
                 "created_at": addon.created_at,
                 "updated_at": addon.updated_at,
             })

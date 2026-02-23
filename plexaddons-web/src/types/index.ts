@@ -85,6 +85,10 @@ export interface Addon {
   theme_accent_color: string | null;
   theme_header_url: string | null;
   owner_verified_developer: boolean;
+  is_paid: boolean;
+  price_cents: number | null;
+  revenue_split_percent: number;
+  sponsor_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -540,6 +544,7 @@ export interface OrganizationMember {
   id: number;
   user_id: number;
   role: OrganizationRole;
+  permissions: Record<string, boolean> | null;
   joined_at: string;
   discord_username: string | null;
   discord_avatar: string | null;
@@ -551,6 +556,7 @@ export interface Organization {
   slug: string;
   description: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   owner_id: number;
   created_at: string;
   updated_at: string;
@@ -573,6 +579,7 @@ export interface OrganizationUpdate {
   name?: string;
   description?: string;
   avatar_url?: string;
+  banner_url?: string;
 }
 
 // Notifications
@@ -593,3 +600,492 @@ export interface NotificationListResponse {
   total: number;
   unread_count: number;
 }
+
+// Marketplace Types (Premium Feature)
+export type LicenseStatus = 'active' | 'expired' | 'revoked' | 'suspended';
+
+export interface AddonLicense {
+  id: number;
+  addon_id: number;
+  buyer_id: number | null;
+  license_key: string;
+  stripe_payment_intent_id: string | null;
+  amount_cents: number;
+  developer_amount_cents: number;
+  platform_amount_cents: number;
+  status: LicenseStatus;
+  server_id: string | null;
+  expires_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+export interface LicenseListResponse {
+  licenses: AddonLicense[];
+  total: number;
+}
+
+export interface LicenseVerifyResponse {
+  valid: boolean;
+  addon_id: number | null;
+  addon_slug: string | null;
+  status: LicenseStatus | null;
+  expires_at: string | null;
+}
+
+export interface PurchaseAddonResponse {
+  license: AddonLicense;
+  message: string;
+}
+
+export interface StripeConnectStatus {
+  has_connect_account: boolean;
+  account_id: string | null;
+  payouts_enabled: boolean;
+  onboarding_complete: boolean;
+}
+
+export interface RevenueStats {
+  total_sales: number;
+  total_revenue_cents: number;
+  total_earnings_cents: number;
+  total_fees_cents: number;
+  active_licenses: number;
+}
+
+// ============== Premium Analytics Types ==============
+
+// Self-Hosted Config (PREM-15)
+export interface SelfHostedConfig {
+  id: number;
+  addon_id: number;
+  custom_domain: string | null;
+  domain_verified: boolean;
+  verification_token: string | null;
+  private_endpoint_enabled: boolean;
+  api_key_required: boolean;
+  rate_limit_per_minute: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SelfHostedConfigCreate {
+  custom_domain?: string | null;
+  private_endpoint_enabled?: boolean;
+  api_key_required?: boolean;
+  rate_limit_per_minute?: number;
+}
+
+export interface SelfHostedConfigUpdate {
+  custom_domain?: string | null;
+  private_endpoint_enabled?: boolean;
+  api_key_required?: boolean;
+  rate_limit_per_minute?: number;
+}
+
+// Analytics Alerts (PREM-17)
+export type AlertNotificationChannel = 'webhook' | 'email' | 'discord';
+export type AlertComparison = 'below' | 'above';
+
+export interface AnalyticsAlert {
+  id: number;
+  addon_id: number;
+  name: string;
+  metric: string;
+  comparison: AlertComparison;
+  threshold: number;
+  notification_channel: AlertNotificationChannel;
+  webhook_url: string | null;
+  email: string | null;
+  discord_webhook_url: string | null;
+  is_active: boolean;
+  last_triggered_at: string | null;
+  trigger_count: number;
+  cooldown_minutes: number;
+// ============== Code Signing Types (PREM-5) ==============
+
+export interface SigningKey {
+  id: number;
+  addon_id: number;
+  created_by_id: number | null;
+  name: string;
+  public_key: string;
+  key_fingerprint: string;
+  algorithm: string;
+  is_active: boolean;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsAlertCreate {
+  name: string;
+  metric: string;
+  comparison: AlertComparison;
+  threshold: number;
+  notification_channel: AlertNotificationChannel;
+  webhook_url?: string;
+  email?: string;
+  discord_webhook_url?: string;
+  cooldown_minutes?: number;
+}
+
+export interface AnalyticsAlertUpdate {
+  name?: string;
+  metric?: string;
+  comparison?: AlertComparison;
+  threshold?: number;
+  notification_channel?: AlertNotificationChannel;
+  webhook_url?: string;
+  email?: string;
+  discord_webhook_url?: string;
+  is_active?: boolean;
+  cooldown_minutes?: number;
+}
+
+export interface AnalyticsAlertListResponse {
+  alerts: AnalyticsAlert[];
+  total: number;
+}
+
+// Cohort Analysis (PREM-18)
+export interface CohortSummary {
+  from_version: string;
+  to_version: string;
+  user_count: number;
+  first_transition: string;
+  last_transition: string;
+}
+
+export interface CohortAnalysisResponse {
+  addon_id: number;
+  period_days: number;
+  cohorts: CohortSummary[];
+  total_transitions: number;
+}
+
+// Predictive Analytics (PREM-19)
+export interface PredictiveEstimate {
+  addon_id: number;
+  target_version: string;
+  current_adoption_percent: number;
+  daily_adoption_rate: number;
+  estimated_days_to_50: number | null;
+  estimated_days_to_90: number | null;
+  estimated_days_to_100: number | null;
+  total_users: number;
+  adopted_users: number;
+}
+
+// Real-Time Analytics (PREM-16)
+export interface RealtimeStats {
+  addon_id: number;
+  checks_last_hour: number;
+  checks_last_24h: number;
+  unique_users_last_hour: number;
+  active_versions: number;
+  top_version: string | null;
+}
+
+export interface RecentCheck {
+  id: number;
+  checked_version: string;
+  resolved_version: string | null;
+  timestamp: string;
+  client_hash_prefix: string | null;
+}
+
+export interface HourlyBreakdown {
+  hour: string;
+  checks: number;
+  unique_users: number;
+}
+export interface SigningKeyCreate {
+  name: string;
+  public_key: string;
+  algorithm?: string;
+}
+
+export interface SigningKeyListResponse {
+  keys: SigningKey[];
+  total: number;
+}
+
+export interface VersionSignature {
+  id: number;
+  version_id: number;
+  signing_key_id: number | null;
+  signature: string;
+  signed_hash: string;
+  verified: boolean;
+  verified_at: string | null;
+  created_at: string;
+}
+
+// ============== Vulnerability Scanning Types (PREM-6) ==============
+
+export type ScanStatus = 'pending' | 'scanning' | 'completed' | 'failed';
+
+export interface VulnerabilityScan {
+  id: number;
+  version_id: number;
+  initiated_by_id: number | null;
+  status: ScanStatus;
+  vulnerabilities: Array<Record<string, unknown>> | null;
+  total_vulnerabilities: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  scan_started_at: string | null;
+  scan_completed_at: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface VulnerabilityScanListResponse {
+  scans: VulnerabilityScan[];
+  total: number;
+}
+
+// ============== SBOM Types (PREM-7) ==============
+
+export interface SBOMEntry {
+  id: number;
+  version_id: number;
+  uploaded_by_id: number | null;
+  format: string;
+  dependencies: Array<{ name: string; version: string; license: string; is_direct: boolean }> | null;
+  total_dependencies: number;
+  direct_dependencies: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SBOMListResponse {
+  sboms: SBOMEntry[];
+  total: number;
+}
+
+// ============== 2FA Types (PREM-9) ==============
+
+export interface TwoFactorChallengeResponse {
+  challenge_id: number;
+  action: string;
+  expires_at: string;
+  message: string;
+}
+
+export interface TwoFactorVerifyResponse {
+  verified: boolean;
+  message: string;
+}
+// ============== Staged Rollout Types ==============
+
+export type RolloutStage = 'canary' | 'early' | 'partial' | 'majority' | 'full' | 'paused';
+export type RolloutStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+
+export interface RolloutEvent {
+  id: number;
+  rollout_id: number;
+  from_stage: string | null;
+  to_stage: string;
+  from_percentage: number | null;
+  to_percentage: number;
+  triggered_by: string;
+  user_id: number | null;
+  created_at: string;
+}
+
+export interface StagedRollout {
+  id: number;
+  addon_id: number;
+  version_id: number;
+  created_by_id: number | null;
+  stage: RolloutStage;
+  percentage: number;
+  status: RolloutStatus;
+  targeting_rules: Record<string, unknown> | null;
+  auto_promote: boolean;
+  auto_promote_after_hours: number;
+  total_checks: number;
+  error_reports: number;
+  created_at: string;
+  updated_at: string;
+  promoted_at: string | null;
+  events: RolloutEvent[];
+}
+
+export interface StagedRolloutCreate {
+  version_id: number;
+  targeting_rules?: Record<string, unknown> | null;
+  auto_promote?: boolean;
+  auto_promote_after_hours?: number;
+}
+
+export interface StagedRolloutUpdate {
+  targeting_rules?: Record<string, unknown> | null;
+  auto_promote?: boolean;
+  auto_promote_after_hours?: number;
+}
+
+export interface StagedRolloutListResponse {
+  rollouts: StagedRollout[];
+  total: number;
+}
+
+// ============== Feature Flag Types ==============
+
+export interface FeatureFlag {
+  id: number;
+  addon_id: number;
+  created_by_id: number | null;
+  key: string;
+  name: string;
+  description: string | null;
+  enabled: boolean;
+  percentage: number;
+  targeting: Record<string, unknown> | null;
+// Organization Enhancements (Premium)
+export const ORG_PERMISSIONS = [
+  'manage_versions',
+  'view_analytics',
+  'manage_billing',
+  'manage_members',
+  'manage_addons',
+] as const;
+
+export interface OrgAuditLog {
+  id: number;
+  action: string;
+  details: Record<string, unknown> | null;
+  user_id: number | null;
+  username: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface OrgAuditLogListResponse {
+  logs: OrgAuditLog[];
+  total: number;
+}
+
+export interface OrgApiKey {
+  id: number;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_by_id: number | null;
+  created_by_username: string | null;
+  created_at: string;
+}
+
+export interface OrgApiKeyCreateResponse extends OrgApiKey {
+  key: string;
+}
+
+export interface OrgApiKeyListResponse {
+  api_keys: OrgApiKey[];
+  total: number;
+}
+
+export interface OrgAnalyticsSummary {
+  total_downloads: number;
+  total_version_checks: number;
+  total_unique_users: number;
+  addon_count: number;
+  member_count: number;
+  storage_used_bytes: number;
+  top_addons: Array<{ id: number; name: string; slug: string; downloads: number }>;
+}
+
+export interface OrgPublicPage {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
+  owner_username: string | null;
+  member_count: number;
+  addon_count: number;
+  addons: Addon[];
+  created_at: string;
+}
+
+// Webhook Endpoints (Premium)
+export interface WebhookEndpoint {
+  id: number;
+  name: string;
+  url: string;
+  secret: string;
+  is_active: boolean;
+  event_filter: string[] | null;
+  payload_template: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureFlagCreate {
+  key: string;
+  name: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagUpdate {
+  name?: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagListResponse {
+  flags: FeatureFlag[];
+  total: number;
+}
+export interface WebhookEndpointCreate {
+  name: string;
+  url: string;
+  event_filter?: string[];
+  payload_template?: string;
+}
+
+export interface WebhookEndpointUpdate {
+  name?: string;
+  url?: string;
+  is_active?: boolean;
+  event_filter?: string[];
+  payload_template?: string;
+}
+
+export interface WebhookDelivery {
+  id: number;
+  endpoint_id: number;
+  event_type: string;
+  payload: string;
+  status: 'pending' | 'success' | 'failed';
+  status_code: number | null;
+  response_body: string | null;
+  error_message: string | null;
+  attempt: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+export const WEBHOOK_EVENTS = [
+  { value: 'version.released', label: 'Version Released' },
+  { value: 'version.updated', label: 'Version Updated' },
+  { value: 'version.deleted', label: 'Version Deleted' },
+  { value: 'addon.created', label: 'Addon Created' },
+  { value: 'addon.updated', label: 'Addon Updated' },
+  { value: 'addon.deleted', label: 'Addon Deleted' },
+];

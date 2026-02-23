@@ -7,13 +7,23 @@ settings = get_settings()
 # Convert postgresql:// to postgresql+asyncpg://
 database_url = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
 
-engine = create_async_engine(
-    database_url,
+_engine_kwargs = dict(
     echo=settings.debug,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=20,
+    max_overflow=30,
+    pool_timeout=30,
+    pool_recycle=1800,  # Recycle connections after 30 minutes
 )
+
+# Pool settings only apply to connection-based backends (not SQLite)
+if "sqlite" not in database_url:
+    _engine_kwargs.update(
+        pool_size=10,
+        max_overflow=20,
+    )
+
+engine = create_async_engine(database_url, **_engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,
