@@ -593,3 +593,140 @@ export interface NotificationListResponse {
   total: number;
   unread_count: number;
 }
+
+
+// ============== Premium Analytics Types ==============
+
+// Self-Hosted Config (PREM-15)
+export interface SelfHostedConfig {
+  id: number;
+  addon_id: number;
+  custom_domain: string | null;
+  domain_verified: boolean;
+  verification_token: string | null;
+  private_endpoint_enabled: boolean;
+  api_key_required: boolean;
+  rate_limit_per_minute: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SelfHostedConfigCreate {
+  custom_domain?: string | null;
+  private_endpoint_enabled?: boolean;
+  api_key_required?: boolean;
+  rate_limit_per_minute?: number;
+}
+
+export interface SelfHostedConfigUpdate {
+  custom_domain?: string | null;
+  private_endpoint_enabled?: boolean;
+  api_key_required?: boolean;
+  rate_limit_per_minute?: number;
+}
+
+// Analytics Alerts (PREM-17)
+export type AlertNotificationChannel = 'webhook' | 'email' | 'discord';
+export type AlertComparison = 'below' | 'above';
+
+export interface AnalyticsAlert {
+  id: number;
+  addon_id: number;
+  name: string;
+  metric: string;
+  comparison: AlertComparison;
+  threshold: number;
+  notification_channel: AlertNotificationChannel;
+  webhook_url: string | null;
+  email: string | null;
+  discord_webhook_url: string | null;
+  is_active: boolean;
+  last_triggered_at: string | null;
+  trigger_count: number;
+  cooldown_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsAlertCreate {
+  name: string;
+  metric: string;
+  comparison: AlertComparison;
+  threshold: number;
+  notification_channel: AlertNotificationChannel;
+  webhook_url?: string;
+  email?: string;
+  discord_webhook_url?: string;
+  cooldown_minutes?: number;
+}
+
+export interface AnalyticsAlertUpdate {
+  name?: string;
+  metric?: string;
+  comparison?: AlertComparison;
+  threshold?: number;
+  notification_channel?: AlertNotificationChannel;
+  webhook_url?: string;
+  email?: string;
+  discord_webhook_url?: string;
+  is_active?: boolean;
+  cooldown_minutes?: number;
+}
+
+export interface AnalyticsAlertListResponse {
+  alerts: AnalyticsAlert[];
+  total: number;
+}
+
+// Cohort Analysis (PREM-18)
+export interface CohortSummary {
+  from_version: string;
+  to_version: string;
+  user_count: number;
+  first_transition: string;
+  last_transition: string;
+}
+
+export interface CohortAnalysisResponse {
+  addon_id: number;
+  period_days: number;
+  cohorts: CohortSummary[];
+  total_transitions: number;
+}
+
+// Predictive Analytics (PREM-19)
+export interface PredictiveEstimate {
+  addon_id: number;
+  target_version: string;
+  current_adoption_percent: number;
+  daily_adoption_rate: number;
+  estimated_days_to_50: number | null;
+  estimated_days_to_90: number | null;
+  estimated_days_to_100: number | null;
+  total_users: number;
+  adopted_users: number;
+}
+
+// Real-Time Analytics (PREM-16)
+export interface RealtimeStats {
+  addon_id: number;
+  checks_last_hour: number;
+  checks_last_24h: number;
+  unique_users_last_hour: number;
+  active_versions: number;
+  top_version: string | null;
+}
+
+export interface RecentCheck {
+  id: number;
+  checked_version: string;
+  resolved_version: string | null;
+  timestamp: string;
+  client_hash_prefix: string | null;
+}
+
+export interface HourlyBreakdown {
+  hour: string;
+  checks: number;
+  unique_users: number;
+}
