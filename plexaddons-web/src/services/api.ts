@@ -618,6 +618,7 @@ class ApiClient {
       profile_slug: string | null;
       badges: string[];
       bio: string | null;
+      is_verified_developer: boolean;
       addon_count: number;
       created_at: string;
     }>;
