@@ -68,6 +68,9 @@ export default function AddonDetail() {
     <div className="addon-detail">
       <div className="addon-detail-header">
         <div className="addon-detail-title">
+          {addon.icon_url && (
+            <img src={addon.icon_url} alt={addon.name} className="addon-detail-icon" />
+          )}
           <h1>
             {addon.name}
             {addon.verified && (
@@ -103,7 +106,22 @@ export default function AddonDetail() {
         )}
         <span className="meta-separator">•</span>
         <span>{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
+        {addon.download_count > 0 && (
+          <>
+            <span className="meta-separator">•</span>
+            <span>⬇ {addon.download_count.toLocaleString()} download{addon.download_count !== 1 ? 's' : ''}</span>
+          </>
+        )}
       </div>
+
+      {addon.readme && (
+        <section className="addon-readme-section">
+          <h2>About</h2>
+          <div className="addon-readme">
+            <MarkdownRenderer content={addon.readme} />
+          </div>
+        </section>
+      )}
 
       <section className="versions-section">
         <h2>Versions</h2>

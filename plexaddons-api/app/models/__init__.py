@@ -215,6 +215,8 @@ class Addon(Base):
     homepage = Column(String(500), nullable=True)
     external = Column(Boolean, default=False)  # true = free community addon
     tags = Column(JSON, default=list)  # List of AddonTag values
+    icon_url = Column(String(500), nullable=True)  # Addon icon/logo URL
+    readme = Column(Text, nullable=True)  # Markdown long description / README
     
     # Status
     is_active = Column(Boolean, default=True)

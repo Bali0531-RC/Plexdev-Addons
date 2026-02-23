@@ -220,6 +220,8 @@ class AddonBase(BaseModel):
     homepage: Optional[str] = None
     external: bool = False
     tags: Optional[List[AddonTag]] = Field(default_factory=list)
+    icon_url: Optional[str] = Field(None, max_length=500)
+    readme: Optional[str] = None
 
 
 class AddonCreate(AddonBase):
@@ -235,6 +237,8 @@ class AddonUpdate(BaseModel):
     is_public: Optional[bool] = None
     verified: Optional[bool] = None  # Admin only
     tags: Optional[List[AddonTag]] = None
+    icon_url: Optional[str] = Field(None, max_length=500)
+    readme: Optional[str] = None
 
 
 class AddonResponse(BaseModel):
@@ -250,6 +254,8 @@ class AddonResponse(BaseModel):
     owner_id: int
     organization_id: Optional[int] = None
     tags: List[AddonTag] = Field(default_factory=list)
+    icon_url: Optional[str] = None
+    readme: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -259,6 +265,7 @@ class AddonResponse(BaseModel):
     latest_version: Optional[str] = None
     latest_release_date: Optional[date] = None
     version_count: int = 0
+    download_count: int = 0  # Total version checks / downloads
 
     class Config:
         from_attributes = True
