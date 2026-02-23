@@ -21,6 +21,7 @@ export default function AddonDetail() {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
+    console.log('[AddonDetail] useEffect fired, slug:', slug);
     if (slug) {
       loadAddon();
     }
@@ -62,6 +63,8 @@ export default function AddonDetail() {
       day: 'numeric',
     });
   };
+
+  console.log('[AddonDetail] RENDER - loading:', loading, 'error:', error, 'addon?.sponsor_url:', addon?.sponsor_url, 'isAuthenticated:', isAuthenticated);
 
   if (loading) {
     return (
