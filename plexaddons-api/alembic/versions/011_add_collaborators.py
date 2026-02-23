@@ -17,6 +17,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Drop leftover table/enum from any previous failed attempt
+    op.execute("DROP TABLE IF EXISTS addon_collaborators CASCADE")
+    op.execute("DROP TYPE IF EXISTS collaboratorrole CASCADE")
+
     # Create CollaboratorRole enum
     collaboratorrole = postgresql.ENUM('admin', 'editor', 'viewer', name='collaboratorrole', create_type=False)
     collaboratorrole.create(op.get_bind(), checkfirst=True)

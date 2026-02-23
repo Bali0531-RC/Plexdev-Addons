@@ -17,12 +17,12 @@ depends_on = None
 
 def upgrade() -> None:
     # PRO-10: Addon page theme customization
-    op.add_column('addons', sa.Column('theme_accent_color', sa.String(7), nullable=True))
-    op.add_column('addons', sa.Column('theme_header_url', sa.String(500), nullable=True))
+    op.execute("ALTER TABLE addons ADD COLUMN IF NOT EXISTS theme_accent_color VARCHAR(7)")
+    op.execute("ALTER TABLE addons ADD COLUMN IF NOT EXISTS theme_header_url VARCHAR(500)")
 
     # PRO-11: Verified developer badge
-    op.add_column('users', sa.Column('is_verified_developer', sa.Boolean(), server_default=sa.text('false'), nullable=False))
-    op.create_index('idx_users_verified_developer', 'users', ['is_verified_developer'])
+    op.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified_developer BOOLEAN NOT NULL DEFAULT false")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_users_verified_developer ON users (is_verified_developer)")
 
 
 def downgrade() -> None:
