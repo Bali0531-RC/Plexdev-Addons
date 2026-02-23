@@ -251,3 +251,46 @@
     margin-left: 0;
   }
 }
+
+/* Transfer Ownership Section */
+.transfer-section {
+  background: var(--surface);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.transfer-section h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  color: #ef4444;
+}
+
+.transfer-warning {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.transfer-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.transfer-input {
+  flex: 1;
+  max-width: 200px;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.transfer-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}

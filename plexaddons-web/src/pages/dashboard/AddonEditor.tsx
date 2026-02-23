@@ -2,13 +2,16 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
+import CollaboratorsManager from '../../components/CollaboratorsManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew = !slug || slug === 'new';
 
   const [addon, setAddon] = useState<Addon | null>(null);
@@ -297,6 +300,64 @@ export default function AddonEditor() {
           )}
         </div>
       )}
+
+      {/* Collaborators (Pro+ feature) */}
+      {!isNew && addon && (
+        <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
+      )}
+
+      {/* Transfer Ownership (Pro+ feature) */}
+      {!isNew && addon && addon.owner_id === user?.id && (user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium') && (
+        <TransferOwnership addonId={addon.id} />
+      )}
+    </div>
+  );
+}
+
+function TransferOwnership({ addonId }: { addonId: number }) {
+  const [newOwnerId, setNewOwnerId] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const navigate = useNavigate();
+
+  const handleTransfer = async () => {
+    const id = parseInt(newOwnerId);
+    if (!id || isNaN(id)) {
+      toast.error('Please enter a valid user ID');
+      return;
+    }
+    if (!confirm('Are you sure you want to transfer ownership? This action cannot be undone.')) return;
+    try {
+      setTransferring(true);
+      await api.transferOwnership(addonId, id);
+      toast.success('Ownership transferred successfully');
+      navigate('/dashboard/addons');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Transfer failed');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  return (
+    <div className="transfer-section">
+      <h3>Transfer Ownership</h3>
+      <p className="transfer-warning">Transfer this addon to another user. You will become an admin collaborator.</p>
+      <div className="transfer-form">
+        <input
+          type="number"
+          placeholder="New owner User ID"
+          value={newOwnerId}
+          onChange={(e) => setNewOwnerId(e.target.value)}
+          className="transfer-input"
+        />
+        <button
+          onClick={handleTransfer}
+          disabled={transferring || !newOwnerId}
+          className="btn btn-sm btn-danger"
+        >
+          {transferring ? 'Transferring...' : 'Transfer Ownership'}
+        </button>
+      </div>
     </div>
   );
 }

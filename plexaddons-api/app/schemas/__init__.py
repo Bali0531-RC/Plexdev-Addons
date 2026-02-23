@@ -5,7 +5,7 @@ import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
-    ReleaseChannel,
+    ReleaseChannel, CollaboratorRole
 )
 
 
@@ -816,6 +816,35 @@ class NotificationListResponse(BaseModel):
     notifications: List[NotificationResponse]
     total: int
     unread_count: int
+
+
+# ============== Collaborator Schemas ==============
+
+class CollaboratorInvite(BaseModel):
+    user_id: int
+    role: CollaboratorRole = CollaboratorRole.EDITOR
+
+class CollaboratorUpdate(BaseModel):
+    role: CollaboratorRole
+
+class CollaboratorResponse(BaseModel):
+    id: int
+    addon_id: int
+    user_id: int
+    role: CollaboratorRole
+    accepted: bool
+    username: Optional[str] = None
+    display_name: Optional[str] = None
+    avatar: Optional[str] = None
+    invited_by_id: Optional[int] = None
+    created_at: datetime
+    accepted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class TransferOwnershipRequest(BaseModel):
+    new_owner_id: int
 
 
 # Forward reference resolution
