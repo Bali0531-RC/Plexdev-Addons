@@ -125,6 +125,7 @@ class AddonService:
         owner_id: Optional[int] = None,
         search: Optional[str] = None,
         public_only: bool = True,
+        addon_ids: Optional[List[int]] = None,
     ) -> tuple[List[dict], int]:
         """List addons with latest version info."""
         # Base query
@@ -141,6 +142,8 @@ class AddonService:
         if search:
             safe_search = sanitize_ilike_pattern(search)
             filters.append(Addon.name.ilike(f"%{safe_search}%"))
+        if addon_ids is not None:
+            filters.append(Addon.id.in_(addon_ids))
         
         if filters:
             query = query.where(and_(*filters))

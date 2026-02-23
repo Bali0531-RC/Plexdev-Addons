@@ -41,6 +41,12 @@ import {
   OrganizationUpdate,
   OrganizationMember,
   OrganizationRole,
+  StarStatus,
+  Review,
+  ReviewListResponse,
+  ReviewCreate,
+  ReviewUpdate,
+  TrendingAddon,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -190,6 +196,53 @@ class ApiClient {
 
   async deleteAddon(slug: string): Promise<void> {
     return this.fetch(`/v1/addons/${slug}`, { method: 'DELETE' });
+  }
+
+  // Stars / Favorites
+  async starAddon(slug: string): Promise<StarStatus> {
+    return this.fetch(`/v1/stars/addons/${slug}`, { method: 'POST' });
+  }
+
+  async unstarAddon(slug: string): Promise<StarStatus> {
+    return this.fetch(`/v1/stars/addons/${slug}`, { method: 'DELETE' });
+  }
+
+  async getStarStatus(slug: string): Promise<StarStatus> {
+    return this.fetch(`/v1/stars/addons/${slug}`);
+  }
+
+  async getMyStarredAddons(page = 1, perPage = 20): Promise<AddonListResponse> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.fetch(`/v1/stars/mine?${params}`);
+  }
+
+  // Reviews
+  async getReviews(slug: string, page = 1, perPage = 20): Promise<ReviewListResponse> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.fetch(`/v1/addons/${slug}/reviews?${params}`);
+  }
+
+  async createReview(slug: string, data: ReviewCreate): Promise<Review> {
+    return this.fetch(`/v1/addons/${slug}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateReview(slug: string, data: ReviewUpdate): Promise<Review> {
+    return this.fetch(`/v1/addons/${slug}/reviews`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteReview(slug: string): Promise<void> {
+    return this.fetch(`/v1/addons/${slug}/reviews`, { method: 'DELETE' });
+  }
+
+  // Trending
+  async getTrendingAddons(limit = 10): Promise<{ trending: TrendingAddon[] }> {
+    return this.fetch(`/v1/addons/trending?limit=${limit}`);
   }
 
   // Versions

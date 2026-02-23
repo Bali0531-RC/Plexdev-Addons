@@ -723,6 +723,56 @@ class AvailableScopesResponse(BaseModel):
     max_keys: int
 
 
+# ============ Star / Favorite Schemas ============
+
+class StarResponse(BaseModel):
+    """Star status for an addon"""
+    starred: bool
+    star_count: int
+
+
+# ============ Review Schemas ============
+
+class ReviewCreate(BaseModel):
+    """Create a review for an addon"""
+    rating: int = Field(..., ge=1, le=5)
+    title: Optional[str] = Field(None, max_length=200)
+    content: Optional[str] = Field(None, max_length=2000)
+
+
+class ReviewUpdate(BaseModel):
+    """Update an existing review"""
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    title: Optional[str] = Field(None, max_length=200)
+    content: Optional[str] = Field(None, max_length=2000)
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    user_id: int
+    addon_id: int
+    rating: int
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_visible: bool = True
+    created_at: datetime
+    updated_at: datetime
+    # Denormalized author info
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
+    author_discord_id: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ReviewListResponse(BaseModel):
+    reviews: List[ReviewResponse]
+    total: int
+    average_rating: Optional[float] = None
+    rating_distribution: Optional[dict] = None  # {1: count, 2: count, ...}
+
+
 # Forward reference resolution
 AuthResponse.model_rebuild()
 UserPublicProfile.model_rebuild()
