@@ -33,6 +33,7 @@ export default function AddonDetail() {
         api.getAddon(slug!),
         api.listVersions(slug!),
       ]);
+      console.log('[AddonDetail] API response sponsor_url:', addonData.sponsor_url, 'is_paid:', addonData.is_paid);
       setAddon(addonData);
       setVersions(versionsData.versions);
       // Check if current user already has a license for this paid addon
