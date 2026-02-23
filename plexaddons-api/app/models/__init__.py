@@ -62,6 +62,21 @@ class CollaboratorRole(str, enum.Enum):
     VIEWER = "viewer"     # Read-only access to private addons
 
 
+class ScanStatus(str, enum.Enum):
+    PENDING = "pending"
+    SCANNING = "scanning"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class VulnerabilitySeverity(str, enum.Enum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+
+
 # API Key Scopes - defines what each key can access
 class ApiKeyScope(str, enum.Enum):
     # Read operations (Pro+)
@@ -732,6 +747,9 @@ class ApiKey(Base):
     # Expiration (optional)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     
+    # IP Allowlisting (Premium)
+    ip_allowlist = Column(JSON, nullable=True)  # List of CIDR ranges e.g. ["192.168.1.0/24", "10.0.0.1/32"]
+    
     # Status
     is_active = Column(Boolean, default=True, index=True)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
@@ -772,4 +790,140 @@ class AddonCollaborator(Base):
         Index("idx_addon_collaborators_addon", "addon_id"),
         Index("idx_addon_collaborators_user", "user_id"),
         Index("idx_addon_collaborators_unique", "addon_id", "user_id", unique=True),
+    )
+
+
+class AddonSigningKey(Base):
+    """Code signing keys per addon (Premium: PREM-5)."""
+    __tablename__ = "addon_signing_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(100), nullable=False)
+    public_key = Column(Text, nullable=False)
+    key_fingerprint = Column(String(64), nullable=False)  # SHA-256 fingerprint
+    algorithm = Column(String(20), nullable=False, default="ed25519")
+
+    is_active = Column(Boolean, default=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    addon = relationship("Addon", backref="signing_keys")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+    __table_args__ = (
+        Index("idx_signing_keys_addon", "addon_id"),
+        Index("idx_signing_keys_fingerprint", "key_fingerprint"),
+    )
+
+
+class VersionSignature(Base):
+    """Signature for a version, created with signing key (PREM-5)."""
+    __tablename__ = "version_signatures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    signing_key_id = Column(Integer, ForeignKey("addon_signing_keys.id", ondelete="SET NULL"), nullable=True)
+
+    signature = Column(Text, nullable=False)
+    signed_hash = Column(String(128), nullable=False)  # SHA-256 hash of the artifact that was signed
+
+    verified = Column(Boolean, default=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="signatures")
+    signing_key = relationship("AddonSigningKey")
+
+    __table_args__ = (
+        Index("idx_version_signatures_version", "version_id"),
+    )
+
+
+class VulnerabilityScan(Base):
+    """Vulnerability scan results per version (PREM-6)."""
+    __tablename__ = "vulnerability_scans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    initiated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    status = Column(SQLEnum(ScanStatus, values_callable=lambda x: [e.value for e in x]),
+                    nullable=False, default=ScanStatus.PENDING)
+    vulnerabilities = Column(JSON, default=list)  # List of {id, severity, summary, url, package, patched_versions}
+    total_vulnerabilities = Column(Integer, default=0)
+    critical_count = Column(Integer, default=0)
+    high_count = Column(Integer, default=0)
+    medium_count = Column(Integer, default=0)
+    low_count = Column(Integer, default=0)
+
+    scan_started_at = Column(DateTime(timezone=True), nullable=True)
+    scan_completed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="vulnerability_scans")
+    initiated_by = relationship("User", foreign_keys=[initiated_by_id])
+
+    __table_args__ = (
+        Index("idx_vuln_scans_version", "version_id"),
+        Index("idx_vuln_scans_status", "status"),
+    )
+
+
+class VersionSBOM(Base):
+    """Software Bill of Materials per version (PREM-7)."""
+    __tablename__ = "version_sboms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    uploaded_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    format = Column(String(50), nullable=False, default="npm")  # npm, pip, maven, etc.
+    raw_content = Column(Text, nullable=True)  # Raw lockfile content
+    dependencies = Column(JSON, default=list)  # Parsed: [{name, version, license, is_direct}]
+    total_dependencies = Column(Integer, default=0)
+    direct_dependencies = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="sboms")
+    uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
+
+    __table_args__ = (
+        Index("idx_sboms_version", "version_id"),
+    )
+
+
+class TwoFactorChallenge(Base):
+    """2FA challenges for critical actions (PREM-9)."""
+    __tablename__ = "two_factor_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    action = Column(String(50), nullable=False)  # e.g. "delete_addon", "revoke_key", "change_payment"
+    challenge_code_hash = Column(String(128), nullable=False)  # Hashed 6-digit code
+    
+    is_verified = Column(Boolean, default=False)
+    is_used = Column(Boolean, default=False)
+    attempts = Column(Integer, default=0)
+    max_attempts = Column(Integer, default=5)
+
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User", backref="two_factor_challenges")
+
+    __table_args__ = (
+        Index("idx_2fa_challenges_user", "user_id"),
+        Index("idx_2fa_challenges_expires", "expires_at"),
     )

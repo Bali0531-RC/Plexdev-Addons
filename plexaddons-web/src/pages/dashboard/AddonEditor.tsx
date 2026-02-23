@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
+import SecurityManager from '../../components/SecurityManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -358,6 +359,11 @@ export default function AddonEditor() {
       {/* Collaborators (Pro+ feature) */}
       {!isNew && addon && (
         <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
+      )}
+
+      {/* Security Suite (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <SecurityManager addonId={addon.id} versions={versions} />
       )}
 
       {/* Transfer Ownership (Pro+ feature) */}

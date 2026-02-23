@@ -5,7 +5,7 @@ import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
-    ReleaseChannel, CollaboratorRole
+    ReleaseChannel, CollaboratorRole, ScanStatus
 )
 
 
@@ -853,6 +853,150 @@ class CollaboratorResponse(BaseModel):
 
 class TransferOwnershipRequest(BaseModel):
     new_owner_id: int
+
+
+# ============== Code Signing Schemas (PREM-5) ==============
+
+class SigningKeyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    public_key: str = Field(..., min_length=10)
+    algorithm: str = Field(default="ed25519", pattern=r'^(ed25519|rsa|ecdsa)$')
+
+class SigningKeyResponse(BaseModel):
+    id: int
+    addon_id: int
+    created_by_id: Optional[int] = None
+    name: str
+    public_key: str
+    key_fingerprint: str
+    algorithm: str
+    is_active: bool
+    revoked_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SigningKeyListResponse(BaseModel):
+    keys: List[SigningKeyResponse]
+    total: int
+
+class VersionSignatureCreate(BaseModel):
+    signing_key_id: int
+    signature: str = Field(..., min_length=1)
+    signed_hash: str = Field(..., min_length=64, max_length=128)
+
+class VersionSignatureResponse(BaseModel):
+    id: int
+    version_id: int
+    signing_key_id: Optional[int] = None
+    signature: str
+    signed_hash: str
+    verified: bool
+    verified_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VersionSignatureVerifyRequest(BaseModel):
+    artifact_hash: str = Field(..., min_length=64, max_length=128)
+
+
+# ============== Vulnerability Scanning Schemas (PREM-6) ==============
+
+class VulnerabilityScanResponse(BaseModel):
+    id: int
+    version_id: int
+    initiated_by_id: Optional[int] = None
+    status: ScanStatus
+    vulnerabilities: Optional[list] = None
+    total_vulnerabilities: int
+    critical_count: int
+    high_count: int
+    medium_count: int
+    low_count: int
+    scan_started_at: Optional[datetime] = None
+    scan_completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VulnerabilityScanListResponse(BaseModel):
+    scans: List[VulnerabilityScanResponse]
+    total: int
+
+
+# ============== SBOM Schemas (PREM-7) ==============
+
+class SBOMUpload(BaseModel):
+    format: str = Field(default="npm", pattern=r'^(npm|pip|maven|gradle|cargo|go)$')
+    raw_content: str = Field(..., min_length=1)
+
+class SBOMResponse(BaseModel):
+    id: int
+    version_id: int
+    uploaded_by_id: Optional[int] = None
+    format: str
+    dependencies: Optional[list] = None
+    total_dependencies: int
+    direct_dependencies: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SBOMListResponse(BaseModel):
+    sboms: List[SBOMResponse]
+    total: int
+
+
+# ============== IP Allowlist Schemas (PREM-8) ==============
+
+class ApiKeyIPAllowlistUpdate(BaseModel):
+    ip_allowlist: Optional[List[str]] = Field(
+        default=None,
+        description="List of CIDR ranges, e.g. ['192.168.1.0/24', '10.0.0.1/32']"
+    )
+
+    @field_validator('ip_allowlist')
+    @classmethod
+    def validate_cidrs(cls, v):
+        if v is None:
+            return v
+        import ipaddress
+        for cidr in v:
+            try:
+                ipaddress.ip_network(cidr, strict=False)
+            except ValueError:
+                raise ValueError(f"Invalid CIDR range: {cidr}")
+        if len(v) > 50:
+            raise ValueError("Maximum 50 CIDR ranges allowed")
+        return v
+
+
+# ============== 2FA Challenge Schemas (PREM-9) ==============
+
+class TwoFactorChallengeRequest(BaseModel):
+    action: str = Field(..., pattern=r'^(delete_addon|revoke_key|change_payment|delete_account)$')
+
+class TwoFactorChallengeResponse(BaseModel):
+    challenge_id: int
+    action: str
+    expires_at: datetime
+    message: str
+
+class TwoFactorVerifyRequest(BaseModel):
+    challenge_id: int
+    code: str = Field(..., min_length=6, max_length=6)
+
+class TwoFactorVerifyResponse(BaseModel):
+    verified: bool
+    message: str
 
 
 # Forward reference resolution

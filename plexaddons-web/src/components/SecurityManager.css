@@ -1,0 +1,167 @@
+.security-manager {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.security-manager h3 {
+  margin: 0 0 1rem 0;
+}
+
+.security-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+  padding-bottom: 0.5rem;
+}
+
+.security-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: var(--text-secondary, #a0a0c0);
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.2s;
+}
+
+.security-tab.active {
+  background: var(--bg-secondary, #16162a);
+  color: var(--text-primary, #fff);
+  font-weight: 500;
+}
+
+.security-tab:hover {
+  color: var(--text-primary, #fff);
+}
+
+.security-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.create-form {
+  background: var(--bg-secondary, #16162a);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.security-item {
+  background: var(--bg-secondary, #16162a);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0c0);
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.item-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0c0);
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge.active,
+.status-badge.completed {
+  background: #10b981;
+  color: white;
+}
+
+.status-badge.revoked,
+.status-badge.failed {
+  background: #ef4444;
+  color: white;
+}
+
+.status-badge.pending,
+.status-badge.scanning {
+  background: #f59e0b;
+  color: white;
+}
+
+.vuln-counts {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.no-vulns {
+  color: #10b981;
+}
+
+.scan-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.deps-preview {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.dep-badge {
+  background: var(--card-bg, #1a1a2e);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.dep-more {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0c0);
+}
+
+.empty-state {
+  color: var(--text-secondary, #a0a0c0);
+  font-style: italic;
+}
