@@ -593,3 +593,95 @@ export interface NotificationListResponse {
   total: number;
   unread_count: number;
 }
+
+// ============== Staged Rollout Types ==============
+
+export type RolloutStage = 'canary' | 'early' | 'partial' | 'majority' | 'full' | 'paused';
+export type RolloutStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+
+export interface RolloutEvent {
+  id: number;
+  rollout_id: number;
+  from_stage: string | null;
+  to_stage: string;
+  from_percentage: number | null;
+  to_percentage: number;
+  triggered_by: string;
+  user_id: number | null;
+  created_at: string;
+}
+
+export interface StagedRollout {
+  id: number;
+  addon_id: number;
+  version_id: number;
+  created_by_id: number | null;
+  stage: RolloutStage;
+  percentage: number;
+  status: RolloutStatus;
+  targeting_rules: Record<string, unknown> | null;
+  auto_promote: boolean;
+  auto_promote_after_hours: number;
+  total_checks: number;
+  error_reports: number;
+  created_at: string;
+  updated_at: string;
+  promoted_at: string | null;
+  events: RolloutEvent[];
+}
+
+export interface StagedRolloutCreate {
+  version_id: number;
+  targeting_rules?: Record<string, unknown> | null;
+  auto_promote?: boolean;
+  auto_promote_after_hours?: number;
+}
+
+export interface StagedRolloutUpdate {
+  targeting_rules?: Record<string, unknown> | null;
+  auto_promote?: boolean;
+  auto_promote_after_hours?: number;
+}
+
+export interface StagedRolloutListResponse {
+  rollouts: StagedRollout[];
+  total: number;
+}
+
+// ============== Feature Flag Types ==============
+
+export interface FeatureFlag {
+  id: number;
+  addon_id: number;
+  created_by_id: number | null;
+  key: string;
+  name: string;
+  description: string | null;
+  enabled: boolean;
+  percentage: number;
+  targeting: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureFlagCreate {
+  key: string;
+  name: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagUpdate {
+  name?: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagListResponse {
+  flags: FeatureFlag[];
+  total: number;
+}

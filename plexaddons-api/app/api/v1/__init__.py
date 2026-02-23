@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, rollouts, feature_flags
 
 router = APIRouter(prefix="/v1")
 
@@ -22,3 +22,5 @@ router.include_router(notifications.router)
 router.include_router(collaborators.router)
 router.include_router(collaborators.transfer_router)
 router.include_router(collaborators.invitation_router)
+router.include_router(rollouts.router)
+router.include_router(feature_flags.router)
