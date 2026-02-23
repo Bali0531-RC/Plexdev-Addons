@@ -79,6 +79,8 @@ export interface Addon {
   readme: string | null;
   tags: AddonTag[] | null;
   organization_id: number | null;
+  banner_url: string | null;
+  screenshots: string[];
   created_at: string;
   updated_at: string;
 }
@@ -504,4 +506,23 @@ export interface OrganizationUpdate {
   name?: string;
   description?: string;
   avatar_url?: string;
+}
+
+// Notifications
+export type NotificationType = 'addon_update' | 'review_received' | 'star_received' | 'system' | 'addon_verified' | 'version_published';
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  total: number;
+  unread_count: number;
 }

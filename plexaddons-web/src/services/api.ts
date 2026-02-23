@@ -47,6 +47,7 @@ import {
   ReviewCreate,
   ReviewUpdate,
   TrendingAddon,
+  NotificationListResponse,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -805,6 +806,29 @@ class ApiClient {
 
   async removeOrganizationMember(orgSlug: string, userId: number): Promise<void> {
     return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, { method: 'DELETE' });
+  }
+
+  // Notifications
+  async getNotifications(page = 1, perPage = 20, unreadOnly = false): Promise<NotificationListResponse> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (unreadOnly) params.set('unread_only', 'true');
+    return this.fetch(`/v1/notifications?${params}`);
+  }
+
+  async getUnreadNotificationCount(): Promise<{ unread_count: number }> {
+    return this.fetch('/v1/notifications/unread-count');
+  }
+
+  async markNotificationRead(id: number): Promise<void> {
+    return this.fetch(`/v1/notifications/${id}/read`, { method: 'POST' });
+  }
+
+  async markAllNotificationsRead(): Promise<void> {
+    return this.fetch('/v1/notifications/read-all', { method: 'POST' });
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
   }
 }
 

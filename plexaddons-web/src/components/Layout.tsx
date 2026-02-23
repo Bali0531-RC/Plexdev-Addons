@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './Layout.css';
 
 export default function Layout() {
@@ -50,6 +51,9 @@ export default function Layout() {
             <Link to="/addons" className={location.pathname === '/addons' ? 'active' : ''}>
               Addons
             </Link>
+            <Link to="/categories" className={location.pathname === '/categories' || location.pathname.startsWith('/addons/category/') ? 'active' : ''}>
+              Categories
+            </Link>
             <Link to="/users" className={location.pathname === '/users' ? 'active' : ''}>
               Users
             </Link>
@@ -72,6 +76,7 @@ export default function Layout() {
           </nav>
 
           <div className="header-actions">
+            {isAuthenticated && <NotificationBell />}
             {isAuthenticated ? (
               <div className="user-menu">
                 <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
