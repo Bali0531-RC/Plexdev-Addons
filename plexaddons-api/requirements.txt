@@ -28,6 +28,8 @@ stripe==7.12.0
 # Scheduling
 apscheduler==3.10.4
 
+# Background task queue
+arq==0.26.1
 # Structured Logging
 structlog==24.1.0
 
