@@ -21,7 +21,6 @@ export default function AddonDetail() {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    console.log('[AddonDetail] useEffect fired, slug:', slug);
     if (slug) {
       loadAddon();
     }
@@ -34,7 +33,6 @@ export default function AddonDetail() {
         api.getAddon(slug!),
         api.listVersions(slug!),
       ]);
-      console.log('[AddonDetail] API response sponsor_url:', addonData.sponsor_url, 'is_paid:', addonData.is_paid);
       setAddon(addonData);
       setVersions(versionsData.versions);
       // Check if current user already has a license for this paid addon
@@ -63,8 +61,6 @@ export default function AddonDetail() {
       day: 'numeric',
     });
   };
-
-  console.log('[AddonDetail] RENDER - loading:', loading, 'error:', error, 'addon?.sponsor_url:', addon?.sponsor_url, 'isAuthenticated:', isAuthenticated);
 
   if (loading) {
     return (
@@ -183,8 +179,8 @@ export default function AddonDetail() {
         {addon.sponsor_url && (
           <>
             <span className="meta-separator">•</span>
-            <a href={addon.sponsor_url} target="_blank" rel="noopener noreferrer" className="sponsor-link">
-              ❤️ Sponsor
+            <a href={addon.sponsor_url} target="_blank" rel="noopener noreferrer" className="donate-link">
+              ❤️ Support
             </a>
           </>
         )}
