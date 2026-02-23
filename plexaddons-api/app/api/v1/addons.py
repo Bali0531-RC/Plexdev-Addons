@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, case, desc
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import date, timedelta
 from app.database import get_db
 from app.models import User, Addon, AddonUsageStats, AddonStar, AddonReview, Version
@@ -25,17 +25,21 @@ async def list_addons(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
+    tag: Optional[str] = None,
+    sort_by: Literal["newest", "oldest", "name_asc", "name_desc", "updated"] = "updated",
     db: AsyncSession = Depends(get_db),
     user: Optional[User] = Depends(get_current_user_optional),
     _: None = Depends(rate_limit_check),
 ):
-    """List all public addons."""
+    """List all public addons with server-side search, tag filter, and sorting."""
     skip = (page - 1) * per_page
     addons, total = await AddonService.list_addons(
         db,
         skip=skip,
         limit=per_page,
         search=search,
+        tag=tag,
+        sort_by=sort_by,
         public_only=True,
     )
     
@@ -232,11 +236,14 @@ async def create_addon(
         owner_id=addon.owner_id,
         organization_id=addon.organization_id,
         tags=addon.tags or [],
+        icon_url=addon.icon_url,
+        readme=addon.readme,
         owner_username=user.discord_username,
         owner_discord_id=user.discord_id,
         latest_version=None,
         latest_release_date=None,
         version_count=0,
+        download_count=0,
         created_at=addon.created_at,
         updated_at=addon.updated_at,
     )
@@ -260,7 +267,7 @@ async def get_addon(
             raise NotFoundError("Addon not found")
     
     # Get enriched data
-    from app.models import Version
+    from app.models import Version, AddonUsageStats
     from sqlalchemy import select, func
     
     # Get owner
@@ -282,6 +289,13 @@ async def get_addon(
     )
     version_count = count_result.scalar() or 0
     
+    # Get total download/check count
+    download_result = await db.execute(
+        select(func.coalesce(func.sum(AddonUsageStats.check_count), 0))
+        .where(AddonUsageStats.addon_id == addon.id)
+    )
+    download_count = download_result.scalar() or 0
+    
     return AddonResponse(
         id=addon.id,
         slug=addon.slug,
@@ -295,11 +309,14 @@ async def get_addon(
         owner_id=addon.owner_id,
         organization_id=addon.organization_id,
         tags=addon.tags or [],
+        icon_url=addon.icon_url,
+        readme=addon.readme,
         owner_username=owner.discord_username if owner else None,
         owner_discord_id=owner.discord_id if owner else None,
         latest_version=latest.version if latest else None,
         latest_release_date=latest.release_date if latest else None,
         version_count=version_count,
+        download_count=download_count,
         created_at=addon.created_at,
         updated_at=addon.updated_at,
     )

@@ -3,7 +3,7 @@ from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, literal_column
 from sqlalchemy.orm import aliased
-from app.models import Addon, Version, User
+from app.models import Addon, Version, User, AddonUsageStats
 from app.schemas import AddonCreate, AddonUpdate
 from app.utils import slugify
 from app.core.exceptions import NotFoundError, ConflictError, ForbiddenError
@@ -125,10 +125,12 @@ class AddonService:
         limit: int = 20,
         owner_id: Optional[int] = None,
         search: Optional[str] = None,
+        tag: Optional[str] = None,
+        sort_by: str = "updated",
         public_only: bool = True,
         addon_ids: Optional[List[int]] = None,
     ) -> tuple[List[dict], int]:
-        """List addons with latest version info using optimized JOINs."""
+        """List addons with latest version info, server-side search, tag filter, and sorting."""
         # Base filters
         filters = []
         if public_only:
@@ -138,7 +140,13 @@ class AddonService:
             filters.append(Addon.owner_id == owner_id)
         if search:
             safe_search = sanitize_ilike_pattern(search)
-            filters.append(Addon.name.ilike(f"%{safe_search}%"))
+            # Search across name and description
+            filters.append(
+                func.concat(Addon.name, ' ', func.coalesce(Addon.description, '')).ilike(f"%{safe_search}%")
+            )
+        if tag:
+            # Filter by tag - tags is stored as a PostgreSQL ARRAY/JSON column
+            filters.append(Addon.tags.contains([tag]))
         if addon_ids is not None:
             filters.append(Addon.id.in_(addon_ids))
         
@@ -202,7 +210,17 @@ class AddonService:
         if filters:
             query = query.where(and_(*filters))
         
-        query = query.order_by(Addon.updated_at.desc()).offset(skip).limit(limit)
+        # Sorting
+        sort_options = {
+            "newest": Addon.created_at.desc(),
+            "oldest": Addon.created_at.asc(),
+            "name_asc": Addon.name.asc(),
+            "name_desc": Addon.name.desc(),
+            "updated": Addon.updated_at.desc(),
+        }
+        order = sort_options.get(sort_by, Addon.updated_at.desc())
+        
+        query = query.order_by(order).offset(skip).limit(limit)
         result = await db.execute(query)
         rows = result.all()
         
@@ -217,15 +235,19 @@ class AddonService:
                 "homepage": addon.homepage,
                 "external": addon.external,
                 "tags": addon.tags or [],
+                "icon_url": addon.icon_url,
+                "readme": addon.readme,
                 "is_active": addon.is_active,
                 "is_public": addon.is_public,
                 "verified": addon.verified,
                 "owner_id": addon.owner_id,
+                "organization_id": addon.organization_id,
                 "owner_username": row.owner_username,
                 "owner_discord_id": row.owner_discord_id,
                 "latest_version": row.latest_version,
                 "latest_release_date": row.latest_release_date,
                 "version_count": row.version_count,
+                "download_count": 0,
                 "created_at": addon.created_at,
                 "updated_at": addon.updated_at,
             })

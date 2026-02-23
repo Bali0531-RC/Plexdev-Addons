@@ -159,10 +159,11 @@ class ApiClient {
   }
 
   // Addons
-  async listAddons(page = 1, perPage = 20, search?: string, tag?: AddonTag): Promise<AddonListResponse> {
+  async listAddons(page = 1, perPage = 20, search?: string, tag?: AddonTag, sortBy?: string): Promise<AddonListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.append('search', search);
     if (tag) params.append('tag', tag);
+    if (sortBy) params.append('sort_by', sortBy);
     return this.fetch(`/v1/addons?${params}`);
   }
 

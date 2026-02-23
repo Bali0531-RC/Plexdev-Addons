@@ -19,14 +19,15 @@
 }
 
 .addons-search {
-  margin-bottom: 1rem;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .search-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.75rem 1rem;
   font-size: 1rem;
   background: var(--surface);
@@ -111,6 +112,15 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.75rem;
+}
+
+.addon-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
 }
 
 .addon-card-header h3 {
@@ -218,6 +228,12 @@
   max-width: 70%;
 }
 
+.addon-downloads {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .addon-author-link {
   cursor: pointer;
   transition: color 0.2s;
@@ -259,4 +275,133 @@
   .addons-grid {
     grid-template-columns: 1fr;
   }
+
+  .addons-toolbar {
+    flex-direction: column;
+  }
+}
+
+/* Toolbar */
+.addons-toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.addons-sort {
+  flex-shrink: 0;
+}
+
+.sort-select {
+  height: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Results Info */
+.addons-results-info {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-page {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-page:hover {
+  border-color: var(--accent);
+}
+
+.btn-page.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.page-ellipsis {
+  padding: 0 0.25rem;
+  color: var(--text-muted);
+}
+
+/* Skeleton Loading States */
+.addon-card.skeleton {
+  pointer-events: none;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-title {
+  height: 1.2rem;
+  width: 60%;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-text {
+  height: 0.9rem;
+  width: 100%;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text.short {
+  width: 40%;
+}
+
+.skeleton-footer {
+  height: 0.8rem;
+  width: 30%;
+  background: var(--border);
+  border-radius: 4px;
+  margin-top: auto;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
