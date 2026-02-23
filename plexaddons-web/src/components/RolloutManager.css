@@ -1,0 +1,127 @@
+.rollout-manager {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.rollout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.rollout-header h3 {
+  margin: 0;
+}
+
+.rollout-create-form {
+  background: var(--bg-secondary, #16162a);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rollouts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rollout-card {
+  background: var(--bg-secondary, #16162a);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #2a2a4a);
+}
+
+.rollout-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.rollout-version {
+  font-weight: 600;
+}
+
+.rollout-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.rollout-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rollout-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border-color, #2a2a4a);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rollout-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.rollout-percentage {
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 40px;
+  text-align: right;
+}
+
+.rollout-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #a0a0c0);
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rollout-events {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0c0);
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 4px;
+}
+
+.rollout-event {
+  padding: 2px 0;
+}
+
+.rollout-event-time {
+  margin-left: 0.5rem;
+  opacity: 0.7;
+}
+
+.rollout-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.no-rollouts {
+  color: var(--text-secondary, #a0a0c0);
+  font-style: italic;
+}

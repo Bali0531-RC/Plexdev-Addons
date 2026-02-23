@@ -213,10 +213,10 @@ async def get_trending_addons(
             "owner_username": owner.discord_username if owner else None,
             "owner_discord_id": owner.discord_id if owner else None,
             "latest_version": latest.version if latest else None,
-            "star_count": row[5] if row[5] else 0,  # star_count
-            "avg_rating": round(float(row[6]), 1) if row[6] else None,  # avg_rating
-            "review_count": row[7] if row[7] else 0,  # review_count
-            "recent_unique_users": row[2] if row[2] else 0,  # recent_unique
+            "star_count": row.star_count or 0,
+            "avg_rating": round(float(row.avg_rating), 1) if row.avg_rating else None,
+            "review_count": row.review_count or 0,
+            "recent_unique_users": row.recent_unique or 0,
         })
 
     return {"trending": trending}
