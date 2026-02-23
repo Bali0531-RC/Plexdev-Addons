@@ -527,6 +527,57 @@ class AddonUsageStats(Base):
     )
 
 
+# ============== STAR / FAVORITE SYSTEM ==============
+
+class AddonStar(Base):
+    """User stars/favorites on addons."""
+    __tablename__ = "addon_stars"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="stars")
+    addon = relationship("Addon", backref="stars")
+
+    __table_args__ = (
+        Index("idx_addon_stars_user_addon", "user_id", "addon_id", unique=True),
+        Index("idx_addon_stars_addon", "addon_id"),
+    )
+
+
+# ============== REVIEWS & RATINGS SYSTEM ==============
+
+class AddonReview(Base):
+    """User reviews and ratings for addons."""
+    __tablename__ = "addon_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    title = Column(String(200), nullable=True)
+    content = Column(Text, nullable=True)
+
+    # Moderation
+    is_visible = Column(Boolean, default=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="reviews")
+    addon = relationship("Addon", backref="reviews")
+
+    __table_args__ = (
+        Index("idx_addon_reviews_user_addon", "user_id", "addon_id", unique=True),
+        Index("idx_addon_reviews_addon", "addon_id"),
+    )
+
+
 # ============== ORGANIZATION MODELS (Premium Feature) ==============
 
 class Organization(Base):

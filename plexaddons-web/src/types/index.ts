@@ -83,6 +83,65 @@ export interface Addon {
   updated_at: string;
 }
 
+// Star / Favorite Types
+export interface StarStatus {
+  starred: boolean;
+  star_count: number;
+}
+
+// Review Types
+export interface Review {
+  id: number;
+  user_id: number;
+  addon_id: number;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+  author_username: string | null;
+  author_avatar: string | null;
+  author_discord_id: string | null;
+}
+
+export interface ReviewListResponse {
+  reviews: Review[];
+  total: number;
+  average_rating: number | null;
+  rating_distribution: Record<string, number> | null;
+}
+
+export interface ReviewCreate {
+  rating: number;
+  title?: string;
+  content?: string;
+}
+
+export interface ReviewUpdate {
+  rating?: number;
+  title?: string;
+  content?: string;
+}
+
+// Trending Addon Type
+export interface TrendingAddon {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  verified: boolean;
+  external: boolean;
+  tags: AddonTag[];
+  owner_username: string | null;
+  owner_discord_id: string | null;
+  latest_version: string | null;
+  star_count: number;
+  avg_rating: number | null;
+  review_count: number;
+  recent_unique_users: number;
+}
+
 export interface Version {
   id: number;
   addon_id: number;

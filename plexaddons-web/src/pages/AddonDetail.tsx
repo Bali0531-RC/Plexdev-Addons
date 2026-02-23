@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import StarButton from '../components/StarButton';
+import ReviewsSection from '../components/ReviewsSection';
 import './AddonDetail.css';
 
 export default function AddonDetail() {
@@ -78,6 +80,7 @@ export default function AddonDetail() {
             )}
           </h1>
           {addon.external && <span className="badge badge-external">External</span>}
+          <StarButton slug={addon.slug} />
         </div>
         {addon.latest_version && (
           <span className="addon-latest-version">v{addon.latest_version}</span>
@@ -180,6 +183,8 @@ export default function AddonDetail() {
           </div>
         )}
       </section>
+
+      <ReviewsSection slug={addon.slug} addonOwnerId={addon.owner_id} />
     </div>
   );
 }
