@@ -593,3 +593,56 @@ export interface NotificationListResponse {
   total: number;
   unread_count: number;
 }
+
+// Webhook Endpoints (Premium)
+export interface WebhookEndpoint {
+  id: number;
+  name: string;
+  url: string;
+  secret: string;
+  is_active: boolean;
+  event_filter: string[] | null;
+  payload_template: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookEndpointCreate {
+  name: string;
+  url: string;
+  event_filter?: string[];
+  payload_template?: string;
+}
+
+export interface WebhookEndpointUpdate {
+  name?: string;
+  url?: string;
+  is_active?: boolean;
+  event_filter?: string[];
+  payload_template?: string;
+}
+
+export interface WebhookDelivery {
+  id: number;
+  endpoint_id: number;
+  event_type: string;
+  payload: string;
+  status: 'pending' | 'success' | 'failed';
+  status_code: number | null;
+  response_body: string | null;
+  error_message: string | null;
+  attempt: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+export const WEBHOOK_EVENTS = [
+  { value: 'version.released', label: 'Version Released' },
+  { value: 'version.updated', label: 'Version Updated' },
+  { value: 'version.deleted', label: 'Version Deleted' },
+  { value: 'addon.created', label: 'Addon Created' },
+  { value: 'addon.updated', label: 'Addon Updated' },
+  { value: 'addon.deleted', label: 'Addon Deleted' },
+];
