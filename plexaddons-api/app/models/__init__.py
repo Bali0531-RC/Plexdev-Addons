@@ -627,6 +627,7 @@ class Organization(Base):
     
     # Avatar/branding
     avatar_url = Column(String(500), nullable=True)
+    banner_url = Column(String(500), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -635,6 +636,8 @@ class Organization(Base):
     owner = relationship("User", back_populates="owned_organizations", foreign_keys=[owner_id])
     members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
     addons = relationship("Addon", back_populates="organization")
+    audit_logs = relationship("OrgAuditLog", back_populates="organization", cascade="all, delete-orphan")
+    api_keys = relationship("OrgApiKey", back_populates="organization", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index("idx_organizations_owner", "owner_id"),
@@ -651,6 +654,9 @@ class OrganizationMember(Base):
     
     # Role
     role = Column(SQLEnum(OrganizationRole), default=OrganizationRole.MEMBER, nullable=False)
+    
+    # Granular permissions (JSON: {"manage_versions": true, "view_analytics": true, ...})
+    permissions = Column(JSON, nullable=True)
     
     # Invitation tracking
     invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -772,6 +778,56 @@ class AddonCollaborator(Base):
         Index("idx_addon_collaborators_addon", "addon_id"),
         Index("idx_addon_collaborators_user", "user_id"),
         Index("idx_addon_collaborators_unique", "addon_id", "user_id", unique=True),
+    )
+
+
+# ============== ORGANIZATION ENHANCEMENTS ==============
+
+class OrgAuditLog(Base):
+    """Audit log for organization actions."""
+    __tablename__ = "org_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False)  # e.g. "member.invited", "addon.created"
+    details = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="audit_logs")
+    user = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_audit_logs_org", "organization_id"),
+        Index("idx_org_audit_logs_created", "organization_id", "created_at"),
+    )
+
+
+class OrgApiKey(Base):
+    """API keys scoped to an organization."""
+    __tablename__ = "org_api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    name = Column(String(100), nullable=False)
+    key_hash = Column(String(128), nullable=False, unique=True)
+    key_prefix = Column(String(12), nullable=False)  # First 8 chars for identification
+    scopes = Column(JSON, nullable=True)  # ["read:addons", "read:analytics", "write:versions"]
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="api_keys")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_api_keys_org", "organization_id"),
+        Index("idx_org_api_keys_hash", "key_hash"),
     )
 
 

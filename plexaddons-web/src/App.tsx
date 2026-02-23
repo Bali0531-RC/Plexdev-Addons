@@ -29,6 +29,7 @@ import Support from './pages/dashboard/Support'
 import NewTicket from './pages/dashboard/NewTicket'
 import TicketDetail from './pages/dashboard/TicketDetail'
 import Organizations from './pages/dashboard/Organizations'
+import OrgPublicPage from './pages/OrgPublicPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAddons from './pages/admin/AdminAddons'
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="impressum" element={<Navigate to="/legal" replace />} />
         <Route path="login" element={<Login />} />
         <Route path="auth/callback" element={<AuthCallback />} />
+        <Route path="org/:orgSlug" element={<OrgPublicPage />} />
 
         {/* Protected routes */}
         <Route path="dashboard" element={<ProtectedRoute />}>

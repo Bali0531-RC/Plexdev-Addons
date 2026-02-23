@@ -53,6 +53,12 @@ import {
   ReviewUpdate,
   TrendingAddon,
   NotificationListResponse,
+  OrgAuditLogListResponse,
+  OrgApiKey,
+  OrgApiKeyCreateResponse,
+  OrgApiKeyListResponse,
+  OrgAnalyticsSummary,
+  OrgPublicPage,
   WebhookEndpoint,
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
@@ -904,6 +910,44 @@ class ApiClient {
 
   async removeOrganizationMember(orgSlug: string, userId: number): Promise<void> {
     return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, { method: 'DELETE' });
+  }
+
+  async updateMemberPermissions(orgSlug: string, userId: number, permissions: Record<string, boolean>): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}/permissions`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions }),
+    });
+  }
+
+  // Organization Audit Logs
+  async getOrgAuditLogs(orgSlug: string, page = 1, perPage = 50): Promise<OrgAuditLogListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/audit-logs?page=${page}&per_page=${perPage}`);
+  }
+
+  // Organization API Keys
+  async createOrgApiKey(orgSlug: string, data: { name: string; scopes?: string[]; expires_at?: string }): Promise<OrgApiKeyCreateResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listOrgApiKeys(orgSlug: string): Promise<OrgApiKeyListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`);
+  }
+
+  async deleteOrgApiKey(orgSlug: string, keyId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  // Organization Analytics
+  async getOrgAnalytics(orgSlug: string): Promise<OrgAnalyticsSummary> {
+    return this.fetch(`/v1/organizations/${orgSlug}/analytics`);
+  }
+
+  // Public Organization Page
+  async getPublicOrgPage(orgSlug: string): Promise<OrgPublicPage> {
+    return this.fetch(`/v1/organizations/public/${orgSlug}`);
   }
 
   // Notifications

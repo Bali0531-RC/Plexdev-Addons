@@ -540,6 +540,7 @@ export interface OrganizationMember {
   id: number;
   user_id: number;
   role: OrganizationRole;
+  permissions: Record<string, boolean> | null;
   joined_at: string;
   discord_username: string | null;
   discord_avatar: string | null;
@@ -551,6 +552,7 @@ export interface Organization {
   slug: string;
   description: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   owner_id: number;
   created_at: string;
   updated_at: string;
@@ -573,6 +575,7 @@ export interface OrganizationUpdate {
   name?: string;
   description?: string;
   avatar_url?: string;
+  banner_url?: string;
 }
 
 // Notifications
@@ -592,6 +595,76 @@ export interface NotificationListResponse {
   notifications: Notification[];
   total: number;
   unread_count: number;
+}
+
+// Organization Enhancements (Premium)
+export const ORG_PERMISSIONS = [
+  'manage_versions',
+  'view_analytics',
+  'manage_billing',
+  'manage_members',
+  'manage_addons',
+] as const;
+
+export interface OrgAuditLog {
+  id: number;
+  action: string;
+  details: Record<string, unknown> | null;
+  user_id: number | null;
+  username: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface OrgAuditLogListResponse {
+  logs: OrgAuditLog[];
+  total: number;
+}
+
+export interface OrgApiKey {
+  id: number;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_by_id: number | null;
+  created_by_username: string | null;
+  created_at: string;
+}
+
+export interface OrgApiKeyCreateResponse extends OrgApiKey {
+  key: string;
+}
+
+export interface OrgApiKeyListResponse {
+  api_keys: OrgApiKey[];
+  total: number;
+}
+
+export interface OrgAnalyticsSummary {
+  total_downloads: number;
+  total_version_checks: number;
+  total_unique_users: number;
+  addon_count: number;
+  member_count: number;
+  storage_used_bytes: number;
+  top_addons: Array<{ id: number; name: string; slug: string; downloads: number }>;
+}
+
+export interface OrgPublicPage {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
+  owner_username: string | null;
+  member_count: number;
+  addon_count: number;
+  addons: Addon[];
+  created_at: string;
 }
 
 // Webhook Endpoints (Premium)
