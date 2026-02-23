@@ -149,6 +149,9 @@ class AddonService:
             filters.append(Addon.tags.contains([tag]))
         if addon_ids is not None:
             filters.append(Addon.id.in_(addon_ids))
+        if tag:
+            # Filter addons that contain this tag in their JSON tags array
+            filters.append(Addon.tags.contains([tag]))
         
         # Get total count
         count_query = select(func.count(Addon.id))
@@ -237,6 +240,8 @@ class AddonService:
                 "tags": addon.tags or [],
                 "icon_url": addon.icon_url,
                 "readme": addon.readme,
+                "banner_url": addon.banner_url,
+                "screenshots": addon.screenshots or [],
                 "is_active": addon.is_active,
                 "is_public": addon.is_public,
                 "verified": addon.verified,

@@ -11,3 +11,4 @@ from app.services.ticket_service import TicketService, ticket_service
 from app.services.discord_service import DiscordService, discord_service
 from app.services.analytics_service import AnalyticsService
 from app.services.webhook_service import WebhookService, webhook_service
+from app.services.notification_service import NotificationService

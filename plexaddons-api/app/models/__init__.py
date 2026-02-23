@@ -218,6 +218,10 @@ class Addon(Base):
     icon_url = Column(String(500), nullable=True)  # Addon icon/logo URL
     readme = Column(Text, nullable=True)  # Markdown long description / README
     
+    # Media
+    banner_url = Column(String(500), nullable=True)  # Hero banner image URL
+    screenshots = Column(JSON, default=list)  # List of screenshot URLs (max 6)
+    
     # Status
     is_active = Column(Boolean, default=True)
     is_public = Column(Boolean, default=True, index=True)
@@ -631,6 +635,46 @@ class OrganizationMember(Base):
     __table_args__ = (
         Index("idx_org_members_org_user", "organization_id", "user_id", unique=True),
         Index("idx_org_members_user", "user_id"),
+    )
+
+
+# ============== NOTIFICATION SYSTEM ==============
+
+class NotificationType(str, enum.Enum):
+    ADDON_UPDATE = "addon_update"          # New version of a starred addon
+    REVIEW_RECEIVED = "review_received"    # Someone reviewed your addon
+    STAR_RECEIVED = "star_received"        # Someone starred your addon
+    SYSTEM = "system"                      # System announcements
+    ADDON_VERIFIED = "addon_verified"      # Your addon was verified
+    VERSION_PUBLISHED = "version_published" # Scheduled version went live
+
+
+class Notification(Base):
+    """In-app notifications for users."""
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Notification content
+    type = Column(SQLEnum(NotificationType), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=True)
+    
+    # Optional link to related resource
+    link = Column(String(500), nullable=True)  # e.g., /addons/my-addon
+    
+    # Read status
+    is_read = Column(Boolean, default=False, index=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", backref="notifications")
+    
+    __table_args__ = (
+        Index("idx_notifications_user_read", "user_id", "is_read"),
+        Index("idx_notifications_user_created", "user_id", "created_at"),
     )
 
 

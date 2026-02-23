@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import ScreenshotGallery from '../components/ScreenshotGallery';
 import StarButton from '../components/StarButton';
 import ReviewsSection from '../components/ReviewsSection';
 import './AddonDetail.css';
@@ -90,6 +91,11 @@ export default function AddonDetail() {
       {addon.description && (
         <p className="addon-detail-description">{addon.description}</p>
       )}
+
+      <ScreenshotGallery
+        screenshots={addon.screenshots || []}
+        bannerUrl={addon.banner_url}
+      />
 
       <div className="addon-detail-meta">
         <span 

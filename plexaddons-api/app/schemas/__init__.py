@@ -239,6 +239,8 @@ class AddonUpdate(BaseModel):
     tags: Optional[List[AddonTag]] = None
     icon_url: Optional[str] = Field(None, max_length=500)
     readme: Optional[str] = None
+    banner_url: Optional[str] = Field(None, max_length=500)
+    screenshots: Optional[List[str]] = Field(None, max_items=6)
 
 
 class AddonResponse(BaseModel):
@@ -256,6 +258,8 @@ class AddonResponse(BaseModel):
     tags: List[AddonTag] = Field(default_factory=list)
     icon_url: Optional[str] = None
     readme: Optional[str] = None
+    banner_url: Optional[str] = None
+    screenshots: List[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     
@@ -778,6 +782,27 @@ class ReviewListResponse(BaseModel):
     total: int
     average_rating: Optional[float] = None
     rating_distribution: Optional[dict] = None  # {1: count, 2: count, ...}
+
+
+# ============ Notification Schemas ============
+
+class NotificationResponse(BaseModel):
+    id: int
+    type: str
+    title: str
+    message: Optional[str] = None
+    link: Optional[str] = None
+    is_read: bool = False
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationListResponse(BaseModel):
+    notifications: List[NotificationResponse]
+    total: int
+    unread_count: int
 
 
 # Forward reference resolution

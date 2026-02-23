@@ -1,0 +1,209 @@
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-s);
+  transition: color var(--transition), background var(--transition);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell-btn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.notification-bell-btn .badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+/* Panel */
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-panel-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mark-all-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background var(--transition);
+}
+
+.mark-all-btn:hover {
+  background: var(--bg-hover);
+}
+
+.mark-all-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* List */
+.notification-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.notification-empty {
+  padding: var(--space-2xl) var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.notification-item {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.notification-item:hover {
+  background: var(--bg-hover);
+  color: inherit;
+}
+
+.notification-item.unread {
+  background: rgba(83, 185, 255, 0.04);
+}
+
+.notification-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  background: var(--bg-hover);
+}
+
+.notification-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-message {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.notification-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.notification-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.notification-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  transition: color var(--transition), background var(--transition);
+  line-height: 1;
+}
+
+.notification-action-btn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.notification-action-btn.delete:hover {
+  color: var(--danger);
+}
+
+/* Overlay to close panel on outside click */
+.notification-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+@media (max-width: 768px) {
+  .notification-panel {
+    width: calc(100vw - 32px);
+    right: -60px;
+  }
+}
