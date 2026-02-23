@@ -7,6 +7,10 @@ import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../t
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
 import MarketplaceManager from '../../components/MarketplaceManager';
+import PremiumAnalytics from '../../components/PremiumAnalytics';
+import SecurityManager from '../../components/SecurityManager';
+import RolloutManager from '../../components/RolloutManager';
+import FeatureFlagManager from '../../components/FeatureFlagManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -371,6 +375,20 @@ export default function AddonEditor() {
           revenueSplitPercent={addon.revenue_split_percent}
           sponsorUrl={addon.sponsor_url}
         />
+      {/* Premium Analytics (Premium feature) */}
+      {!isNew && addon && isPremium && (
+        <PremiumAnalytics addonId={addon.id} versions={versions.map(v => ({ version: v.version }))} />
+      {/* Security Suite (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <SecurityManager addonId={addon.id} versions={versions} />
+      {/* Staged Rollouts (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <RolloutManager addonId={addon.id} versions={versions} />
+      )}
+
+      {/* Feature Flags (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <FeatureFlagManager addonId={addon.id} />
       )}
 
       {/* Transfer Ownership (Pro+ feature) */}

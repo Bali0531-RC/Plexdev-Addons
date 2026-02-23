@@ -59,6 +59,16 @@ import {
   PurchaseAddonResponse,
   StripeConnectStatus,
   RevenueStats,
+  OrgAuditLogListResponse,
+  OrgApiKey,
+  OrgApiKeyCreateResponse,
+  OrgApiKeyListResponse,
+  OrgAnalyticsSummary,
+  OrgPublicPage,
+  WebhookEndpoint,
+  WebhookEndpointCreate,
+  WebhookEndpointUpdate,
+  WebhookDelivery,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -908,6 +918,44 @@ class ApiClient {
     return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}`, { method: 'DELETE' });
   }
 
+  async updateMemberPermissions(orgSlug: string, userId: number, permissions: Record<string, boolean>): Promise<OrganizationMember> {
+    return this.fetch(`/v1/organizations/${orgSlug}/members/${userId}/permissions`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions }),
+    });
+  }
+
+  // Organization Audit Logs
+  async getOrgAuditLogs(orgSlug: string, page = 1, perPage = 50): Promise<OrgAuditLogListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/audit-logs?page=${page}&per_page=${perPage}`);
+  }
+
+  // Organization API Keys
+  async createOrgApiKey(orgSlug: string, data: { name: string; scopes?: string[]; expires_at?: string }): Promise<OrgApiKeyCreateResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listOrgApiKeys(orgSlug: string): Promise<OrgApiKeyListResponse> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys`);
+  }
+
+  async deleteOrgApiKey(orgSlug: string, keyId: number): Promise<void> {
+    return this.fetch(`/v1/organizations/${orgSlug}/api-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  // Organization Analytics
+  async getOrgAnalytics(orgSlug: string): Promise<OrgAnalyticsSummary> {
+    return this.fetch(`/v1/organizations/${orgSlug}/analytics`);
+  }
+
+  // Public Organization Page
+  async getPublicOrgPage(orgSlug: string): Promise<OrgPublicPage> {
+    return this.fetch(`/v1/organizations/public/${orgSlug}`);
+  }
+
   // Notifications
   async getNotifications(page = 1, perPage = 20, unreadOnly = false): Promise<NotificationListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
@@ -934,6 +982,175 @@ class ApiClient {
   // Marketplace & Sponsorship (Premium Feature)
   async updateAddonPricing(addonId: number, data: { is_paid?: boolean; price_cents?: number; revenue_split_percent?: number }): Promise<Addon> {
     return this.fetch(`/v1/marketplace/addons/${addonId}/pricing`, {
+  // ============== Premium Analytics (PREM-15 through 19) ==============
+
+  // Self-Hosted Config (PREM-15)
+  async getSelfHostedConfig(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`);
+  }
+
+  async createSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
+  // ============== Code Signing (PREM-5) ==============
+
+  async listSigningKeys(addonId: number): Promise<import('../types').SigningKeyListResponse> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys`);
+  }
+
+  async createSigningKey(addonId: number, data: import('../types').SigningKeyCreate): Promise<import('../types').SigningKey> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async revokeSigningKey(addonId: number, keyId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/signing-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  async listVersionSignatures(versionId: number): Promise<import('../types').VersionSignature[]> {
+    return this.fetch(`/v1/versions/${versionId}/signatures`);
+  }
+
+  async createVersionSignature(versionId: number, data: { signing_key_id: number; signature: string; signed_hash: string }): Promise<import('../types').VersionSignature> {
+    return this.fetch(`/v1/versions/${versionId}/signatures`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  // ============== Vulnerability Scanning (PREM-6) ==============
+
+  async initiateScan(versionId: number): Promise<import('../types').VulnerabilityScan> {
+    return this.fetch(`/v1/versions/${versionId}/scans`, { method: 'POST' });
+  }
+
+  async listScans(versionId: number): Promise<import('../types').VulnerabilityScanListResponse> {
+    return this.fetch(`/v1/versions/${versionId}/scans`);
+  }
+
+  async getScan(versionId: number, scanId: number): Promise<import('../types').VulnerabilityScan> {
+    return this.fetch(`/v1/versions/${versionId}/scans/${scanId}`);
+  }
+
+  // ============== SBOM (PREM-7) ==============
+
+  async uploadSBOM(versionId: number, data: { format: string; raw_content: string }): Promise<import('../types').SBOMEntry> {
+    return this.fetch(`/v1/versions/${versionId}/sbom`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async listSBOMs(versionId: number): Promise<import('../types').SBOMListResponse> {
+    return this.fetch(`/v1/versions/${versionId}/sbom`);
+  }
+
+  // ============== IP Allowlist (PREM-8) ==============
+
+  async getIPAllowlist(keyId: number): Promise<{ ip_allowlist: string[] | null }> {
+    return this.fetch(`/v1/api-keys/${keyId}/ip-allowlist`);
+  }
+
+  async updateIPAllowlist(keyId: number, ipAllowlist: string[] | null): Promise<{ ip_allowlist: string[] | null }> {
+    return this.fetch(`/v1/api-keys/${keyId}/ip-allowlist`, { method: 'PUT', body: JSON.stringify({ ip_allowlist: ipAllowlist }) });
+  }
+
+  // ============== 2FA (PREM-9) ==============
+
+  async create2FAChallenge(action: string): Promise<import('../types').TwoFactorChallengeResponse> {
+    return this.fetch('/v1/security/2fa/challenge', { method: 'POST', body: JSON.stringify({ action }) });
+  }
+
+  async verify2FAChallenge(challengeId: number, code: string): Promise<import('../types').TwoFactorVerifyResponse> {
+    return this.fetch('/v1/security/2fa/verify', { method: 'POST', body: JSON.stringify({ challenge_id: challengeId, code }) });
+  // ============== Staged Rollouts ==============
+
+  async listRollouts(addonId: number, status?: string): Promise<import('../types').StagedRolloutListResponse> {
+    const params = status ? `?status_filter=${status}` : '';
+    return this.fetch(`/v1/addons/${addonId}/rollouts${params}`);
+  }
+
+  async createRollout(addonId: number, data: import('../types').StagedRolloutCreate): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async getRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}`);
+  }
+
+  async updateRollout(addonId: number, rolloutId: number, data: import('../types').StagedRolloutUpdate): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async activateRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/activate`, { method: 'POST' });
+  }
+
+  async promoteRollout(addonId: number, rolloutId: number, targetStage?: string): Promise<import('../types').StagedRollout> {
+    const body = targetStage ? JSON.stringify({ target_stage: targetStage }) : '{}';
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/promote`, { method: 'POST', body });
+  }
+
+  async pauseRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/pause`, { method: 'POST' });
+  }
+
+  async cancelRollout(addonId: number, rolloutId: number): Promise<import('../types').StagedRollout> {
+    return this.fetch(`/v1/addons/${addonId}/rollouts/${rolloutId}/cancel`, { method: 'POST' });
+  }
+
+  // ============== Feature Flags ==============
+
+  async listFlags(addonId: number): Promise<import('../types').FeatureFlagListResponse> {
+    return this.fetch(`/v1/addons/${addonId}/flags`);
+  }
+
+  async createFlag(addonId: number, data: import('../types').FeatureFlagCreate): Promise<import('../types').FeatureFlag> {
+    return this.fetch(`/v1/addons/${addonId}/flags`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateFlag(addonId: number, flagId: number, data: import('../types').FeatureFlagUpdate): Promise<import('../types').FeatureFlag> {
+    return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async deleteFlag(addonId: number, flagId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'DELETE' });
+  // Webhook Endpoints (Premium)
+  async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
+    return this.fetch('/v1/webhooks/endpoints');
+  }
+
+  async createWebhookEndpoint(data: WebhookEndpointCreate): Promise<WebhookEndpoint> {
+    return this.fetch('/v1/webhooks/endpoints', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
+      method: 'PUT',
+  async updateWebhookEndpoint(id: number, data: WebhookEndpointUpdate): Promise<WebhookEndpoint> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSelfHostedConfig(addonId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'DELETE' });
+  }
+
+  async verifySelfHostedDomain(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted/verify-domain`, { method: 'POST' });
+  }
+
+  // Analytics Alerts (PREM-17)
+  async listAlerts(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/alerts`);
+  }
+
+  async createAlert(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/alerts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAlert(addonId: number, alertId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -989,6 +1206,58 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify({ sponsor_url: sponsorUrl }),
     });
+  async deleteAlert(addonId: number, alertId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, { method: 'DELETE' });
+  }
+
+  async testAlert(addonId: number, alertId: number) {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}/test`, { method: 'POST' });
+  }
+
+  // Cohort Analysis (PREM-18)
+  async getCohortAnalysis(addonId: number, days = 30, fromVersion?: string, toVersion?: string) {
+    const params = new URLSearchParams({ days: String(days) });
+    if (fromVersion) params.set('from_version', fromVersion);
+    if (toVersion) params.set('to_version', toVersion);
+    return this.fetch(`/v1/addons/${addonId}/cohorts?${params}`);
+  }
+
+  // Predictive Analytics (PREM-19)
+  async getPredictiveAnalytics(addonId: number, targetVersion: string, days = 14) {
+    const params = new URLSearchParams({ target_version: targetVersion, days: String(days) });
+    return this.fetch(`/v1/addons/${addonId}/predictive?${params}`);
+  }
+
+  // Real-Time Analytics (PREM-16)
+  async getRealtimeStats(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/realtime`);
+  }
+
+  async getRecentChecks(addonId: number, limit = 50) {
+    return this.fetch(`/v1/addons/${addonId}/realtime/recent?limit=${limit}`);
+  }
+
+  async getHourlyBreakdown(addonId: number, hours = 24) {
+    return this.fetch(`/v1/addons/${addonId}/realtime/hourly?hours=${hours}`);
+  async deleteWebhookEndpoint(id: number): Promise<void> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}`, { method: 'DELETE' });
+  }
+
+  async rotateWebhookEndpointSecret(id: number): Promise<{ secret: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/rotate-secret`, { method: 'POST' });
+  }
+
+  async testWebhookEndpoint(id: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/endpoints/${id}/test`, { method: 'POST' });
+  }
+
+  async getWebhookDeliveries(endpointId: number, page = 1, perPage = 20): Promise<WebhookDelivery[]> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.fetch(`/v1/webhooks/endpoints/${endpointId}/deliveries?${params}`);
+  }
+
+  async retryWebhookDelivery(deliveryId: number): Promise<{ success: boolean; status_code?: number; error?: string }> {
+    return this.fetch(`/v1/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
   }
 }
 
