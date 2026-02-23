@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.config import get_settings
 from app.models import (
-    VersionCheck, AddonUsageStats, Addon, Version, User, SubscriptionTier
+    VersionCheck, AddonUsageStats, Addon, Version, User, SubscriptionTier,
+    CohortEntry,
 )
 from app.schemas import (
     AddonAnalyticsResponse, DailyStats, VersionDistribution, AnalyticsSummary
@@ -54,7 +55,49 @@ class AnalyticsService:
         await db.commit()
         await db.refresh(check)
         
+        # Track version transitions for cohort analysis (PREM-18)
+        await AnalyticsService._track_cohort_transition(
+            db, addon_id, checked_version, ip_hash
+        )
+        
         return check
+    
+    @staticmethod
+    async def _track_cohort_transition(
+        db: AsyncSession,
+        addon_id: int,
+        current_version: str,
+        ip_hash: str,
+    ):
+        """
+        Detect version transitions for cohort analysis.
+        
+        If a user (by IP hash) previously checked a different version of
+        the same addon, record a cohort entry for the transition.
+        """
+        # Find the user's most recent previous check for this addon
+        prev_check = await db.execute(
+            select(VersionCheck.checked_version)
+            .where(
+                VersionCheck.addon_id == addon_id,
+                VersionCheck.client_ip_hash == ip_hash,
+                VersionCheck.checked_version != current_version,
+                VersionCheck.checked_version.isnot(None),
+            )
+            .order_by(VersionCheck.timestamp.desc())
+            .limit(1)
+        )
+        prev_version = prev_check.scalar_one_or_none()
+        
+        if prev_version and prev_version != current_version:
+            entry = CohortEntry(
+                addon_id=addon_id,
+                from_version=prev_version,
+                to_version=current_version,
+                client_ip_hash=ip_hash,
+            )
+            db.add(entry)
+            await db.commit()
     
     @staticmethod
     async def update_daily_stats(
