@@ -53,6 +53,12 @@ import {
   ReviewUpdate,
   TrendingAddon,
   NotificationListResponse,
+  AddonLicense,
+  LicenseListResponse,
+  LicenseVerifyResponse,
+  PurchaseAddonResponse,
+  StripeConnectStatus,
+  RevenueStats,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -923,6 +929,66 @@ class ApiClient {
 
   async deleteNotification(id: number): Promise<void> {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
+  }
+
+  // Marketplace & Sponsorship (Premium Feature)
+  async updateAddonPricing(addonId: number, data: { is_paid?: boolean; price_cents?: number; revenue_split_percent?: number }): Promise<Addon> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/pricing`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async purchaseAddon(addonId: number, serverId?: string): Promise<PurchaseAddonResponse> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/purchase`, {
+      method: 'POST',
+      body: JSON.stringify({ server_id: serverId }),
+    });
+  }
+
+  async listAddonLicenses(addonId: number, skip = 0, limit = 50): Promise<LicenseListResponse> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/licenses?skip=${skip}&limit=${limit}`);
+  }
+
+  async listMyLicenses(skip = 0, limit = 50): Promise<LicenseListResponse> {
+    return this.fetch(`/v1/marketplace/my-licenses?skip=${skip}&limit=${limit}`);
+  }
+
+  async revokeLicense(licenseId: number): Promise<AddonLicense> {
+    return this.fetch(`/v1/marketplace/licenses/${licenseId}/revoke`, { method: 'POST' });
+  }
+
+  async verifyLicense(licenseKey: string, serverId?: string): Promise<LicenseVerifyResponse> {
+    return this.fetch('/v1/marketplace/verify-license', {
+      method: 'POST',
+      body: JSON.stringify({ license_key: licenseKey, server_id: serverId }),
+    });
+  }
+
+  async getRevenueStats(addonId: number): Promise<RevenueStats> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/revenue`);
+  }
+
+  async getStripeConnectStatus(): Promise<StripeConnectStatus> {
+    return this.fetch('/v1/stripe-connect/status');
+  }
+
+  async startStripeConnectOnboarding(returnUrl: string, refreshUrl: string): Promise<{ onboarding_url: string }> {
+    return this.fetch('/v1/stripe-connect/onboard', {
+      method: 'POST',
+      body: JSON.stringify({ return_url: returnUrl, refresh_url: refreshUrl }),
+    });
+  }
+
+  async getSponsorUrl(addonId: number): Promise<{ sponsor_url: string | null }> {
+    return this.fetch(`/v1/addons/${addonId}/sponsorship`);
+  }
+
+  async updateSponsorUrl(addonId: number, sponsorUrl: string | null): Promise<{ sponsor_url: string | null }> {
+    return this.fetch(`/v1/addons/${addonId}/sponsorship`, {
+      method: 'PUT',
+      body: JSON.stringify({ sponsor_url: sponsorUrl }),
+    });
   }
 }
 

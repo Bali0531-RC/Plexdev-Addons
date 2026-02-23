@@ -101,6 +101,14 @@ class TicketCategory(str, enum.Enum):
     BUG_REPORT = "bug_report"
 
 
+# License status for paid addons
+class LicenseStatus(str, enum.Enum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    SUSPENDED = "suspended"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -164,6 +172,9 @@ class User(Base):
     temp_tier_granted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     temp_tier_granted_at = Column(DateTime(timezone=True), nullable=True)
     temp_tier_reason = Column(String(500), nullable=True)  # Why was temp tier granted
+    
+    # ============== STRIPE CONNECT (Marketplace payouts) ==============
+    stripe_connect_account_id = Column(String(255), nullable=True, unique=True)
     
     # OAuth tokens (should be encrypted in production)
     discord_access_token = Column(Text, nullable=True)
@@ -246,6 +257,12 @@ class Addon(Base):
     is_active = Column(Boolean, default=True)
     is_public = Column(Boolean, default=True, index=True)
     verified = Column(Boolean, default=False, index=True)  # Verified by PlexDevelopment team
+    
+    # Marketplace (Premium)
+    is_paid = Column(Boolean, default=False)
+    price_cents = Column(Integer, nullable=True)  # Price in cents (e.g., 499 = $4.99)
+    revenue_split_percent = Column(Integer, default=90)  # Developer's share (90 = 90/10 split)
+    sponsor_url = Column(String(500), nullable=True)  # External sponsorship/donation link
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -772,4 +789,52 @@ class AddonCollaborator(Base):
         Index("idx_addon_collaborators_addon", "addon_id"),
         Index("idx_addon_collaborators_user", "user_id"),
         Index("idx_addon_collaborators_unique", "addon_id", "user_id", unique=True),
+    )
+
+
+# ============== ADDON LICENSES (Marketplace - Premium) ==============
+
+class AddonLicense(Base):
+    """License keys for paid addons (PREM-13)."""
+    __tablename__ = "addon_licenses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # License identification
+    license_key = Column(String(64), unique=True, nullable=False, index=True)
+    
+    # Payment info
+    stripe_payment_intent_id = Column(String(255), nullable=True)
+    amount_cents = Column(Integer, nullable=False)  # Amount paid
+    developer_amount_cents = Column(Integer, nullable=False)  # Developer's share
+    platform_amount_cents = Column(Integer, nullable=False)  # Platform's share
+    
+    # Status
+    status = Column(
+        SQLEnum(LicenseStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=LicenseStatus.ACTIVE,
+    )
+    
+    # Optional: tie license to a server/instance
+    server_id = Column(String(100), nullable=True)
+    
+    # Expiration (optional, None = lifetime)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    addon = relationship("Addon", backref="licenses")
+    buyer = relationship("User", backref="purchased_licenses")
+    
+    __table_args__ = (
+        Index("idx_addon_licenses_addon", "addon_id"),
+        Index("idx_addon_licenses_buyer", "buyer_id"),
+        Index("idx_addon_licenses_key", "license_key", unique=True),
+        Index("idx_addon_licenses_status", "status"),
     )

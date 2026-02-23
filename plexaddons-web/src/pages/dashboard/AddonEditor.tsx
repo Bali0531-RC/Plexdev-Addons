@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
+import MarketplaceManager from '../../components/MarketplaceManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
@@ -14,6 +15,7 @@ export default function AddonEditor() {
   const { user } = useAuth();
   const isNew = !slug || slug === 'new';
   const isPro = user?.effective_tier === 'pro' || user?.effective_tier === 'premium' || user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const isPremium = user?.effective_tier === 'premium' || user?.subscription_tier === 'premium';
 
   const [addon, setAddon] = useState<Addon | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -358,6 +360,17 @@ export default function AddonEditor() {
       {/* Collaborators (Pro+ feature) */}
       {!isNew && addon && (
         <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
+      )}
+
+      {/* Marketplace & Sponsorship (Premium feature) */}
+      {isPremium && !isNew && addon && (
+        <MarketplaceManager
+          addonId={addon.id}
+          isPaid={addon.is_paid}
+          priceCents={addon.price_cents}
+          revenueSplitPercent={addon.revenue_split_percent}
+          sponsorUrl={addon.sponsor_url}
+        />
       )}
 
       {/* Transfer Ownership (Pro+ feature) */}
