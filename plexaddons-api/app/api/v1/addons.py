@@ -16,6 +16,7 @@ from app.schemas import (
 from app.services import AddonService, VersionService
 from app.api.deps import get_current_user, get_current_user_optional, get_effective_tier, rate_limit_check, rate_limit_check_authenticated
 from app.core.exceptions import NotFoundError, ForbiddenError
+from app.core.cache import cache
 from app.models import SubscriptionTier
 
 router = APIRouter(prefix="/addons", tags=["Addons"])
@@ -34,6 +35,15 @@ async def list_addons(
 ):
     """List all public addons with server-side search, tag filter, and sorting."""
     skip = (page - 1) * per_page
+    
+    # Try cache for unauthenticated, unfiltered requests
+    cache_key = None
+    if not search and not tag:
+        cache_key = f"addon_list:{sort_by}:{page}:{per_page}"
+        cached = await cache.get(cache_key)
+        if cached:
+            return AddonListResponse(**cached)
+    
     addons, total = await AddonService.list_addons(
         db,
         skip=skip,
@@ -44,12 +54,17 @@ async def list_addons(
         public_only=True,
     )
     
-    return AddonListResponse(
+    result = AddonListResponse(
         addons=[AddonResponse(**addon) for addon in addons],
         total=total,
         page=page,
         per_page=per_page,
     )
+    
+    if cache_key:
+        await cache.set(cache_key, result.model_dump(), cache.TTL_ADDON_LIST)
+    
+    return result
 
 
 @router.get("/mine", response_model=AddonListResponse)
@@ -198,10 +213,10 @@ async def get_trending_addons(
             "owner_username": owner.discord_username if owner else None,
             "owner_discord_id": owner.discord_id if owner else None,
             "latest_version": latest.version if latest else None,
-            "star_count": row[5] if row[5] else 0,  # star_count
-            "avg_rating": round(float(row[6]), 1) if row[6] else None,  # avg_rating
-            "review_count": row[7] if row[7] else 0,  # review_count
-            "recent_unique_users": row[2] if row[2] else 0,  # recent_unique
+            "star_count": row.star_count or 0,
+            "avg_rating": round(float(row.avg_rating), 1) if row.avg_rating else None,
+            "review_count": row.review_count or 0,
+            "recent_unique_users": row.recent_unique or 0,
         })
 
     return {"trending": trending}
@@ -223,6 +238,8 @@ async def create_addon(
     # Add addon_creator badge if this is user's first public addon
     if addon.is_public:
         await UserService.check_and_add_creator_badge(db, user)
+    
+    await cache.invalidate_addon(addon_id=addon.id, addon_slug=addon.slug)
     
     return AddonResponse(
         id=addon.id,
@@ -353,6 +370,7 @@ async def update_addon(
         data.theme_header_url = None
     
     updated = await AddonService.update_addon(db, addon, user, data)
+    await cache.invalidate_addon(addon_id=updated.id, addon_slug=updated.slug)
     return await get_addon(updated.slug, db, user)
 
 
@@ -369,6 +387,7 @@ async def delete_addon(
         raise NotFoundError("Addon not found")
     
     await AddonService.delete_addon(db, addon, user)
+    await cache.invalidate_addon(addon_id=addon.id, addon_slug=addon.slug)
     return {"status": "deleted"}
 
 

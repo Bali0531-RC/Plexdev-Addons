@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Date, Index, Enum as SQLEnum, JSON, SmallInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -62,6 +62,37 @@ class CollaboratorRole(str, enum.Enum):
     VIEWER = "viewer"     # Read-only access to private addons
 
 
+class ScanStatus(str, enum.Enum):
+    PENDING = "pending"
+    SCANNING = "scanning"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class VulnerabilitySeverity(str, enum.Enum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+# Rollout stages
+class RolloutStage(str, enum.Enum):
+    CANARY = "canary"       # 1%
+    EARLY = "early"         # 5%
+    PARTIAL = "partial"     # 25%
+    MAJORITY = "majority"   # 50%
+    FULL = "full"           # 100%
+    PAUSED = "paused"       # manually paused
+
+
+class RolloutStatus(str, enum.Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
 # API Key Scopes - defines what each key can access
 class ApiKeyScope(str, enum.Enum):
     # Read operations (Pro+)
@@ -98,7 +129,28 @@ class TicketCategory(str, enum.Enum):
     BILLING = "billing"
     TECHNICAL = "technical"
     FEATURE_REQUEST = "feature_request"
+
+
+# Alert notification channels (Premium)
+class AlertNotificationChannel(str, enum.Enum):
+    WEBHOOK = "webhook"
+    EMAIL = "email"
+    DISCORD = "discord"
+
+
+# Alert comparison operators
+class AlertComparison(str, enum.Enum):
+    BELOW = "below"     # Notify when metric drops below threshold
+    ABOVE = "above"     # Notify when metric exceeds threshold
     BUG_REPORT = "bug_report"
+
+
+# License status for paid addons
+class LicenseStatus(str, enum.Enum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    SUSPENDED = "suspended"
 
 
 class User(Base):
@@ -164,6 +216,9 @@ class User(Base):
     temp_tier_granted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     temp_tier_granted_at = Column(DateTime(timezone=True), nullable=True)
     temp_tier_reason = Column(String(500), nullable=True)  # Why was temp tier granted
+    
+    # ============== STRIPE CONNECT (Marketplace payouts) ==============
+    stripe_connect_account_id = Column(String(255), nullable=True, unique=True)
     
     # OAuth tokens (should be encrypted in production)
     discord_access_token = Column(Text, nullable=True)
@@ -247,6 +302,12 @@ class Addon(Base):
     is_public = Column(Boolean, default=True, index=True)
     verified = Column(Boolean, default=False, index=True)  # Verified by PlexDevelopment team
     
+    # Marketplace (Premium)
+    is_paid = Column(Boolean, default=False)
+    price_cents = Column(Integer, nullable=True)  # Price in cents (e.g., 499 = $4.99)
+    revenue_split_percent = Column(Integer, default=90)  # Developer's share (90 = 90/10 split)
+    sponsor_url = Column(String(500), nullable=True)  # External sponsorship/donation link
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -258,6 +319,8 @@ class Addon(Base):
     __table_args__ = (
         Index("idx_addons_owner_name", "owner_id", "name", unique=True),
         Index("idx_addons_organization", "organization_id"),
+        Index("idx_addons_public_active", "is_public", "is_active"),
+        Index("idx_addons_updated_at", "updated_at"),
     )
 
 
@@ -311,6 +374,7 @@ class Version(Base):
         Index("idx_versions_release_date", "release_date"),
         Index("idx_versions_scheduled_release", "scheduled_release_at"),
         Index("idx_versions_channel", "addon_id", "channel"),
+        Index("idx_versions_addon_created_at", "addon_id", "created_at"),
     )
 
 
@@ -560,6 +624,108 @@ class AddonUsageStats(Base):
     )
 
 
+# ============== SELF-HOSTED VERSION CHECKER (Premium) ==============
+
+class SelfHostedConfig(Base):
+    """Self-hosted version checker configuration for Premium users (PREM-15)."""
+    __tablename__ = "self_hosted_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    # Custom domain for versions.json endpoint
+    custom_domain = Column(String(255), nullable=True, unique=True)
+    domain_verified = Column(Boolean, default=False)
+    verification_token = Column(String(64), nullable=True)
+    
+    # Private versions.json endpoint config
+    private_endpoint_enabled = Column(Boolean, default=True)
+    api_key_required = Column(Boolean, default=True)
+    
+    # Rate limiting for self-hosted endpoint
+    rate_limit_per_minute = Column(Integer, default=60)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    addon = relationship("Addon", backref="self_hosted_config")
+    
+    __table_args__ = (
+        Index("idx_self_hosted_configs_addon", "addon_id", unique=True),
+        Index("idx_self_hosted_configs_domain", "custom_domain"),
+    )
+
+
+# ============== ANALYTICS ALERTS (Premium) ==============
+
+class AnalyticsAlert(Base):
+    """Alert configuration for analytics thresholds (PREM-17)."""
+    __tablename__ = "analytics_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    
+    # Alert configuration
+    name = Column(String(100), nullable=False)
+    metric = Column(String(50), nullable=False)  # "daily_checks", "unique_users", "error_rate"
+    comparison = Column(SQLEnum(AlertComparison, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    threshold = Column(Integer, nullable=False)
+    
+    # Notification settings
+    notification_channel = Column(SQLEnum(AlertNotificationChannel, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    webhook_url = Column(String(500), nullable=True)
+    email = Column(String(320), nullable=True)
+    discord_webhook_url = Column(String(500), nullable=True)
+    
+    # State
+    is_active = Column(Boolean, default=True)
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    trigger_count = Column(Integer, default=0)
+    
+    # Cooldown: minimum minutes between alerts
+    cooldown_minutes = Column(Integer, default=60)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    addon = relationship("Addon", backref="analytics_alerts")
+    
+    __table_args__ = (
+        Index("idx_analytics_alerts_addon", "addon_id"),
+        Index("idx_analytics_alerts_active", "is_active"),
+    )
+
+
+# ============== COHORT ANALYSIS (Premium) ==============
+
+class CohortEntry(Base):
+    """Tracks version upgrade paths for cohort analysis (PREM-18)."""
+    __tablename__ = "cohort_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    
+    # Version transition
+    from_version = Column(String(50), nullable=False)
+    to_version = Column(String(50), nullable=False)
+    
+    # Privacy-preserving user tracking (hashed IP)
+    client_ip_hash = Column(String(64), nullable=False)
+    
+    # When the transition was detected
+    transitioned_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        Index("idx_cohort_entries_addon", "addon_id"),
+        Index("idx_cohort_entries_addon_versions", "addon_id", "from_version", "to_version"),
+        Index("idx_cohort_entries_transitioned", "transitioned_at"),
+    )
+
+
 # ============== STAR / FAVORITE SYSTEM ==============
 
 class AddonStar(Base):
@@ -627,6 +793,7 @@ class Organization(Base):
     
     # Avatar/branding
     avatar_url = Column(String(500), nullable=True)
+    banner_url = Column(String(500), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -635,6 +802,8 @@ class Organization(Base):
     owner = relationship("User", back_populates="owned_organizations", foreign_keys=[owner_id])
     members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
     addons = relationship("Addon", back_populates="organization")
+    audit_logs = relationship("OrgAuditLog", back_populates="organization", cascade="all, delete-orphan")
+    api_keys = relationship("OrgApiKey", back_populates="organization", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index("idx_organizations_owner", "owner_id"),
@@ -651,6 +820,9 @@ class OrganizationMember(Base):
     
     # Role
     role = Column(SQLEnum(OrganizationRole), default=OrganizationRole.MEMBER, nullable=False)
+    
+    # Granular permissions (JSON: {"manage_versions": true, "view_analytics": true, ...})
+    permissions = Column(JSON, nullable=True)
     
     # Invitation tracking
     invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -732,6 +904,9 @@ class ApiKey(Base):
     # Expiration (optional)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     
+    # IP Allowlisting (Premium)
+    ip_allowlist = Column(JSON, nullable=True)  # List of CIDR ranges e.g. ["192.168.1.0/24", "10.0.0.1/32"]
+    
     # Status
     is_active = Column(Boolean, default=True, index=True)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
@@ -772,4 +947,381 @@ class AddonCollaborator(Base):
         Index("idx_addon_collaborators_addon", "addon_id"),
         Index("idx_addon_collaborators_user", "user_id"),
         Index("idx_addon_collaborators_unique", "addon_id", "user_id", unique=True),
+    )
+
+
+# ============== ADDON LICENSES (Marketplace - Premium) ==============
+
+class AddonLicense(Base):
+    """License keys for paid addons (PREM-13)."""
+    __tablename__ = "addon_licenses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # License identification
+    license_key = Column(String(64), unique=True, nullable=False, index=True)
+    
+    # Payment info
+    stripe_payment_intent_id = Column(String(255), nullable=True)
+    amount_cents = Column(Integer, nullable=False)  # Amount paid
+    developer_amount_cents = Column(Integer, nullable=False)  # Developer's share
+    platform_amount_cents = Column(Integer, nullable=False)  # Platform's share
+    
+    # Status
+    status = Column(
+        SQLEnum(LicenseStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=LicenseStatus.ACTIVE,
+    )
+    
+    # Optional: tie license to a server/instance
+    server_id = Column(String(100), nullable=True)
+    
+    # Expiration (optional, None = lifetime)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    addon = relationship("Addon", backref="licenses")
+    buyer = relationship("User", backref="purchased_licenses")
+    
+    __table_args__ = (
+        Index("idx_addon_licenses_addon", "addon_id"),
+        Index("idx_addon_licenses_buyer", "buyer_id"),
+        Index("idx_addon_licenses_key", "license_key", unique=True),
+        Index("idx_addon_licenses_status", "status"),
+class AddonSigningKey(Base):
+    """Code signing keys per addon (Premium: PREM-5)."""
+    __tablename__ = "addon_signing_keys"
+# ============== STAGED ROLLOUTS ==============
+
+class StagedRollout(Base):
+    """Staged rollout configuration for a version."""
+    __tablename__ = "staged_rollouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # Current stage & percentage
+    stage = Column(SQLEnum(RolloutStage, values_callable=lambda x: [e.value for e in x]),
+                   nullable=False, default=RolloutStage.CANARY)
+    percentage = Column(Integer, nullable=False, default=1)  # 0-100
+
+    status = Column(SQLEnum(RolloutStatus, values_callable=lambda x: [e.value for e in x]),
+                    nullable=False, default=RolloutStatus.DRAFT)
+
+    # Targeting rules (JSON: {"server_ids": [...], "user_ids": [...], "metadata": {...}})
+    targeting_rules = Column(JSON, nullable=True)
+
+    # Auto-promotion settings
+    auto_promote = Column(Boolean, default=False)
+    auto_promote_after_hours = Column(Integer, default=24)  # hours without issues before auto-promoting
+
+    # Metrics
+    total_checks = Column(Integer, default=0)
+    error_reports = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    promoted_at = Column(DateTime(timezone=True), nullable=True)  # Last promotion timestamp
+
+    # Relationships
+    addon = relationship("Addon", backref="rollouts")
+    version = relationship("Version", backref="rollouts")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_staged_rollouts_addon", "addon_id"),
+        Index("idx_staged_rollouts_version", "version_id"),
+        Index("idx_staged_rollouts_addon_status", "addon_id", "status"),
+    )
+
+
+class RolloutEvent(Base):
+    """Tracks rollout stage transitions."""
+    __tablename__ = "rollout_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rollout_id = Column(Integer, ForeignKey("staged_rollouts.id", ondelete="CASCADE"), nullable=False)
+    from_stage = Column(String(20), nullable=True)
+    to_stage = Column(String(20), nullable=False)
+    from_percentage = Column(Integer, nullable=True)
+    to_percentage = Column(Integer, nullable=False)
+    triggered_by = Column(String(20), nullable=False, default="manual")  # "manual" or "auto"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    rollout = relationship("StagedRollout", backref="events")
+
+    __table_args__ = (
+        Index("idx_rollout_events_rollout", "rollout_id"),
+    )
+
+
+# ============== FEATURE FLAGS ==============
+
+class FeatureFlag(Base):
+    """Feature flags linked to addons for toggling functionality without releases."""
+    __tablename__ = "feature_flags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(100), nullable=False)
+    public_key = Column(Text, nullable=False)
+    key_fingerprint = Column(String(64), nullable=False)  # SHA-256 fingerprint
+    algorithm = Column(String(20), nullable=False, default="ed25519")
+
+    is_active = Column(Boolean, default=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    addon = relationship("Addon", backref="signing_keys")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+    __table_args__ = (
+        Index("idx_signing_keys_addon", "addon_id"),
+        Index("idx_signing_keys_fingerprint", "key_fingerprint"),
+    )
+
+
+class VersionSignature(Base):
+    """Signature for a version, created with signing key (PREM-5)."""
+    __tablename__ = "version_signatures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    signing_key_id = Column(Integer, ForeignKey("addon_signing_keys.id", ondelete="SET NULL"), nullable=True)
+
+    signature = Column(Text, nullable=False)
+    signed_hash = Column(String(128), nullable=False)  # SHA-256 hash of the artifact that was signed
+
+    verified = Column(Boolean, default=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="signatures")
+    signing_key = relationship("AddonSigningKey")
+
+    __table_args__ = (
+        Index("idx_version_signatures_version", "version_id"),
+    )
+
+
+class VulnerabilityScan(Base):
+    """Vulnerability scan results per version (PREM-6)."""
+    __tablename__ = "vulnerability_scans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    initiated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    status = Column(SQLEnum(ScanStatus, values_callable=lambda x: [e.value for e in x]),
+                    nullable=False, default=ScanStatus.PENDING)
+    vulnerabilities = Column(JSON, default=list)  # List of {id, severity, summary, url, package, patched_versions}
+    total_vulnerabilities = Column(Integer, default=0)
+    critical_count = Column(Integer, default=0)
+    high_count = Column(Integer, default=0)
+    medium_count = Column(Integer, default=0)
+    low_count = Column(Integer, default=0)
+
+    scan_started_at = Column(DateTime(timezone=True), nullable=True)
+    scan_completed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="vulnerability_scans")
+    initiated_by = relationship("User", foreign_keys=[initiated_by_id])
+
+    __table_args__ = (
+        Index("idx_vuln_scans_version", "version_id"),
+        Index("idx_vuln_scans_status", "status"),
+    )
+
+
+class VersionSBOM(Base):
+    """Software Bill of Materials per version (PREM-7)."""
+    __tablename__ = "version_sboms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
+    uploaded_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    format = Column(String(50), nullable=False, default="npm")  # npm, pip, maven, etc.
+    raw_content = Column(Text, nullable=True)  # Raw lockfile content
+    dependencies = Column(JSON, default=list)  # Parsed: [{name, version, license, is_direct}]
+    total_dependencies = Column(Integer, default=0)
+    direct_dependencies = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    version = relationship("Version", backref="sboms")
+    uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
+
+    __table_args__ = (
+        Index("idx_sboms_version", "version_id"),
+    )
+
+
+class TwoFactorChallenge(Base):
+    """2FA challenges for critical actions (PREM-9)."""
+    __tablename__ = "two_factor_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    action = Column(String(50), nullable=False)  # e.g. "delete_addon", "revoke_key", "change_payment"
+    challenge_code_hash = Column(String(128), nullable=False)  # Hashed 6-digit code
+    
+    is_verified = Column(Boolean, default=False)
+    is_used = Column(Boolean, default=False)
+    attempts = Column(Integer, default=0)
+    max_attempts = Column(Integer, default=5)
+
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User", backref="two_factor_challenges")
+
+    __table_args__ = (
+        Index("idx_2fa_challenges_user", "user_id"),
+        Index("idx_2fa_challenges_expires", "expires_at"),
+    key = Column(String(100), nullable=False)  # e.g. "dark_mode", "new_ui"
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    enabled = Column(Boolean, default=False)
+    percentage = Column(Integer, default=100)  # % of users who see it when enabled
+
+    # Targeting (JSON: {"server_ids": [...], "user_ids": [...]})
+    targeting = Column(JSON, nullable=True)
+# ============== ORGANIZATION ENHANCEMENTS ==============
+
+class OrgAuditLog(Base):
+    """Audit log for organization actions."""
+    __tablename__ = "org_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False)  # e.g. "member.invited", "addon.created"
+    details = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="audit_logs")
+    user = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_audit_logs_org", "organization_id"),
+        Index("idx_org_audit_logs_created", "organization_id", "created_at"),
+    )
+
+
+class OrgApiKey(Base):
+    """API keys scoped to an organization."""
+    __tablename__ = "org_api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    name = Column(String(100), nullable=False)
+    key_hash = Column(String(128), nullable=False, unique=True)
+    key_prefix = Column(String(12), nullable=False)  # First 8 chars for identification
+    scopes = Column(JSON, nullable=True)  # ["read:addons", "read:analytics", "write:versions"]
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="api_keys")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_org_api_keys_org", "organization_id"),
+        Index("idx_org_api_keys_hash", "key_hash"),
+    )
+
+
+class WebhookEndpoint(Base):
+    """Multiple webhook endpoints per user (Premium feature)."""
+    __tablename__ = "webhook_endpoints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    url = Column(String(500), nullable=False)
+    secret = Column(String(64), nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    # Per-event filtering (JSON array of event types, null = all events)
+    event_filter = Column(JSON, nullable=True)
+
+    # Custom payload template (Jinja2-style, null = default format)
+    payload_template = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    addon = relationship("Addon", backref="feature_flags")
+    created_by = relationship("User")
+
+    __table_args__ = (
+        Index("idx_feature_flags_addon", "addon_id"),
+        Index("idx_feature_flags_addon_key", "addon_id", "key", unique=True),
+    user = relationship("User", backref="webhook_endpoints")
+    deliveries = relationship("WebhookDelivery", back_populates="endpoint", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_webhook_endpoints_user", "user_id"),
+    )
+
+
+class WebhookDelivery(Base):
+    """Delivery log for webhook events with retry tracking."""
+    __tablename__ = "webhook_deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint_id = Column(Integer, ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    payload = Column(Text, nullable=False)
+
+    # Delivery status
+    status = Column(String(20), nullable=False, default="pending")  # pending, success, failed
+    status_code = Column(Integer, nullable=True)
+    response_body = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    # Retry tracking
+    attempt = Column(SmallInteger, default=1)
+    max_attempts = Column(SmallInteger, default=6)  # 1 initial + 5 retries
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    endpoint = relationship("WebhookEndpoint", back_populates="deliveries")
+
+    __table_args__ = (
+        Index("idx_webhook_deliveries_endpoint", "endpoint_id"),
+        Index("idx_webhook_deliveries_status", "status"),
+        Index("idx_webhook_deliveries_retry", "status", "next_retry_at"),
     )

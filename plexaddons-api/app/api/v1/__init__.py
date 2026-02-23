@@ -1,5 +1,9 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, marketplace
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, premium_analytics
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, security
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, rollouts, feature_flags
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, webhooks
 
 router = APIRouter(prefix="/v1")
 
@@ -22,3 +26,20 @@ router.include_router(notifications.router)
 router.include_router(collaborators.router)
 router.include_router(collaborators.transfer_router)
 router.include_router(collaborators.invitation_router)
+router.include_router(marketplace.marketplace_router)
+router.include_router(marketplace.connect_router)
+router.include_router(marketplace.sponsorship_router)
+router.include_router(premium_analytics.selfhosted_router)
+router.include_router(premium_analytics.alerts_router)
+router.include_router(premium_analytics.cohort_router)
+router.include_router(premium_analytics.predictive_router)
+router.include_router(premium_analytics.realtime_router)
+router.include_router(security.signing_router)
+router.include_router(security.sig_router)
+router.include_router(security.scan_router)
+router.include_router(security.sbom_router)
+router.include_router(security.ip_router)
+router.include_router(security.twofa_router)
+router.include_router(rollouts.router)
+router.include_router(feature_flags.router)
+router.include_router(webhooks.router)

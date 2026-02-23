@@ -1,10 +1,11 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
-import { UserProfileUpdate, WebhookConfig } from '../../types';
+import { UserProfileUpdate } from '../../types';
 import ApiKeysManager from '../../components/ApiKeysManager';
+import WebhookManager from '../../components/WebhookManager';
 import './Settings.css';
 
 export default function Settings() {
@@ -28,31 +29,10 @@ export default function Settings() {
   });
   const [savingProfile, setSavingProfile] = useState(false);
   
-  // Webhook state
-  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [webhookEnabled, setWebhookEnabled] = useState(false);
-  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
-  const [savingWebhook, setSavingWebhook] = useState(false);
-  const [testingWebhook, setTestingWebhook] = useState(false);
-  const [regeneratingSecret, setRegeneratingSecret] = useState(false);
-  
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
-
-  // Fetch webhook config on mount (for premium users)
-  useEffect(() => {
-    if (user?.subscription_tier === 'premium') {
-      // Fetch webhook config
-      api.getMyWebhook().then((config) => {
-        setWebhookConfig(config);
-        setWebhookUrl(config.webhook_url || '');
-        setWebhookEnabled(config.webhook_enabled);
-      }).catch(() => {});
-    }
-  }, [user?.subscription_tier]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -114,79 +94,6 @@ export default function Settings() {
   const profileUrl = user?.profile_slug || user?.discord_id;
   const isPro = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
   const isPremium = user?.subscription_tier === 'premium';
-
-  const handleSaveWebhook = async (e: FormEvent) => {
-    e.preventDefault();
-    setSavingWebhook(true);
-    try {
-      const config = await api.updateMyWebhook({
-        webhook_url: webhookUrl || null,
-        webhook_enabled: webhookEnabled,
-      });
-      setWebhookConfig(config);
-      toast.success('Webhook settings saved!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save webhook settings');
-    } finally {
-      setSavingWebhook(false);
-    }
-  };
-
-  const handleTestWebhook = async () => {
-    setTestingWebhook(true);
-    try {
-      const result = await api.testMyWebhook();
-      if (result.success) {
-        toast.success(`Webhook test successful! Status: ${result.status_code}`);
-      } else {
-        toast.error(`Webhook test failed: ${result.error}`);
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to test webhook');
-    } finally {
-      setTestingWebhook(false);
-    }
-  };
-
-  const handleRegenerateSecret = async () => {
-    if (!confirm('Are you sure you want to regenerate your webhook secret? You\'ll need to update it in your receiving server.')) {
-      return;
-    }
-    setRegeneratingSecret(true);
-    try {
-      const result = await api.regenerateWebhookSecret();
-      setNewWebhookSecret(result.secret);
-      setWebhookConfig(prev => prev ? { ...prev, has_secret: true } : null);
-      toast.success('Webhook secret regenerated! Make sure to copy it.');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to regenerate webhook secret');
-    } finally {
-      setRegeneratingSecret(false);
-    }
-  };
-
-  const handleDeleteWebhook = async () => {
-    if (!confirm('Are you sure you want to delete your webhook configuration?')) {
-      return;
-    }
-    try {
-      await api.deleteMyWebhook();
-      setWebhookConfig({ webhook_url: null, webhook_enabled: false, has_secret: false });
-      setWebhookUrl('');
-      setWebhookEnabled(false);
-      setNewWebhookSecret(null);
-      toast.success('Webhook deleted');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete webhook');
-    }
-  };
-
-  const copyWebhookSecret = () => {
-    if (newWebhookSecret) {
-      navigator.clipboard.writeText(newWebhookSecret);
-      toast.success('Webhook secret copied to clipboard');
-    }
-  };
 
   return (
     <div className="settings-page">
@@ -457,97 +364,7 @@ export default function Settings() {
         </h2>
         
         {isPremium ? (
-          <>
-            <p className="section-description">
-              Receive real-time notifications when new versions of addons you follow are released.
-              Configure your webhook endpoint below.
-            </p>
-            
-            {newWebhookSecret && (
-              <div className="api-key-reveal">
-                <p className="warning-text">⚠️ Copy this secret now - it won't be shown again!</p>
-                <div className="key-display">
-                  <code>{newWebhookSecret}</code>
-                  <button className="btn btn-secondary btn-sm" onClick={copyWebhookSecret}>
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            <form onSubmit={handleSaveWebhook}>
-              <div className="form-group">
-                <label htmlFor="webhook_url">Webhook URL</label>
-                <input
-                  type="url"
-                  id="webhook_url"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://your-server.com/webhook"
-                />
-                <small>We'll POST JSON payloads to this URL when events occur</small>
-              </div>
-              
-              <div className="form-row toggles">
-                <label className="toggle-item">
-                  <input
-                    type="checkbox"
-                    checked={webhookEnabled}
-                    onChange={(e) => setWebhookEnabled(e.target.checked)}
-                    disabled={!webhookUrl}
-                  />
-                  <span className="toggle-label">
-                    <strong>Enable Webhook</strong>
-                    <small>Start receiving notifications</small>
-                  </span>
-                </label>
-              </div>
-              
-              <div className="button-row">
-                <button type="submit" className="btn btn-primary" disabled={savingWebhook}>
-                  {savingWebhook ? 'Saving...' : 'Save Webhook'}
-                </button>
-                
-                {webhookConfig?.webhook_url && (
-                  <>
-                    <button 
-                      type="button"
-                      className="btn btn-secondary" 
-                      onClick={handleTestWebhook}
-                      disabled={testingWebhook || !webhookEnabled}
-                    >
-                      {testingWebhook ? 'Testing...' : 'Test Webhook'}
-                    </button>
-                    <button 
-                      type="button"
-                      className="btn btn-secondary" 
-                      onClick={handleRegenerateSecret}
-                      disabled={regeneratingSecret}
-                    >
-                      {regeneratingSecret ? 'Regenerating...' : webhookConfig?.has_secret ? 'Regenerate Secret' : 'Generate Secret'}
-                    </button>
-                    <button 
-                      type="button"
-                      className="btn btn-danger" 
-                      onClick={handleDeleteWebhook}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            </form>
-            
-            {webhookConfig?.has_secret && (
-              <div className="webhook-info">
-                <h4>Verifying Webhooks</h4>
-                <p>
-                  Each webhook request includes an <code>X-Webhook-Signature</code> header with an HMAC-SHA256 
-                  signature. Verify this using your secret to ensure the request came from PlexAddons.
-                </p>
-              </div>
-            )}
-          </>
+          <WebhookManager />
         ) : (
           <div className="upgrade-prompt-inline">
             <p>Webhook notifications are available for Premium subscribers.</p>
