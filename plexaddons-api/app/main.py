@@ -107,6 +107,24 @@ async def publish_scheduled_versions():
             print(f"[Scheduler] Published {len(versions)} scheduled versions")
 
 
+async def cleanup_analytics_data():
+    """Scheduled task to clean up old analytics data beyond retention period."""
+    from app.services.analytics_service import AnalyticsService
+    
+    async with AsyncSessionLocal() as db:
+        await AnalyticsService.cleanup_old_data(db, retention_days=settings.analytics_retention_premium)
+        print(f"[Scheduler] Cleaned up analytics data older than {settings.analytics_retention_premium} days")
+
+
+async def recalculate_analytics_unique_users():
+    """Scheduled task to recalculate unique user counts from version check logs."""
+    from app.services.analytics_service import AnalyticsService
+    
+    async with AsyncSessionLocal() as db:
+        await AnalyticsService.recalculate_unique_users(db)
+        print("[Scheduler] Recalculated unique user counts for today")
+
+
 async def bootstrap_initial_admin():
     """Create initial admin user if configured."""
     if not settings.initial_admin_discord_id:
@@ -190,6 +208,18 @@ async def lifespan(app: FastAPI):
         publish_scheduled_versions,
         "interval",
         minutes=5,  # Check every 5 minutes for scheduled versions
+    )
+    scheduler.add_job(
+        cleanup_analytics_data,
+        "cron",
+        hour=5,  # Run at 5 AM daily
+        minute=0,
+    )
+    scheduler.add_job(
+        recalculate_analytics_unique_users,
+        "cron",
+        hour=5,  # Run at 5 AM daily
+        minute=30,
     )
     scheduler.start()
     print("[Startup] Scheduler started")
@@ -290,11 +320,38 @@ app.include_router(webhooks_router, prefix="/api")  # Webhooks at /api/webhooks
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {
+    health = {
         "status": "healthy",
         "version": settings.app_version,
         "environment": settings.environment,
+        "checks": {},
     }
+    
+    # Check database connectivity
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text
+            await db.execute(text("SELECT 1"))
+        health["checks"]["database"] = "ok"
+    except Exception as e:
+        health["checks"]["database"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    # Check Redis connectivity
+    try:
+        from app.core.rate_limit import get_redis_client
+        rc = get_redis_client()
+        if rc:
+            await rc.ping()
+            health["checks"]["redis"] = "ok"
+        else:
+            health["checks"]["redis"] = "not configured"
+    except Exception as e:
+        health["checks"]["redis"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    status_code = 200 if health["status"] == "healthy" else 503
+    return JSONResponse(content=health, status_code=status_code)
 
 
 @app.get("/")

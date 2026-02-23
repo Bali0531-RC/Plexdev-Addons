@@ -88,22 +88,6 @@ class TicketCategory(str, enum.Enum):
     BUG_REPORT = "bug_report"
 
 
-class SubscriptionStatus(str, enum.Enum):
-    ACTIVE = "active"
-    PAST_DUE = "past_due"
-    CANCELED = "canceled"
-    UNPAID = "unpaid"
-    TRIALING = "trialing"
-    PAUSED = "paused"
-    INCOMPLETE = "incomplete"
-    INCOMPLETE_EXPIRED = "incomplete_expired"
-
-
-class PaymentProvider(str, enum.Enum):
-    STRIPE = "stripe"
-    PAYPAL = "paypal"
-
-
 class User(Base):
     __tablename__ = "users"
 
