@@ -995,9 +995,37 @@ class AddonLicense(Base):
         Index("idx_addon_licenses_buyer", "buyer_id"),
         Index("idx_addon_licenses_key", "license_key", unique=True),
         Index("idx_addon_licenses_status", "status"),
+    )
+
+
 class AddonSigningKey(Base):
     """Code signing keys per addon (Premium: PREM-5)."""
     __tablename__ = "addon_signing_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(100), nullable=False)
+    public_key = Column(Text, nullable=False)
+    key_fingerprint = Column(String(64), nullable=False)  # SHA-256 fingerprint
+    algorithm = Column(String(20), nullable=False, default="ed25519")
+
+    is_active = Column(Boolean, default=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    addon = relationship("Addon", backref="signing_keys")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+    __table_args__ = (
+        Index("idx_signing_keys_addon", "addon_id"),
+        Index("idx_signing_keys_fingerprint", "key_fingerprint"),
+    )
+
+
 # ============== STAGED ROLLOUTS ==============
 
 class StagedRollout(Base):
@@ -1075,23 +1103,25 @@ class FeatureFlag(Base):
     addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    name = Column(String(100), nullable=False)
-    public_key = Column(Text, nullable=False)
-    key_fingerprint = Column(String(64), nullable=False)  # SHA-256 fingerprint
-    algorithm = Column(String(20), nullable=False, default="ed25519")
+    key = Column(String(100), nullable=False)  # e.g. "dark_mode", "new_ui"
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
 
-    is_active = Column(Boolean, default=True)
-    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    enabled = Column(Boolean, default=False)
+    percentage = Column(Integer, default=100)  # % of users who see it when enabled
+
+    # Targeting (JSON: {"server_ids": [...], "user_ids": [...]})
+    targeting = Column(JSON, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    addon = relationship("Addon", backref="signing_keys")
+    addon = relationship("Addon", backref="feature_flags")
     created_by = relationship("User", foreign_keys=[created_by_id])
 
     __table_args__ = (
-        Index("idx_signing_keys_addon", "addon_id"),
-        Index("idx_signing_keys_fingerprint", "key_fingerprint"),
+        Index("idx_feature_flags_addon", "addon_id"),
+        Index("idx_feature_flags_addon_key", "addon_id", "key", unique=True),
     )
 
 
@@ -1200,15 +1230,9 @@ class TwoFactorChallenge(Base):
     __table_args__ = (
         Index("idx_2fa_challenges_user", "user_id"),
         Index("idx_2fa_challenges_expires", "expires_at"),
-    key = Column(String(100), nullable=False)  # e.g. "dark_mode", "new_ui"
-    name = Column(String(200), nullable=False)
-    description = Column(Text, nullable=True)
+    )
 
-    enabled = Column(Boolean, default=False)
-    percentage = Column(Integer, default=100)  # % of users who see it when enabled
 
-    # Targeting (JSON: {"server_ids": [...], "user_ids": [...]})
-    targeting = Column(JSON, nullable=True)
 # ============== ORGANIZATION ENHANCEMENTS ==============
 
 class OrgAuditLog(Base):
@@ -1280,12 +1304,6 @@ class WebhookEndpoint(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    addon = relationship("Addon", backref="feature_flags")
-    created_by = relationship("User")
-
-    __table_args__ = (
-        Index("idx_feature_flags_addon", "addon_id"),
-        Index("idx_feature_flags_addon_key", "addon_id", "key", unique=True),
     user = relationship("User", backref="webhook_endpoints")
     deliveries = relationship("WebhookDelivery", back_populates="endpoint", cascade="all, delete-orphan")
 

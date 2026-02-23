@@ -1,14 +1,13 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional, List
+from typing import Dict, Optional, List
 from datetime import datetime, date
 import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
-    ReleaseChannel, CollaboratorRole, LicenseStatus
-    ReleaseChannel, CollaboratorRole, AlertNotificationChannel, AlertComparison
-    ReleaseChannel, CollaboratorRole, ScanStatus
-    ReleaseChannel, CollaboratorRole, RolloutStage, RolloutStatus
+    ReleaseChannel, CollaboratorRole, LicenseStatus,
+    AlertNotificationChannel, AlertComparison, ScanStatus,
+    RolloutStage, RolloutStatus,
 )
 
 
@@ -146,19 +145,6 @@ class UserPublicProfile(BaseModel):
 
 
 # ============ API Key Schemas ============
-
-class ApiKeyCreate(BaseModel):
-    """Response when creating a new API key"""
-    api_key: str  # Full key, only shown once
-    created_at: datetime
-
-
-class ApiKeyResponse(BaseModel):
-    """API key info without the actual key"""
-    has_api_key: bool
-    created_at: Optional[datetime] = None
-    # Show masked key like pa_xxxx...xxxx
-    masked_key: Optional[str] = None
 
 
 # ============ Webhook Schemas ============
@@ -1098,7 +1084,15 @@ class AnalyticsAlertResponse(BaseModel):
     last_triggered_at: Optional[datetime] = None
     trigger_count: int = 0
     cooldown_minutes: int = 60
-# ============== Code Signing Schemas (PREM-5) ==============
+
+    model_config = {"from_attributes": True}
+
+class AnalyticsAlertListResponse(BaseModel):
+    alerts: List[AnalyticsAlertResponse]
+    total: int
+
+
+# ============== Code Signing Schemas (PREM-5) ==========================
 
 class SigningKeyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -1121,12 +1115,33 @@ class SigningKeyResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class AnalyticsAlertListResponse(BaseModel):
-    alerts: List[AnalyticsAlertResponse]
+class SigningKeyListResponse(BaseModel):
+    keys: List[SigningKeyResponse]
     total: int
 
+class VersionSignatureCreate(BaseModel):
+    signing_key_id: int
+    signature: str = Field(..., min_length=1)
+    signed_hash: str = Field(..., min_length=64, max_length=128)
 
-# ============== Cohort Analysis Schemas (PREM-18) ==============
+class VersionSignatureResponse(BaseModel):
+    id: int
+    version_id: int
+    signing_key_id: Optional[int] = None
+    signature: str
+    signed_hash: str
+    verified: bool
+    verified_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VersionSignatureVerifyRequest(BaseModel):
+    artifact_hash: str = Field(..., min_length=64, max_length=128)
+
+
+# ============== Cohort Analysis Schemas (PREM-18) ==========================
 
 class CohortSummary(BaseModel):
     from_version: str
@@ -1172,33 +1187,9 @@ class RealtimeStats(BaseModel):
     unique_users_last_hour: int
     active_versions: int
     top_version: Optional[str] = None
-class SigningKeyListResponse(BaseModel):
-    keys: List[SigningKeyResponse]
-    total: int
-
-class VersionSignatureCreate(BaseModel):
-    signing_key_id: int
-    signature: str = Field(..., min_length=1)
-    signed_hash: str = Field(..., min_length=64, max_length=128)
-
-class VersionSignatureResponse(BaseModel):
-    id: int
-    version_id: int
-    signing_key_id: Optional[int] = None
-    signature: str
-    signed_hash: str
-    verified: bool
-    verified_at: Optional[datetime] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class VersionSignatureVerifyRequest(BaseModel):
-    artifact_hash: str = Field(..., min_length=64, max_length=128)
 
 
-# ============== Vulnerability Scanning Schemas (PREM-6) ==============
+# ============== Vulnerability Scanning Schemas (PREM-6) ==========================
 
 class VulnerabilityScanResponse(BaseModel):
     id: int
@@ -1377,6 +1368,22 @@ class FeatureFlagResponse(BaseModel):
     targeting: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class FeatureFlagListResponse(BaseModel):
+    flags: List[FeatureFlagResponse]
+    total: int
+
+class FeatureFlagEvaluateRequest(BaseModel):
+    server_id: Optional[str] = None
+    user_id: Optional[str] = None
+
+class FeatureFlagEvaluateResponse(BaseModel):
+    key: str
+    enabled: bool
+
+
 # ============ Webhook Endpoint Schemas (Premium) ============
 
 VALID_WEBHOOK_EVENTS = [
@@ -1446,18 +1453,6 @@ class WebhookEndpointResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-class FeatureFlagListResponse(BaseModel):
-    flags: List[FeatureFlagResponse]
-    total: int
-
-class FeatureFlagEvaluateRequest(BaseModel):
-    server_id: Optional[str] = None
-    user_id: Optional[str] = None
-
-class FeatureFlagEvaluateResponse(BaseModel):
-    key: str
-    enabled: bool
 
 class WebhookDeliveryResponse(BaseModel):
     id: int
