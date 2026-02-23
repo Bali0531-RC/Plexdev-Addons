@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Addon, Version } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -11,14 +11,29 @@ import './AddonDetail.css';
 
 export default function AddonDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [addon, setAddon] = useState<Addon | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [purchased, setPurchased] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+
+  // Handle purchase success/cancel redirect from Stripe
+  useEffect(() => {
+    const purchaseStatus = searchParams.get('purchase');
+    if (purchaseStatus === 'success') {
+      setPurchased(true);
+      setPurchaseMessage('Payment successful! Your license is now active.');
+      setSearchParams({}, { replace: true });
+    } else if (purchaseStatus === 'cancelled') {
+      setPurchaseMessage('Payment was cancelled.');
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (slug) {
@@ -120,6 +135,12 @@ export default function AddonDetail() {
         <p className="addon-detail-description">{addon.description}</p>
       )}
 
+      {purchaseMessage && (
+        <div className={`addon-purchase-message ${purchased ? 'success' : 'info'}`}>
+          {purchaseMessage}
+        </div>
+      )}
+
       {addon.is_paid && (
         <div className="addon-purchase-section">
           <div className="addon-price-display">
@@ -134,17 +155,19 @@ export default function AddonDetail() {
               onClick={async () => {
                 setPurchasing(true);
                 try {
-                  await api.purchaseAddon(addon.id);
-                  setPurchased(true);
-                } catch (err) {
+                  const resp = await api.purchaseAddon(addon.id);
+                  if (resp.checkout_url) {
+                    window.location.href = resp.checkout_url;
+                  }
+                } catch (err: any) {
+                  const msg = err?.message || 'Purchase failed. Please try again.';
                   console.error('Purchase failed:', err);
-                  alert('Purchase failed. Please try again.');
-                } finally {
+                  alert(msg);
                   setPurchasing(false);
                 }
               }}
             >
-              {purchasing ? 'Processing…' : 'Purchase'}
+              {purchasing ? 'Redirecting to payment…' : 'Purchase'}
             </button>
           ) : !isAuthenticated ? (
             <Link to="/login" className="btn btn-primary addon-purchase-btn">Log in to Purchase</Link>

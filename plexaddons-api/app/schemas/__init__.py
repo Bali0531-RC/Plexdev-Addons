@@ -239,7 +239,7 @@ class AddonUpdate(BaseModel):
     # Marketplace (Premium)
     is_paid: Optional[bool] = None
     price_cents: Optional[int] = Field(None, ge=100, le=1000000)  # $1.00 - $10,000.00
-    revenue_split_percent: Optional[int] = Field(None, ge=50, le=100)
+    revenue_split_percent: Optional[int] = Field(None, ge=50, le=90)
     sponsor_url: Optional[str] = Field(None, max_length=500)
 
 
@@ -953,7 +953,7 @@ class AddonPricingUpdate(BaseModel):
     """Update pricing for a paid addon."""
     is_paid: bool
     price_cents: Optional[int] = Field(None, ge=100, le=1000000)
-    revenue_split_percent: int = Field(90, ge=50, le=100)
+    revenue_split_percent: int = Field(90, ge=50, le=90)
 
 class LicenseResponse(BaseModel):
     id: int
@@ -1017,8 +1017,9 @@ class PurchaseAddonRequest(BaseModel):
     server_id: Optional[str] = Field(None, max_length=100)
 
 class PurchaseAddonResponse(BaseModel):
-    license: LicenseResponse
-    message: str = "Purchase successful"
+    checkout_url: str
+    session_id: str
+    message: str = "Redirecting to payment"
 
 class StripeConnectOnboardRequest(BaseModel):
     """Request to start Stripe Connect onboarding."""

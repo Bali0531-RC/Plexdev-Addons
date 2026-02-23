@@ -1,12 +1,13 @@
 import stripe
 import logging
+import secrets
 from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone
 from app.config import get_settings
-from app.models import User, Subscription, SubscriptionTier, SubscriptionStatus, PaymentProvider, SubscriptionEvent
+from app.models import User, Subscription, SubscriptionTier, SubscriptionStatus, PaymentProvider, SubscriptionEvent, Addon, AddonLicense, LicenseStatus
 from app.services.user_service import UserService
 from app.core.exceptions import PaymentError, BadRequestError
 import json
@@ -142,6 +143,7 @@ class StripeService:
         
         # Handle different event types
         handlers = {
+            "checkout.session.completed": StripeService._handle_checkout_completed,
             "customer.subscription.created": StripeService._handle_subscription_created,
             "customer.subscription.updated": StripeService._handle_subscription_updated,
             "customer.subscription.deleted": StripeService._handle_subscription_deleted,
@@ -154,6 +156,68 @@ class StripeService:
             await handler(db, event_data, background_tasks)
         
         return {"status": "success", "event_type": event_type}
+    
+    @staticmethod
+    async def _handle_checkout_completed(
+        db: AsyncSession,
+        session_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ):
+        """Handle checkout.session.completed — creates a license for addon purchases."""
+        metadata = session_data.get("metadata", {})
+        
+        # Only handle addon purchases, not subscription checkouts
+        if metadata.get("type") != "addon_purchase":
+            return
+        
+        addon_id = int(metadata["addon_id"])
+        buyer_id = int(metadata["buyer_id"])
+        server_id = metadata.get("server_id") or None
+        price_cents = int(metadata["price_cents"])
+        developer_amount_cents = int(metadata["developer_amount_cents"])
+        platform_amount_cents = int(metadata["platform_amount_cents"])
+        payment_intent_id = session_data.get("payment_intent")
+        
+        # Check if license already exists for this payment (idempotency)
+        if payment_intent_id:
+            existing = await db.execute(
+                select(AddonLicense).where(
+                    AddonLicense.stripe_payment_intent_id == payment_intent_id,
+                )
+            )
+            if existing.scalar_one_or_none():
+                logger.info(f"License already exists for payment_intent {payment_intent_id}")
+                return
+        
+        # Also check for duplicate active license
+        existing_active = await db.execute(
+            select(AddonLicense).where(
+                AddonLicense.addon_id == addon_id,
+                AddonLicense.buyer_id == buyer_id,
+                AddonLicense.status == LicenseStatus.ACTIVE,
+            )
+        )
+        if existing_active.scalar_one_or_none():
+            logger.info(f"Active license already exists for addon {addon_id} buyer {buyer_id}")
+            return
+        
+        license_key = f"lic_{secrets.token_hex(24)}"
+        
+        license = AddonLicense(
+            addon_id=addon_id,
+            buyer_id=buyer_id,
+            license_key=license_key,
+            stripe_payment_intent_id=payment_intent_id,
+            amount_cents=price_cents,
+            developer_amount_cents=developer_amount_cents,
+            platform_amount_cents=platform_amount_cents,
+            status=LicenseStatus.ACTIVE,
+            server_id=server_id,
+        )
+        db.add(license)
+        await db.commit()
+        
+        logger.info(f"License created for addon {addon_id}, buyer {buyer_id}, payment {payment_intent_id}")
     
     @staticmethod
     async def _handle_subscription_created(

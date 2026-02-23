@@ -634,7 +634,8 @@ export interface LicenseVerifyResponse {
 }
 
 export interface PurchaseAddonResponse {
-  license: AddonLicense;
+  checkout_url: string;
+  session_id: string;
   message: string;
 }
 

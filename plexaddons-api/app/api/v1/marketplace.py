@@ -1,12 +1,15 @@
 """Marketplace and Sponsorship endpoints (PREM-13, PREM-14)."""
 
 import secrets
+import stripe
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.config import get_settings
 from app.database import get_db
 from app.models import (
     User, Addon, SubscriptionTier, AddonLicense, LicenseStatus,
@@ -22,6 +25,9 @@ from app.schemas import (
 )
 from app.api.deps import get_current_user, rate_limit_check_authenticated, get_effective_tier
 from app.core.cache import cache
+
+settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 # ============== MARKETPLACE (PREM-13) ==============
@@ -91,11 +97,11 @@ async def purchase_addon(
     _: None = Depends(rate_limit_check_authenticated),
 ):
     """
-    Purchase a paid addon and receive a license key.
+    Purchase a paid addon via Stripe Checkout.
     
-    In production, this would integrate with Stripe to process payment.
-    For now, it creates a license record (payment would be handled by
-    a Stripe Checkout session in the real flow).
+    Creates a Stripe Checkout Session with Stripe Connect split payments.
+    The seller receives their revenue share directly via Stripe Connect,
+    and the platform retains the platform fee.
     """
     result = await db.execute(select(Addon).where(Addon.id == addon_id))
     addon = result.scalar_one_or_none()
@@ -117,28 +123,68 @@ async def purchase_addon(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="You already have an active license for this addon")
     
-    # Calculate revenue split
-    developer_share = int(addon.price_cents * addon.revenue_split_percent / 100)
-    platform_share = addon.price_cents - developer_share
+    # Retrieve the addon owner to get their Connect account
+    owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
+    owner = owner_result.scalar_one_or_none()
+    if not owner or not owner.stripe_connect_account_id:
+        raise HTTPException(
+            status_code=400,
+            detail="The addon developer has not set up payments yet",
+        )
     
-    # Generate license key
-    license_key = f"lic_{secrets.token_hex(24)}"
+    # Calculate the platform fee (inverse of developer share)
+    split = min(addon.revenue_split_percent or 90, 90)
+    developer_share = int(addon.price_cents * split / 100)
+    platform_fee = addon.price_cents - developer_share
     
-    license = AddonLicense(
-        addon_id=addon_id,
-        buyer_id=user.id,
-        license_key=license_key,
-        amount_cents=addon.price_cents,
-        developer_amount_cents=developer_share,
-        platform_amount_cents=platform_share,
-        status=LicenseStatus.ACTIVE,
-        server_id=body.server_id,
-    )
-    db.add(license)
-    await db.commit()
-    await db.refresh(license)
+    # Get or create Stripe customer for the buyer
+    from app.services.stripe_service import StripeService
+    customer_id = await StripeService._get_or_create_customer(user)
     
-    return PurchaseAddonResponse(license=license, message="Purchase successful")
+    success_url = f"{settings.frontend_url}/addons/{addon.slug}?purchase=success"
+    cancel_url = f"{settings.frontend_url}/addons/{addon.slug}?purchase=cancelled"
+    
+    try:
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            mode="payment",
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": addon.name,
+                        "description": f"License for {addon.name}",
+                    },
+                    "unit_amount": addon.price_cents,
+                },
+                "quantity": 1,
+            }],
+            payment_intent_data={
+                "application_fee_amount": platform_fee,
+                "transfer_data": {
+                    "destination": owner.stripe_connect_account_id,
+                },
+            },
+            metadata={
+                "type": "addon_purchase",
+                "addon_id": str(addon.id),
+                "buyer_id": str(user.id),
+                "server_id": body.server_id or "",
+                "price_cents": str(addon.price_cents),
+                "developer_amount_cents": str(developer_share),
+                "platform_amount_cents": str(platform_fee),
+            },
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+        
+        return PurchaseAddonResponse(
+            checkout_url=session.url,
+            session_id=session.id,
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe Checkout session creation failed for addon {addon_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to create payment session. Please try again.")
 
 
 @marketplace_router.get("/addons/{addon_id}/licenses", response_model=LicenseListResponse)
@@ -331,13 +377,22 @@ async def get_connect_status(
     if not user.stripe_connect_account_id:
         return StripeConnectStatusResponse(has_connect_account=False)
     
-    # In production, verify account status with Stripe API
-    return StripeConnectStatusResponse(
-        has_connect_account=True,
-        account_id=user.stripe_connect_account_id,
-        payouts_enabled=True,  # Would check via Stripe API
-        onboarding_complete=True,  # Would check via Stripe API
-    )
+    try:
+        account = stripe.Account.retrieve(user.stripe_connect_account_id)
+        return StripeConnectStatusResponse(
+            has_connect_account=True,
+            account_id=user.stripe_connect_account_id,
+            payouts_enabled=account.payouts_enabled or False,
+            onboarding_complete=account.details_submitted or False,
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to retrieve Stripe Connect account: {e}")
+        return StripeConnectStatusResponse(
+            has_connect_account=True,
+            account_id=user.stripe_connect_account_id,
+            payouts_enabled=False,
+            onboarding_complete=False,
+        )
 
 
 @connect_router.post("/onboard")
@@ -350,34 +405,68 @@ async def start_connect_onboarding(
     """
     Start Stripe Connect onboarding.
     
-    Returns an onboarding URL for the user to complete their Stripe Connect account setup.
-    In production, this creates a Stripe Connect account and returns an Account Link.
+    Creates a Stripe Connect Express account and returns an Account Link URL
+    for the user to complete their onboarding.
     """
     effective_tier = get_effective_tier(user)
     if effective_tier != SubscriptionTier.PREMIUM and not user.is_admin:
         raise HTTPException(status_code=403, detail="Stripe Connect requires Premium subscription")
     
-    if user.stripe_connect_account_id:
+    try:
+        if user.stripe_connect_account_id:
+            # Account already exists — check if onboarding is complete
+            account = stripe.Account.retrieve(user.stripe_connect_account_id)
+            if account.details_submitted:
+                return {
+                    "message": "Stripe Connect account already set up",
+                    "account_id": user.stripe_connect_account_id,
+                }
+            # Onboarding incomplete — generate a new Account Link
+            account_link = stripe.AccountLink.create(
+                account=user.stripe_connect_account_id,
+                refresh_url=body.refresh_url,
+                return_url=body.return_url,
+                type="account_onboarding",
+            )
+            return {
+                "message": "Continue Stripe Connect onboarding",
+                "account_id": user.stripe_connect_account_id,
+                "onboarding_url": account_link.url,
+            }
+        
+        # Create a new Stripe Connect Express account
+        account = stripe.Account.create(
+            type="express",
+            email=user.email,
+            metadata={
+                "user_id": str(user.id),
+                "discord_id": user.discord_id,
+            },
+            capabilities={
+                "card_payments": {"requested": True},
+                "transfers": {"requested": True},
+            },
+        )
+        
+        user.stripe_connect_account_id = account.id
+        await db.commit()
+        
+        # Generate an Account Link for onboarding
+        account_link = stripe.AccountLink.create(
+            account=account.id,
+            refresh_url=body.refresh_url,
+            return_url=body.return_url,
+            type="account_onboarding",
+        )
+        
         return {
-            "message": "Stripe Connect account already exists",
-            "account_id": user.stripe_connect_account_id,
+            "message": "Stripe Connect onboarding initiated",
+            "account_id": account.id,
+            "onboarding_url": account_link.url,
         }
-    
-    # In production:
-    # 1. Create a Stripe Connect account via stripe.Account.create()
-    # 2. Generate an Account Link via stripe.AccountLink.create()
-    # 3. Return the URL for the user to complete onboarding
-    
-    # Placeholder: generate a mock account ID
-    mock_account_id = f"acct_{secrets.token_hex(12)}"
-    user.stripe_connect_account_id = mock_account_id
-    await db.commit()
-    
-    return {
-        "message": "Stripe Connect onboarding initiated",
-        "account_id": mock_account_id,
-        "onboarding_url": f"{body.return_url}?account={mock_account_id}",
-    }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe Connect onboarding failed: {e}")
+        raise HTTPException(status_code=502, detail="Failed to set up Stripe Connect. Please try again.")
 
 
 # ============== SPONSORSHIP (PREM-14) ==============
