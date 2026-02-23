@@ -32,6 +32,7 @@ import {
   ApiKeyCreated,
   AnalyticsSummary,
   AddonAnalytics,
+  ApiUsageAnalytics,
   WebhookConfig,
   WebhookUpdate,
   WebhookTestResponse,
@@ -750,12 +751,33 @@ class ApiClient {
 
   // ============== ANALYTICS ==============
 
-  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
-    return this.fetch('/v1/analytics/summary');
+  async getAnalyticsSummary(days?: number): Promise<AnalyticsSummary> {
+    const params = days ? `?days=${days}` : '';
+    return this.fetch(`/v1/analytics/summary${params}`);
   }
 
-  async getAddonAnalytics(addonId: number): Promise<AddonAnalytics> {
-    return this.fetch(`/v1/analytics/addons/${addonId}`);
+  async getAddonAnalytics(addonId: number, days?: number): Promise<AddonAnalytics> {
+    const params = days ? `?days=${days}` : '';
+    return this.fetch(`/v1/analytics/addons/${addonId}${params}`);
+  }
+
+  async exportAddonAnalytics(addonId: number, format: 'csv' | 'json', days?: number): Promise<Blob> {
+    const params = new URLSearchParams({ format });
+    if (days) params.set('days', String(days));
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    const response = await fetch(`${API_BASE}/v1/analytics/addons/${addonId}/export?${params}`, {
+      headers,
+    });
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  }
+
+  async getApiUsageAnalytics(days?: number): Promise<ApiUsageAnalytics> {
+    const params = days ? `?days=${days}` : '';
+    return this.fetch(`/v1/analytics/api-usage${params}`);
   }
 
   // ============== WEBHOOKS ==============
