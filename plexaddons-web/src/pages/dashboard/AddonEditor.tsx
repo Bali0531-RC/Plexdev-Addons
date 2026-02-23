@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import CollaboratorsManager from '../../components/CollaboratorsManager';
+import PremiumAnalytics from '../../components/PremiumAnalytics';
 import SecurityManager from '../../components/SecurityManager';
 import RolloutManager from '../../components/RolloutManager';
 import FeatureFlagManager from '../../components/FeatureFlagManager';
@@ -17,6 +18,7 @@ export default function AddonEditor() {
   const { user } = useAuth();
   const isNew = !slug || slug === 'new';
   const isPro = user?.effective_tier === 'pro' || user?.effective_tier === 'premium' || user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const isPremium = user?.effective_tier === 'premium' || user?.subscription_tier === 'premium';
 
   const [addon, setAddon] = useState<Addon | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -363,6 +365,9 @@ export default function AddonEditor() {
         <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
       )}
 
+      {/* Premium Analytics (Premium feature) */}
+      {!isNew && addon && isPremium && (
+        <PremiumAnalytics addonId={addon.id} versions={versions.map(v => ({ version: v.version }))} />
       {/* Security Suite (Premium feature) */}
       {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
         <SecurityManager addonId={addon.id} versions={versions} />

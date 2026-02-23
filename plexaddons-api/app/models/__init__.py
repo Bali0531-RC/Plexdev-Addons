@@ -129,6 +129,19 @@ class TicketCategory(str, enum.Enum):
     BILLING = "billing"
     TECHNICAL = "technical"
     FEATURE_REQUEST = "feature_request"
+
+
+# Alert notification channels (Premium)
+class AlertNotificationChannel(str, enum.Enum):
+    WEBHOOK = "webhook"
+    EMAIL = "email"
+    DISCORD = "discord"
+
+
+# Alert comparison operators
+class AlertComparison(str, enum.Enum):
+    BELOW = "below"     # Notify when metric drops below threshold
+    ABOVE = "above"     # Notify when metric exceeds threshold
     BUG_REPORT = "bug_report"
 
 
@@ -588,6 +601,108 @@ class AddonUsageStats(Base):
     __table_args__ = (
         Index("idx_addon_usage_stats_addon_date", "addon_id", "date"),
         Index("idx_addon_usage_stats_addon_version_date", "addon_id", "version_id", "date", unique=True),
+    )
+
+
+# ============== SELF-HOSTED VERSION CHECKER (Premium) ==============
+
+class SelfHostedConfig(Base):
+    """Self-hosted version checker configuration for Premium users (PREM-15)."""
+    __tablename__ = "self_hosted_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    # Custom domain for versions.json endpoint
+    custom_domain = Column(String(255), nullable=True, unique=True)
+    domain_verified = Column(Boolean, default=False)
+    verification_token = Column(String(64), nullable=True)
+    
+    # Private versions.json endpoint config
+    private_endpoint_enabled = Column(Boolean, default=True)
+    api_key_required = Column(Boolean, default=True)
+    
+    # Rate limiting for self-hosted endpoint
+    rate_limit_per_minute = Column(Integer, default=60)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    addon = relationship("Addon", backref="self_hosted_config")
+    
+    __table_args__ = (
+        Index("idx_self_hosted_configs_addon", "addon_id", unique=True),
+        Index("idx_self_hosted_configs_domain", "custom_domain"),
+    )
+
+
+# ============== ANALYTICS ALERTS (Premium) ==============
+
+class AnalyticsAlert(Base):
+    """Alert configuration for analytics thresholds (PREM-17)."""
+    __tablename__ = "analytics_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    
+    # Alert configuration
+    name = Column(String(100), nullable=False)
+    metric = Column(String(50), nullable=False)  # "daily_checks", "unique_users", "error_rate"
+    comparison = Column(SQLEnum(AlertComparison, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    threshold = Column(Integer, nullable=False)
+    
+    # Notification settings
+    notification_channel = Column(SQLEnum(AlertNotificationChannel, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    webhook_url = Column(String(500), nullable=True)
+    email = Column(String(320), nullable=True)
+    discord_webhook_url = Column(String(500), nullable=True)
+    
+    # State
+    is_active = Column(Boolean, default=True)
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    trigger_count = Column(Integer, default=0)
+    
+    # Cooldown: minimum minutes between alerts
+    cooldown_minutes = Column(Integer, default=60)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    addon = relationship("Addon", backref="analytics_alerts")
+    
+    __table_args__ = (
+        Index("idx_analytics_alerts_addon", "addon_id"),
+        Index("idx_analytics_alerts_active", "is_active"),
+    )
+
+
+# ============== COHORT ANALYSIS (Premium) ==============
+
+class CohortEntry(Base):
+    """Tracks version upgrade paths for cohort analysis (PREM-18)."""
+    __tablename__ = "cohort_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    
+    # Version transition
+    from_version = Column(String(50), nullable=False)
+    to_version = Column(String(50), nullable=False)
+    
+    # Privacy-preserving user tracking (hashed IP)
+    client_ip_hash = Column(String(64), nullable=False)
+    
+    # When the transition was detected
+    transitioned_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        Index("idx_cohort_entries_addon", "addon_id"),
+        Index("idx_cohort_entries_addon_versions", "addon_id", "from_version", "to_version"),
+        Index("idx_cohort_entries_transitioned", "transitioned_at"),
     )
 
 

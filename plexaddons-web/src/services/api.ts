@@ -973,6 +973,15 @@ class ApiClient {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
   }
 
+  // ============== Premium Analytics (PREM-15 through 19) ==============
+
+  // Self-Hosted Config (PREM-15)
+  async getSelfHostedConfig(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`);
+  }
+
+  async createSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
   // ============== Code Signing (PREM-5) ==============
 
   async listSigningKeys(addonId: number): Promise<import('../types').SigningKeyListResponse> {
@@ -1101,6 +1110,9 @@ class ApiClient {
     });
   }
 
+  async updateSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
+      method: 'PUT',
   async updateWebhookEndpoint(id: number, data: WebhookEndpointUpdate): Promise<WebhookEndpoint> {
     return this.fetch(`/v1/webhooks/endpoints/${id}`, {
       method: 'PATCH',
@@ -1108,6 +1120,66 @@ class ApiClient {
     });
   }
 
+  async deleteSelfHostedConfig(addonId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'DELETE' });
+  }
+
+  async verifySelfHostedDomain(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted/verify-domain`, { method: 'POST' });
+  }
+
+  // Analytics Alerts (PREM-17)
+  async listAlerts(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/alerts`);
+  }
+
+  async createAlert(addonId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/alerts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAlert(addonId: number, alertId: number, data: Record<string, unknown>) {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAlert(addonId: number, alertId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, { method: 'DELETE' });
+  }
+
+  async testAlert(addonId: number, alertId: number) {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}/test`, { method: 'POST' });
+  }
+
+  // Cohort Analysis (PREM-18)
+  async getCohortAnalysis(addonId: number, days = 30, fromVersion?: string, toVersion?: string) {
+    const params = new URLSearchParams({ days: String(days) });
+    if (fromVersion) params.set('from_version', fromVersion);
+    if (toVersion) params.set('to_version', toVersion);
+    return this.fetch(`/v1/addons/${addonId}/cohorts?${params}`);
+  }
+
+  // Predictive Analytics (PREM-19)
+  async getPredictiveAnalytics(addonId: number, targetVersion: string, days = 14) {
+    const params = new URLSearchParams({ target_version: targetVersion, days: String(days) });
+    return this.fetch(`/v1/addons/${addonId}/predictive?${params}`);
+  }
+
+  // Real-Time Analytics (PREM-16)
+  async getRealtimeStats(addonId: number) {
+    return this.fetch(`/v1/addons/${addonId}/realtime`);
+  }
+
+  async getRecentChecks(addonId: number, limit = 50) {
+    return this.fetch(`/v1/addons/${addonId}/realtime/recent?limit=${limit}`);
+  }
+
+  async getHourlyBreakdown(addonId: number, hours = 24) {
+    return this.fetch(`/v1/addons/${addonId}/realtime/hourly?hours=${hours}`);
   async deleteWebhookEndpoint(id: number): Promise<void> {
     return this.fetch(`/v1/webhooks/endpoints/${id}`, { method: 'DELETE' });
   }

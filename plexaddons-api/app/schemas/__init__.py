@@ -5,6 +5,7 @@ import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
+    ReleaseChannel, CollaboratorRole, AlertNotificationChannel, AlertComparison
     ReleaseChannel, CollaboratorRole, ScanStatus
     ReleaseChannel, CollaboratorRole, RolloutStage, RolloutStatus
 )
@@ -949,6 +950,76 @@ class TransferOwnershipRequest(BaseModel):
     new_owner_id: int
 
 
+# ============== Self-Hosted Config Schemas (PREM-15) ==============
+
+class SelfHostedConfigCreate(BaseModel):
+    custom_domain: Optional[str] = Field(None, max_length=255)
+    private_endpoint_enabled: bool = True
+    api_key_required: bool = True
+    rate_limit_per_minute: int = Field(60, ge=1, le=600)
+
+class SelfHostedConfigUpdate(BaseModel):
+    custom_domain: Optional[str] = Field(None, max_length=255)
+    private_endpoint_enabled: Optional[bool] = None
+    api_key_required: Optional[bool] = None
+    rate_limit_per_minute: Optional[int] = Field(None, ge=1, le=600)
+
+class SelfHostedConfigResponse(BaseModel):
+    id: int
+    addon_id: int
+    custom_domain: Optional[str] = None
+    domain_verified: bool = False
+    verification_token: Optional[str] = None
+    private_endpoint_enabled: bool = True
+    api_key_required: bool = True
+    rate_limit_per_minute: int = 60
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============== Analytics Alert Schemas (PREM-17) ==============
+
+class AnalyticsAlertCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    metric: str = Field(..., pattern=r"^(daily_checks|unique_users|error_rate)$")
+    comparison: AlertComparison
+    threshold: int = Field(..., ge=0)
+    notification_channel: AlertNotificationChannel
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    email: Optional[str] = Field(None, max_length=320)
+    discord_webhook_url: Optional[str] = Field(None, max_length=500)
+    cooldown_minutes: int = Field(60, ge=5, le=1440)
+
+class AnalyticsAlertUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    metric: Optional[str] = Field(None, pattern=r"^(daily_checks|unique_users|error_rate)$")
+    comparison: Optional[AlertComparison] = None
+    threshold: Optional[int] = Field(None, ge=0)
+    notification_channel: Optional[AlertNotificationChannel] = None
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    email: Optional[str] = Field(None, max_length=320)
+    discord_webhook_url: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
+    cooldown_minutes: Optional[int] = Field(None, ge=5, le=1440)
+
+class AnalyticsAlertResponse(BaseModel):
+    id: int
+    addon_id: int
+    name: str
+    metric: str
+    comparison: AlertComparison
+    threshold: int
+    notification_channel: AlertNotificationChannel
+    webhook_url: Optional[str] = None
+    email: Optional[str] = None
+    discord_webhook_url: Optional[str] = None
+    is_active: bool = True
+    last_triggered_at: Optional[datetime] = None
+    trigger_count: int = 0
+    cooldown_minutes: int = 60
 # ============== Code Signing Schemas (PREM-5) ==============
 
 class SigningKeyCreate(BaseModel):
@@ -972,6 +1043,57 @@ class SigningKeyResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class AnalyticsAlertListResponse(BaseModel):
+    alerts: List[AnalyticsAlertResponse]
+    total: int
+
+
+# ============== Cohort Analysis Schemas (PREM-18) ==============
+
+class CohortSummary(BaseModel):
+    from_version: str
+    to_version: str
+    user_count: int
+    first_transition: datetime
+    last_transition: datetime
+
+class CohortAnalysisResponse(BaseModel):
+    addon_id: int
+    period_days: int
+    cohorts: List[CohortSummary]
+    total_transitions: int
+
+
+# ============== Predictive Analytics Schemas (PREM-19) ==============
+
+class PredictiveEstimate(BaseModel):
+    addon_id: int
+    target_version: str
+    current_adoption_percent: float
+    daily_adoption_rate: float
+    estimated_days_to_50: Optional[int] = None
+    estimated_days_to_90: Optional[int] = None
+    estimated_days_to_100: Optional[int] = None
+    total_users: int
+    adopted_users: int
+
+
+# ============== Real-Time Analytics Schemas (PREM-16) ==============
+
+class RealtimeEvent(BaseModel):
+    addon_id: int
+    addon_name: str
+    version: str
+    timestamp: datetime
+    client_ip_hash: Optional[str] = None
+
+class RealtimeStats(BaseModel):
+    addon_id: int
+    checks_last_hour: int
+    checks_last_24h: int
+    unique_users_last_hour: int
+    active_versions: int
+    top_version: Optional[str] = None
 class SigningKeyListResponse(BaseModel):
     keys: List[SigningKeyResponse]
     total: int
