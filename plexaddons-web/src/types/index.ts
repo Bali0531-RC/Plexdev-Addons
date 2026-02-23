@@ -367,7 +367,7 @@ export interface PublicUser {
   discord_id: string;
   discord_username: string;
   discord_avatar: string | null;
-  subscription_tier: 'free' | 'pro' | 'premium';
+  subscription_tier: string;
   profile_slug: string | null;
   badges: string[];
   bio: string | null;
