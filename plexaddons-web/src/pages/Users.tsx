@@ -125,7 +125,12 @@ export default function Users() {
                 />
                 <div className="user-info">
                   <div className="user-name-row">
-                    <h3 className="user-name">{user.discord_username}</h3>
+                    <h3 className="user-name">
+                      {user.discord_username}
+                      {user.is_verified_developer && (
+                        <span className="verified-dev-badge-sm" title="Verified Developer">✓</span>
+                      )}
+                    </h3>
                     <span 
                       className="user-tier"
                       style={{ 

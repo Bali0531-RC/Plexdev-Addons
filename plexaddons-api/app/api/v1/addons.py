@@ -14,8 +14,9 @@ from app.schemas import (
     VersionListResponse,
 )
 from app.services import AddonService, VersionService
-from app.api.deps import get_current_user, get_current_user_optional, rate_limit_check, rate_limit_check_authenticated
+from app.api.deps import get_current_user, get_current_user_optional, get_effective_tier, rate_limit_check, rate_limit_check_authenticated
 from app.core.exceptions import NotFoundError, ForbiddenError
+from app.models import SubscriptionTier
 
 router = APIRouter(prefix="/addons", tags=["Addons"])
 
@@ -240,8 +241,11 @@ async def create_addon(
         readme=addon.readme,
         banner_url=addon.banner_url,
         screenshots=addon.screenshots or [],
+        theme_accent_color=addon.theme_accent_color,
+        theme_header_url=addon.theme_header_url,
         owner_username=user.discord_username,
         owner_discord_id=user.discord_id,
+        owner_verified_developer=user.is_verified_developer,
         latest_version=None,
         latest_release_date=None,
         version_count=0,
@@ -315,8 +319,11 @@ async def get_addon(
         readme=addon.readme,
         banner_url=addon.banner_url,
         screenshots=addon.screenshots or [],
+        theme_accent_color=addon.theme_accent_color,
+        theme_header_url=addon.theme_header_url,
         owner_username=owner.discord_username if owner else None,
         owner_discord_id=owner.discord_id if owner else None,
+        owner_verified_developer=owner.is_verified_developer if owner else False,
         latest_version=latest.version if latest else None,
         latest_release_date=latest.release_date if latest else None,
         version_count=version_count,
@@ -338,6 +345,12 @@ async def update_addon(
     addon = await AddonService.get_addon_by_slug(db, slug)
     if not addon:
         raise NotFoundError("Addon not found")
+    
+    # Theme customization requires Pro+ tier
+    effective_tier = get_effective_tier(user)
+    if effective_tier == SubscriptionTier.FREE:
+        data.theme_accent_color = None
+        data.theme_header_url = None
     
     updated = await AddonService.update_addon(db, addon, user, data)
     return await get_addon(updated.slug, db, user)

@@ -90,7 +90,12 @@ export default function Profile() {
           />
           <div className="profile-info">
             <div className="profile-name-row">
-              <h1 className="profile-name">{profile.discord_username}</h1>
+              <h1 className="profile-name">
+                {profile.discord_username}
+                {profile.is_verified_developer && (
+                  <span className="verified-dev-badge" title="Verified Developer">✓</span>
+                )}
+              </h1>
               <span 
                 className="profile-tier-badge"
                 style={{ backgroundColor: tierBadge.color }}

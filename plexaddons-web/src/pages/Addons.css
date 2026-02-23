@@ -153,6 +153,22 @@
   flex-shrink: 0;
 }
 
+.verified-dev-badge-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: bold;
+  margin-left: 3px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 .addon-version {
   font-size: 0.85rem;
   color: var(--accent);

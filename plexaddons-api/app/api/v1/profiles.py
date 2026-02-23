@@ -95,6 +95,7 @@ async def list_public_users(
             "profile_slug": user.profile_slug,
             "badges": badges,
             "bio": user.bio,
+            "is_verified_developer": user.is_verified_developer,
             "addon_count": addon_counts.get(user.id, 0),
             "created_at": user.created_at.isoformat(),
         })
@@ -176,6 +177,7 @@ async def get_public_profile(
                     updated_at=addon.updated_at,
                     owner_username=user.discord_username,
                     owner_discord_id=user.discord_id,
+                    owner_verified_developer=user.is_verified_developer,
                     latest_version=latest.version if latest else None,
                     latest_release_date=latest.release_date if latest else None,
                     version_count=len(versions),
@@ -201,6 +203,7 @@ async def get_public_profile(
         badges=badges,
         banner_url=user.banner_url,
         accent_color=user.accent_color,
+        is_verified_developer=user.is_verified_developer,
         created_at=user.created_at,
         addons=addons_list,
     )
