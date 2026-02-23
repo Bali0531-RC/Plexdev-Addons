@@ -36,6 +36,9 @@ import {
   WebhookTestResponse,
   AddonTag,
   Organization,
+  Collaborator,
+  CollaboratorRole,
+  CollaborationInvitation,
   OrganizationDetail,
   OrganizationCreate,
   OrganizationUpdate,
@@ -735,6 +738,49 @@ class ApiClient {
 
   async getAddonAnalytics(addonId: number): Promise<AddonAnalytics> {
     return this.fetch(`/v1/analytics/addons/${addonId}`);
+  }
+
+  // ============== COLLABORATORS ==============
+
+  async listCollaborators(addonId: number): Promise<Collaborator[]> {
+    return this.fetch(`/v1/addons/${addonId}/collaborators`);
+  }
+
+  async inviteCollaborator(addonId: number, userId: number, role: CollaboratorRole): Promise<Collaborator> {
+    return this.fetch(`/v1/addons/${addonId}/collaborators`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, role }),
+    });
+  }
+
+  async updateCollaborator(addonId: number, collaboratorId: number, role: CollaboratorRole): Promise<Collaborator> {
+    return this.fetch(`/v1/addons/${addonId}/collaborators/${collaboratorId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async removeCollaborator(addonId: number, collaboratorId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/collaborators/${collaboratorId}`, { method: 'DELETE' });
+  }
+
+  async transferOwnership(addonId: number, newOwnerId: number): Promise<{ message: string }> {
+    return this.fetch(`/v1/addons/${addonId}/transfer`, {
+      method: 'POST',
+      body: JSON.stringify({ new_owner_id: newOwnerId }),
+    });
+  }
+
+  async getMyInvitations(): Promise<CollaborationInvitation[]> {
+    return this.fetch('/v1/collaborations/invitations');
+  }
+
+  async acceptInvitation(collaboratorId: number): Promise<{ message: string }> {
+    return this.fetch(`/v1/collaborations/invitations/${collaboratorId}/accept`, { method: 'POST' });
+  }
+
+  async declineInvitation(collaboratorId: number): Promise<{ message: string }> {
+    return this.fetch(`/v1/collaborations/invitations/${collaboratorId}`, { method: 'DELETE' });
   }
 
   // ============== WEBHOOKS ==============

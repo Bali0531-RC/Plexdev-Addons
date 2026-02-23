@@ -466,6 +466,36 @@ export interface AnalyticsSummary {
   addons: AddonAnalytics[];
 }
 
+// Collaborator Types (Pro Feature)
+export type CollaboratorRole = 'admin' | 'editor' | 'viewer';
+
+export interface Collaborator {
+  id: number;
+  addon_id: number;
+  user_id: number;
+  role: CollaboratorRole;
+  accepted: boolean;
+  username?: string;
+  display_name?: string;
+  avatar?: string;
+  invited_by_id?: number;
+  created_at: string;
+  accepted_at?: string;
+}
+
+export interface CollaborationInvitation {
+  id: number;
+  addon_id: number;
+  addon_name: string;
+  addon_slug: string;
+  role: CollaboratorRole;
+  accepted: boolean;
+  user_id: number;
+  invited_by_id?: number;
+  created_at: string;
+  accepted_at?: string;
+}
+
 // Organization Types (Premium Feature)
 export type OrganizationRole = 'owner' | 'admin' | 'member';
 

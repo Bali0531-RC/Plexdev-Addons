@@ -1,0 +1,142 @@
+.collaborators-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.collaborators-section h3 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.pro-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.loading-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Invite Form */
+.invite-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.invite-input {
+  flex: 1;
+  max-width: 150px;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.invite-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.invite-select {
+  padding: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+/* Collaborators List */
+.collaborators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.collaborator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+}
+
+.collab-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.collab-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.collab-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.collab-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.collab-status {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.collab-status.accepted {
+  color: #22c55e;
+}
+
+.collab-status.pending {
+  color: #f59e0b;
+}
+
+.collab-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.role-select {
+  padding: 0.35rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: calc(var(--radius) / 2);
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.no-collaborators {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

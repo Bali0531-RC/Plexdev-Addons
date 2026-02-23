@@ -49,6 +49,12 @@ class OrganizationRole(str, enum.Enum):
     MEMBER = "member"     # Can create/edit addons
 
 
+class CollaboratorRole(str, enum.Enum):
+    ADMIN = "admin"       # Can manage collaborators, versions, settings
+    EDITOR = "editor"     # Can create/edit versions
+    VIEWER = "viewer"     # Read-only access to private addons
+
+
 # API Key Scopes - defines what each key can access
 class ApiKeyScope(str, enum.Enum):
     # Read operations (Pro+)
@@ -716,4 +722,31 @@ class ApiKey(Base):
     __table_args__ = (
         Index("idx_api_keys_user_id", "user_id"),
         Index("idx_api_keys_key_hash", "key_hash"),
+    )
+
+
+class AddonCollaborator(Base):
+    """Collaborators who can co-manage addons (lighter than organizations)."""
+    __tablename__ = "addon_collaborators"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = Column(SQLEnum(CollaboratorRole), nullable=False, default=CollaboratorRole.EDITOR)
+    
+    invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    accepted = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    addon = relationship("Addon", backref="collaborators")
+    user = relationship("User", foreign_keys=[user_id], backref="collaborations")
+    invited_by = relationship("User", foreign_keys=[invited_by_id])
+
+    __table_args__ = (
+        Index("idx_addon_collaborators_addon", "addon_id"),
+        Index("idx_addon_collaborators_user", "user_id"),
+        Index("idx_addon_collaborators_unique", "addon_id", "user_id", unique=True),
     )

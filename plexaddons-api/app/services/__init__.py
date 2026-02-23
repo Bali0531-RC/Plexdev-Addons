@@ -12,3 +12,4 @@ from app.services.discord_service import DiscordService, discord_service
 from app.services.analytics_service import AnalyticsService
 from app.services.webhook_service import WebhookService, webhook_service
 from app.services.notification_service import NotificationService
+from app.services.collaborator_service import CollaboratorService
