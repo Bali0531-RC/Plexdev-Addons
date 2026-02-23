@@ -5,7 +5,10 @@ import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
-    ReleaseChannel, CollaboratorRole
+    ReleaseChannel, CollaboratorRole, LicenseStatus
+    ReleaseChannel, CollaboratorRole, AlertNotificationChannel, AlertComparison
+    ReleaseChannel, CollaboratorRole, ScanStatus
+    ReleaseChannel, CollaboratorRole, RolloutStage, RolloutStatus
 )
 
 
@@ -247,6 +250,11 @@ class AddonUpdate(BaseModel):
     # Theme customization (Pro+)
     theme_accent_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
     theme_header_url: Optional[str] = Field(None, max_length=500)
+    # Marketplace (Premium)
+    is_paid: Optional[bool] = None
+    price_cents: Optional[int] = Field(None, ge=100, le=1000000)  # $1.00 - $10,000.00
+    revenue_split_percent: Optional[int] = Field(None, ge=50, le=100)
+    sponsor_url: Optional[str] = Field(None, max_length=500)
 
 
 class AddonResponse(BaseModel):
@@ -268,6 +276,11 @@ class AddonResponse(BaseModel):
     screenshots: List[str] = Field(default_factory=list)
     theme_accent_color: Optional[str] = None
     theme_header_url: Optional[str] = None
+    # Marketplace
+    is_paid: bool = False
+    price_cents: Optional[int] = None
+    revenue_split_percent: int = 90
+    sponsor_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -637,12 +650,14 @@ class OrganizationUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
 
 
 class OrganizationMemberResponse(BaseModel):
     id: int
     user_id: int
     role: OrganizationRole
+    permissions: Optional[Dict[str, bool]] = None
     joined_at: datetime
     # User info
     discord_username: Optional[str] = None
@@ -658,6 +673,7 @@ class OrganizationResponse(BaseModel):
     slug: str
     description: Optional[str] = None
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     owner_id: int
     created_at: datetime
     updated_at: datetime
@@ -687,6 +703,96 @@ class InviteMemberRequest(BaseModel):
 
 class UpdateMemberRoleRequest(BaseModel):
     role: OrganizationRole
+
+
+class UpdateMemberPermissionsRequest(BaseModel):
+    permissions: Dict[str, bool] = Field(
+        ...,
+        description="Granular permissions: manage_versions, view_analytics, manage_billing, manage_members, manage_addons"
+    )
+
+
+ORG_PERMISSIONS = [
+    "manage_versions",
+    "view_analytics",
+    "manage_billing",
+    "manage_members",
+    "manage_addons",
+]
+
+
+class OrgAuditLogResponse(BaseModel):
+    id: int
+    action: str
+    details: Optional[Dict] = None
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    ip_address: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrgAuditLogListResponse(BaseModel):
+    logs: List[OrgAuditLogResponse]
+    total: int
+
+
+class OrgApiKeyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    scopes: List[str] = Field(default_factory=list)
+    expires_at: Optional[datetime] = None
+
+
+class OrgApiKeyResponse(BaseModel):
+    id: int
+    name: str
+    key_prefix: str
+    scopes: List[str] = []
+    is_active: bool
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    created_by_id: Optional[int] = None
+    created_by_username: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrgApiKeyCreateResponse(OrgApiKeyResponse):
+    """Returned only on creation — includes the full key."""
+    key: str
+
+
+class OrgApiKeyListResponse(BaseModel):
+    api_keys: List[OrgApiKeyResponse]
+    total: int
+
+
+class OrgAnalyticsSummary(BaseModel):
+    total_downloads: int = 0
+    total_version_checks: int = 0
+    total_unique_users: int = 0
+    addon_count: int = 0
+    member_count: int = 0
+    storage_used_bytes: int = 0
+    top_addons: List[Dict] = []
+
+
+class OrgPublicPageResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    owner_username: Optional[str] = None
+    member_count: int = 0
+    addon_count: int = 0
+    addons: List[AddonResponse] = []
+    created_at: datetime
 
 
 # ============== Tag Schema ==============
@@ -855,6 +961,522 @@ class TransferOwnershipRequest(BaseModel):
     new_owner_id: int
 
 
+# ============== Marketplace / License Schemas (PREM-13) ==============
+
+class AddonPricingUpdate(BaseModel):
+    """Update pricing for a paid addon."""
+    is_paid: bool
+    price_cents: int = Field(..., ge=100, le=1000000)
+    revenue_split_percent: int = Field(90, ge=50, le=100)
+
+class LicenseResponse(BaseModel):
+    id: int
+    addon_id: int
+    buyer_id: Optional[int] = None
+    license_key: str
+    amount_cents: int
+    developer_amount_cents: int
+    platform_amount_cents: int
+    status: LicenseStatus
+    server_id: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+    revoked_at: Optional[datetime] = None
+# ============== Self-Hosted Config Schemas (PREM-15) ==============
+
+class SelfHostedConfigCreate(BaseModel):
+    custom_domain: Optional[str] = Field(None, max_length=255)
+    private_endpoint_enabled: bool = True
+    api_key_required: bool = True
+    rate_limit_per_minute: int = Field(60, ge=1, le=600)
+
+class SelfHostedConfigUpdate(BaseModel):
+    custom_domain: Optional[str] = Field(None, max_length=255)
+    private_endpoint_enabled: Optional[bool] = None
+    api_key_required: Optional[bool] = None
+    rate_limit_per_minute: Optional[int] = Field(None, ge=1, le=600)
+
+class SelfHostedConfigResponse(BaseModel):
+    id: int
+    addon_id: int
+    custom_domain: Optional[str] = None
+    domain_verified: bool = False
+    verification_token: Optional[str] = None
+    private_endpoint_enabled: bool = True
+    api_key_required: bool = True
+    rate_limit_per_minute: int = 60
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class LicenseListResponse(BaseModel):
+    licenses: List[LicenseResponse]
+    total: int
+
+class LicenseVerifyRequest(BaseModel):
+    license_key: str = Field(..., min_length=1, max_length=64)
+    server_id: Optional[str] = Field(None, max_length=100)
+
+class LicenseVerifyResponse(BaseModel):
+    valid: bool
+    addon_id: Optional[int] = None
+    addon_slug: Optional[str] = None
+    status: Optional[LicenseStatus] = None
+    expires_at: Optional[datetime] = None
+
+class PurchaseAddonRequest(BaseModel):
+    """Request to purchase a paid addon."""
+    server_id: Optional[str] = Field(None, max_length=100)
+
+class PurchaseAddonResponse(BaseModel):
+    license: LicenseResponse
+    message: str = "Purchase successful"
+
+class StripeConnectOnboardRequest(BaseModel):
+    """Request to start Stripe Connect onboarding."""
+    return_url: str
+    refresh_url: str
+
+class StripeConnectStatusResponse(BaseModel):
+    has_connect_account: bool
+    account_id: Optional[str] = None
+    payouts_enabled: bool = False
+    onboarding_complete: bool = False
+
+class RevenueStatsResponse(BaseModel):
+    total_sales: int
+    total_revenue_cents: int
+    developer_earnings_cents: int
+    platform_fees_cents: int
+    active_licenses: int
+
+
+# ============== Sponsorship Schemas (PREM-14) ==============
+
+class SponsorUrlUpdate(BaseModel):
+    sponsor_url: Optional[str] = Field(None, max_length=500)
+
+# ============== Analytics Alert Schemas (PREM-17) ==============
+
+class AnalyticsAlertCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    metric: str = Field(..., pattern=r"^(daily_checks|unique_users|error_rate)$")
+    comparison: AlertComparison
+    threshold: int = Field(..., ge=0)
+    notification_channel: AlertNotificationChannel
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    email: Optional[str] = Field(None, max_length=320)
+    discord_webhook_url: Optional[str] = Field(None, max_length=500)
+    cooldown_minutes: int = Field(60, ge=5, le=1440)
+
+class AnalyticsAlertUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    metric: Optional[str] = Field(None, pattern=r"^(daily_checks|unique_users|error_rate)$")
+    comparison: Optional[AlertComparison] = None
+    threshold: Optional[int] = Field(None, ge=0)
+    notification_channel: Optional[AlertNotificationChannel] = None
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    email: Optional[str] = Field(None, max_length=320)
+    discord_webhook_url: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
+    cooldown_minutes: Optional[int] = Field(None, ge=5, le=1440)
+
+class AnalyticsAlertResponse(BaseModel):
+    id: int
+    addon_id: int
+    name: str
+    metric: str
+    comparison: AlertComparison
+    threshold: int
+    notification_channel: AlertNotificationChannel
+    webhook_url: Optional[str] = None
+    email: Optional[str] = None
+    discord_webhook_url: Optional[str] = None
+    is_active: bool = True
+    last_triggered_at: Optional[datetime] = None
+    trigger_count: int = 0
+    cooldown_minutes: int = 60
+# ============== Code Signing Schemas (PREM-5) ==============
+
+class SigningKeyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    public_key: str = Field(..., min_length=10)
+    algorithm: str = Field(default="ed25519", pattern=r'^(ed25519|rsa|ecdsa)$')
+
+class SigningKeyResponse(BaseModel):
+    id: int
+    addon_id: int
+    created_by_id: Optional[int] = None
+    name: str
+    public_key: str
+    key_fingerprint: str
+    algorithm: str
+    is_active: bool
+    revoked_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AnalyticsAlertListResponse(BaseModel):
+    alerts: List[AnalyticsAlertResponse]
+    total: int
+
+
+# ============== Cohort Analysis Schemas (PREM-18) ==============
+
+class CohortSummary(BaseModel):
+    from_version: str
+    to_version: str
+    user_count: int
+    first_transition: datetime
+    last_transition: datetime
+
+class CohortAnalysisResponse(BaseModel):
+    addon_id: int
+    period_days: int
+    cohorts: List[CohortSummary]
+    total_transitions: int
+
+
+# ============== Predictive Analytics Schemas (PREM-19) ==============
+
+class PredictiveEstimate(BaseModel):
+    addon_id: int
+    target_version: str
+    current_adoption_percent: float
+    daily_adoption_rate: float
+    estimated_days_to_50: Optional[int] = None
+    estimated_days_to_90: Optional[int] = None
+    estimated_days_to_100: Optional[int] = None
+    total_users: int
+    adopted_users: int
+
+
+# ============== Real-Time Analytics Schemas (PREM-16) ==============
+
+class RealtimeEvent(BaseModel):
+    addon_id: int
+    addon_name: str
+    version: str
+    timestamp: datetime
+    client_ip_hash: Optional[str] = None
+
+class RealtimeStats(BaseModel):
+    addon_id: int
+    checks_last_hour: int
+    checks_last_24h: int
+    unique_users_last_hour: int
+    active_versions: int
+    top_version: Optional[str] = None
+class SigningKeyListResponse(BaseModel):
+    keys: List[SigningKeyResponse]
+    total: int
+
+class VersionSignatureCreate(BaseModel):
+    signing_key_id: int
+    signature: str = Field(..., min_length=1)
+    signed_hash: str = Field(..., min_length=64, max_length=128)
+
+class VersionSignatureResponse(BaseModel):
+    id: int
+    version_id: int
+    signing_key_id: Optional[int] = None
+    signature: str
+    signed_hash: str
+    verified: bool
+    verified_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VersionSignatureVerifyRequest(BaseModel):
+    artifact_hash: str = Field(..., min_length=64, max_length=128)
+
+
+# ============== Vulnerability Scanning Schemas (PREM-6) ==============
+
+class VulnerabilityScanResponse(BaseModel):
+    id: int
+    version_id: int
+    initiated_by_id: Optional[int] = None
+    status: ScanStatus
+    vulnerabilities: Optional[list] = None
+    total_vulnerabilities: int
+    critical_count: int
+    high_count: int
+    medium_count: int
+    low_count: int
+    scan_started_at: Optional[datetime] = None
+    scan_completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VulnerabilityScanListResponse(BaseModel):
+    scans: List[VulnerabilityScanResponse]
+    total: int
+
+
+# ============== SBOM Schemas (PREM-7) ==============
+
+class SBOMUpload(BaseModel):
+    format: str = Field(default="npm", pattern=r'^(npm|pip|maven|gradle|cargo|go)$')
+    raw_content: str = Field(..., min_length=1)
+
+class SBOMResponse(BaseModel):
+    id: int
+    version_id: int
+    uploaded_by_id: Optional[int] = None
+    format: str
+    dependencies: Optional[list] = None
+    total_dependencies: int
+    direct_dependencies: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SBOMListResponse(BaseModel):
+    sboms: List[SBOMResponse]
+    total: int
+
+
+# ============== IP Allowlist Schemas (PREM-8) ==============
+
+class ApiKeyIPAllowlistUpdate(BaseModel):
+    ip_allowlist: Optional[List[str]] = Field(
+        default=None,
+        description="List of CIDR ranges, e.g. ['192.168.1.0/24', '10.0.0.1/32']"
+    )
+
+    @field_validator('ip_allowlist')
+    @classmethod
+    def validate_cidrs(cls, v):
+        if v is None:
+            return v
+        import ipaddress
+        for cidr in v:
+            try:
+                ipaddress.ip_network(cidr, strict=False)
+            except ValueError:
+                raise ValueError(f"Invalid CIDR range: {cidr}")
+        if len(v) > 50:
+            raise ValueError("Maximum 50 CIDR ranges allowed")
+        return v
+
+
+# ============== 2FA Challenge Schemas (PREM-9) ==============
+
+class TwoFactorChallengeRequest(BaseModel):
+    action: str = Field(..., pattern=r'^(delete_addon|revoke_key|change_payment|delete_account)$')
+
+class TwoFactorChallengeResponse(BaseModel):
+    challenge_id: int
+    action: str
+    expires_at: datetime
+    message: str
+
+class TwoFactorVerifyRequest(BaseModel):
+    challenge_id: int
+    code: str = Field(..., min_length=6, max_length=6)
+
+class TwoFactorVerifyResponse(BaseModel):
+    verified: bool
+    message: str
+# ============== Staged Rollout Schemas ==============
+
+class StagedRolloutCreate(BaseModel):
+    version_id: int
+    targeting_rules: Optional[dict] = None
+    auto_promote: bool = False
+    auto_promote_after_hours: int = Field(default=24, ge=1, le=720)
+
+class StagedRolloutUpdate(BaseModel):
+    targeting_rules: Optional[dict] = None
+    auto_promote: Optional[bool] = None
+    auto_promote_after_hours: Optional[int] = Field(default=None, ge=1, le=720)
+
+class StagedRolloutResponse(BaseModel):
+    id: int
+    addon_id: int
+    version_id: int
+    created_by_id: Optional[int] = None
+    stage: RolloutStage
+    percentage: int
+    status: RolloutStatus
+    targeting_rules: Optional[dict] = None
+    auto_promote: bool
+    auto_promote_after_hours: int
+    total_checks: int
+    error_reports: int
+    created_at: datetime
+    updated_at: datetime
+    promoted_at: Optional[datetime] = None
+    events: List["RolloutEventResponse"] = []
+
+    class Config:
+        from_attributes = True
+
+class StagedRolloutListResponse(BaseModel):
+    rollouts: List[StagedRolloutResponse]
+    total: int
+
+class RolloutPromoteRequest(BaseModel):
+    """Promote to specific stage, or omit to advance to next stage."""
+    target_stage: Optional[RolloutStage] = None
+
+class RolloutEventResponse(BaseModel):
+    id: int
+    rollout_id: int
+    from_stage: Optional[str] = None
+    to_stage: str
+    from_percentage: Optional[int] = None
+    to_percentage: int
+    triggered_by: str
+    user_id: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============== Feature Flag Schemas ==============
+
+class FeatureFlagCreate(BaseModel):
+    key: str = Field(..., min_length=1, max_length=100, pattern=r'^[a-zA-Z0-9_.-]+$')
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    enabled: bool = False
+    percentage: int = Field(default=100, ge=0, le=100)
+    targeting: Optional[dict] = None
+
+class FeatureFlagUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+    percentage: Optional[int] = Field(default=None, ge=0, le=100)
+    targeting: Optional[dict] = None
+
+class FeatureFlagResponse(BaseModel):
+    id: int
+    addon_id: int
+    created_by_id: Optional[int] = None
+    key: str
+    name: str
+    description: Optional[str] = None
+    enabled: bool
+    percentage: int
+    targeting: Optional[dict] = None
+    created_at: datetime
+    updated_at: datetime
+# ============ Webhook Endpoint Schemas (Premium) ============
+
+VALID_WEBHOOK_EVENTS = [
+    "version.released", "version.updated", "version.deleted",
+    "addon.created", "addon.updated", "addon.deleted",
+]
+
+class WebhookEndpointCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    url: str = Field(..., max_length=500)
+    is_active: bool = True
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = Field(None, max_length=5000)
+
+    @field_validator('url')
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+
+    @field_validator('event_filter')
+    @classmethod
+    def validate_events(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            for e in v:
+                if e not in VALID_WEBHOOK_EVENTS:
+                    raise ValueError(f'Invalid event type: {e}')
+        return v
+
+
+class WebhookEndpointUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    url: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = Field(None, max_length=5000)
+
+    @field_validator('url')
+    @classmethod
+    def validate_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+
+    @field_validator('event_filter')
+    @classmethod
+    def validate_events(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            for e in v:
+                if e not in VALID_WEBHOOK_EVENTS:
+                    raise ValueError(f'Invalid event type: {e}')
+        return v
+
+
+class WebhookEndpointResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    is_active: bool
+    event_filter: Optional[List[str]] = None
+    payload_template: Optional[str] = None
+    has_secret: bool = True
+    masked_secret: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class FeatureFlagListResponse(BaseModel):
+    flags: List[FeatureFlagResponse]
+    total: int
+
+class FeatureFlagEvaluateRequest(BaseModel):
+    server_id: Optional[str] = None
+    user_id: Optional[str] = None
+
+class FeatureFlagEvaluateResponse(BaseModel):
+    key: str
+    enabled: bool
+
+class WebhookDeliveryResponse(BaseModel):
+    id: int
+    endpoint_id: int
+    event_type: str
+    status: str
+    status_code: Optional[int] = None
+    error_message: Optional[str] = None
+    attempt: int
+    max_attempts: int
+    next_retry_at: Optional[datetime] = None
+    created_at: datetime
+    delivered_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Forward reference resolution
+StagedRolloutResponse.model_rebuild()
 AuthResponse.model_rebuild()
 UserPublicProfile.model_rebuild()
