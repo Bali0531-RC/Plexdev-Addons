@@ -14,14 +14,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Enum types
+    # Clean up any partial previous runs
+    op.execute("DROP TABLE IF EXISTS staged_rollouts CASCADE")
     op.execute("DROP TYPE IF EXISTS rolloutstage CASCADE")
-    op.execute("CREATE TYPE rolloutstage AS ENUM ('canary', 'early', 'partial', 'majority', 'full', 'paused')")
     op.execute("DROP TYPE IF EXISTS rolloutstatus CASCADE")
-    op.execute("CREATE TYPE rolloutstatus AS ENUM ('draft', 'active', 'paused', 'completed', 'cancelled')")
 
     # Staged rollouts table
-    op.execute("DROP TABLE IF EXISTS staged_rollouts CASCADE")
     op.create_table(
         'staged_rollouts',
         sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
@@ -29,10 +27,10 @@ def upgrade() -> None:
         sa.Column('version_id', sa.Integer(), sa.ForeignKey('versions.id', ondelete='CASCADE'), nullable=False),
         sa.Column('created_by_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='SET NULL'), nullable=True),
         sa.Column('stage', sa.Enum('canary', 'early', 'partial', 'majority', 'full', 'paused',
-                                   name='rolloutstage', create_type=False), nullable=False, server_default='canary'),
+                                   name='rolloutstage'), nullable=False, server_default='canary'),
         sa.Column('percentage', sa.Integer(), nullable=False, server_default='1'),
         sa.Column('status', sa.Enum('draft', 'active', 'paused', 'completed', 'cancelled',
-                                    name='rolloutstatus', create_type=False), nullable=False, server_default='draft'),
+                                    name='rolloutstatus'), nullable=False, server_default='draft'),
         sa.Column('targeting_rules', sa.JSON(), nullable=True),
         sa.Column('auto_promote', sa.Boolean(), server_default='false'),
         sa.Column('auto_promote_after_hours', sa.Integer(), server_default='24'),

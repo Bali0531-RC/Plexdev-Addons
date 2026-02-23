@@ -14,17 +14,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Enum types
+    # Clean up any partial previous runs
+    op.execute("DROP TABLE IF EXISTS addon_signing_keys CASCADE")
     op.execute("DROP TYPE IF EXISTS scanstatus CASCADE")
-    op.execute("CREATE TYPE scanstatus AS ENUM ('pending', 'scanning', 'completed', 'failed')")
     op.execute("DROP TYPE IF EXISTS vulnerabilityseverity CASCADE")
-    op.execute("CREATE TYPE vulnerabilityseverity AS ENUM ('critical', 'high', 'medium', 'low', 'info')")
 
     # PREM-8: Add ip_allowlist to API keys
     op.execute("ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS ip_allowlist JSON DEFAULT NULL")
 
     # PREM-5: Addon signing keys
-    op.execute("DROP TABLE IF EXISTS addon_signing_keys CASCADE")
     op.create_table(
         'addon_signing_keys',
         sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
@@ -65,7 +63,7 @@ def upgrade() -> None:
         sa.Column('version_id', sa.Integer(), sa.ForeignKey('versions.id', ondelete='CASCADE'), nullable=False),
         sa.Column('initiated_by_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='SET NULL'), nullable=True),
         sa.Column('status', sa.Enum('pending', 'scanning', 'completed', 'failed',
-                                    name='scanstatus', create_type=False), nullable=False, server_default='pending'),
+                                    name='scanstatus'), nullable=False, server_default='pending'),
         sa.Column('vulnerabilities', sa.JSON(), nullable=True),
         sa.Column('total_vulnerabilities', sa.Integer(), server_default='0'),
         sa.Column('critical_count', sa.Integer(), server_default='0'),
