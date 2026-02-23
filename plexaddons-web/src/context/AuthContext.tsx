@@ -19,13 +19,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'plexaddons_token';
 const OAUTH_STATE_KEY = 'plexaddons_oauth_state';
 
-function validateOAuthState(state: string | null): boolean {
-  if (!state) return false;
-  const stored = sessionStorage.getItem(OAUTH_STATE_KEY);
-  sessionStorage.removeItem(OAUTH_STATE_KEY);
-  return stored === state;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export { OAUTH_STATE_KEY, validateOAuthState };
+export { OAUTH_STATE_KEY };
 
 export function useAuth() {
   const context = useContext(AuthContext);

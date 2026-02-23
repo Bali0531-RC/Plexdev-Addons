@@ -74,6 +74,9 @@ export interface Addon {
   latest_version: string | null;
   latest_release_date: string | null;
   version_count: number;
+  download_count: number;
+  icon_url: string | null;
+  readme: string | null;
   tags: AddonTag[] | null;
   organization_id: number | null;
   created_at: string;
@@ -299,6 +302,18 @@ export interface CannedResponseListResponse {
 }
 
 // Profile Types
+export interface PublicUser {
+  discord_id: string;
+  discord_username: string;
+  discord_avatar: string | null;
+  subscription_tier: 'free' | 'pro' | 'premium';
+  profile_slug: string | null;
+  badges: string[];
+  bio: string | null;
+  addon_count: number;
+  created_at: string;
+}
+
 export interface UserPublicProfile {
   discord_id: string;
   discord_username: string;

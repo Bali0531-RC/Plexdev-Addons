@@ -1,19 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { PublicUser } from '../types';
 import './Users.css';
-
-interface PublicUser {
-  discord_id: string;
-  discord_username: string;
-  discord_avatar: string | null;
-  subscription_tier: string;
-  profile_slug: string | null;
-  badges: string[];
-  bio: string | null;
-  addon_count: number;
-  created_at: string;
-}
 
 const TIER_COLORS: Record<string, string> = {
   free: '#666',
