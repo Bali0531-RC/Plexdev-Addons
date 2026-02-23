@@ -124,6 +124,14 @@ export default function AddonDetail() {
             </a>
           </>
         )}
+        {addon.sponsor_url && (
+          <>
+            <span className="meta-separator">•</span>
+            <a href={addon.sponsor_url} target="_blank" rel="noopener noreferrer" className="sponsor-link">
+              ❤️ Sponsor
+            </a>
+          </>
+        )}
         <span className="meta-separator">•</span>
         <span>{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
         {addon.download_count > 0 && (

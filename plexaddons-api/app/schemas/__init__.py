@@ -5,6 +5,7 @@ import json
 from app.models import (
     SubscriptionTier, SubscriptionStatus, PaymentProvider,
     TicketStatus, TicketPriority, TicketCategory, AddonTag, OrganizationRole,
+    ReleaseChannel, CollaboratorRole, LicenseStatus
     ReleaseChannel, CollaboratorRole, AlertNotificationChannel, AlertComparison
     ReleaseChannel, CollaboratorRole, ScanStatus
     ReleaseChannel, CollaboratorRole, RolloutStage, RolloutStatus
@@ -249,6 +250,11 @@ class AddonUpdate(BaseModel):
     # Theme customization (Pro+)
     theme_accent_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
     theme_header_url: Optional[str] = Field(None, max_length=500)
+    # Marketplace (Premium)
+    is_paid: Optional[bool] = None
+    price_cents: Optional[int] = Field(None, ge=100, le=1000000)  # $1.00 - $10,000.00
+    revenue_split_percent: Optional[int] = Field(None, ge=50, le=100)
+    sponsor_url: Optional[str] = Field(None, max_length=500)
 
 
 class AddonResponse(BaseModel):
@@ -270,6 +276,11 @@ class AddonResponse(BaseModel):
     screenshots: List[str] = Field(default_factory=list)
     theme_accent_color: Optional[str] = None
     theme_header_url: Optional[str] = None
+    # Marketplace
+    is_paid: bool = False
+    price_cents: Optional[int] = None
+    revenue_split_percent: int = 90
+    sponsor_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -950,6 +961,27 @@ class TransferOwnershipRequest(BaseModel):
     new_owner_id: int
 
 
+# ============== Marketplace / License Schemas (PREM-13) ==============
+
+class AddonPricingUpdate(BaseModel):
+    """Update pricing for a paid addon."""
+    is_paid: bool
+    price_cents: int = Field(..., ge=100, le=1000000)
+    revenue_split_percent: int = Field(90, ge=50, le=100)
+
+class LicenseResponse(BaseModel):
+    id: int
+    addon_id: int
+    buyer_id: Optional[int] = None
+    license_key: str
+    amount_cents: int
+    developer_amount_cents: int
+    platform_amount_cents: int
+    status: LicenseStatus
+    server_id: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+    revoked_at: Optional[datetime] = None
 # ============== Self-Hosted Config Schemas (PREM-15) ==============
 
 class SelfHostedConfigCreate(BaseModel):
@@ -979,6 +1011,52 @@ class SelfHostedConfigResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class LicenseListResponse(BaseModel):
+    licenses: List[LicenseResponse]
+    total: int
+
+class LicenseVerifyRequest(BaseModel):
+    license_key: str = Field(..., min_length=1, max_length=64)
+    server_id: Optional[str] = Field(None, max_length=100)
+
+class LicenseVerifyResponse(BaseModel):
+    valid: bool
+    addon_id: Optional[int] = None
+    addon_slug: Optional[str] = None
+    status: Optional[LicenseStatus] = None
+    expires_at: Optional[datetime] = None
+
+class PurchaseAddonRequest(BaseModel):
+    """Request to purchase a paid addon."""
+    server_id: Optional[str] = Field(None, max_length=100)
+
+class PurchaseAddonResponse(BaseModel):
+    license: LicenseResponse
+    message: str = "Purchase successful"
+
+class StripeConnectOnboardRequest(BaseModel):
+    """Request to start Stripe Connect onboarding."""
+    return_url: str
+    refresh_url: str
+
+class StripeConnectStatusResponse(BaseModel):
+    has_connect_account: bool
+    account_id: Optional[str] = None
+    payouts_enabled: bool = False
+    onboarding_complete: bool = False
+
+class RevenueStatsResponse(BaseModel):
+    total_sales: int
+    total_revenue_cents: int
+    developer_earnings_cents: int
+    platform_fees_cents: int
+    active_licenses: int
+
+
+# ============== Sponsorship Schemas (PREM-14) ==============
+
+class SponsorUrlUpdate(BaseModel):
+    sponsor_url: Optional[str] = Field(None, max_length=500)
 
 # ============== Analytics Alert Schemas (PREM-17) ==============
 

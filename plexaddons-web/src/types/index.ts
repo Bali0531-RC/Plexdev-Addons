@@ -85,6 +85,10 @@ export interface Addon {
   theme_accent_color: string | null;
   theme_header_url: string | null;
   owner_verified_developer: boolean;
+  is_paid: boolean;
+  price_cents: number | null;
+  revenue_split_percent: number;
+  sponsor_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -597,6 +601,57 @@ export interface NotificationListResponse {
   unread_count: number;
 }
 
+// Marketplace Types (Premium Feature)
+export type LicenseStatus = 'active' | 'expired' | 'revoked' | 'suspended';
+
+export interface AddonLicense {
+  id: number;
+  addon_id: number;
+  buyer_id: number | null;
+  license_key: string;
+  stripe_payment_intent_id: string | null;
+  amount_cents: number;
+  developer_amount_cents: number;
+  platform_amount_cents: number;
+  status: LicenseStatus;
+  server_id: string | null;
+  expires_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+export interface LicenseListResponse {
+  licenses: AddonLicense[];
+  total: number;
+}
+
+export interface LicenseVerifyResponse {
+  valid: boolean;
+  addon_id: number | null;
+  addon_slug: string | null;
+  status: LicenseStatus | null;
+  expires_at: string | null;
+}
+
+export interface PurchaseAddonResponse {
+  license: AddonLicense;
+  message: string;
+}
+
+export interface StripeConnectStatus {
+  has_connect_account: boolean;
+  account_id: string | null;
+  payouts_enabled: boolean;
+  onboarding_complete: boolean;
+}
+
+export interface RevenueStats {
+  total_sales: number;
+  total_revenue_cents: number;
+  total_earnings_cents: number;
+  total_fees_cents: number;
+  active_licenses: number;
+}
 
 // ============== Premium Analytics Types ==============
 

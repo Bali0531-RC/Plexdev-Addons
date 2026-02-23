@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, marketplace
 from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, premium_analytics
 from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, security
 from app.api.v1 import auth, users, addons, versions, payments, admin, tickets, profiles, analytics, tags, organizations, automation, api_keys, stars, reviews, notifications, collaborators, rollouts, feature_flags
@@ -25,6 +26,9 @@ router.include_router(notifications.router)
 router.include_router(collaborators.router)
 router.include_router(collaborators.transfer_router)
 router.include_router(collaborators.invitation_router)
+router.include_router(marketplace.marketplace_router)
+router.include_router(marketplace.connect_router)
+router.include_router(marketplace.sponsorship_router)
 router.include_router(premium_analytics.selfhosted_router)
 router.include_router(premium_analytics.alerts_router)
 router.include_router(premium_analytics.cohort_router)
