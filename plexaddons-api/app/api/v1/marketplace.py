@@ -58,8 +58,14 @@ async def update_addon_pricing(
             detail="Set up Stripe Connect first to enable paid addons",
         )
     
+    if body.is_paid and (body.price_cents is None or body.price_cents < 100):
+        raise HTTPException(
+            status_code=400,
+            detail="Price must be at least $1.00 for paid addons",
+        )
+    
     addon.is_paid = body.is_paid
-    addon.price_cents = body.price_cents
+    addon.price_cents = body.price_cents if body.is_paid else None
     addon.revenue_split_percent = body.revenue_split_percent
     
     await db.commit()

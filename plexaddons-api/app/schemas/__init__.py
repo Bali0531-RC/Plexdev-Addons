@@ -952,7 +952,7 @@ class TransferOwnershipRequest(BaseModel):
 class AddonPricingUpdate(BaseModel):
     """Update pricing for a paid addon."""
     is_paid: bool
-    price_cents: int = Field(..., ge=100, le=1000000)
+    price_cents: Optional[int] = Field(None, ge=100, le=1000000)
     revenue_split_percent: int = Field(90, ge=50, le=100)
 
 class LicenseResponse(BaseModel):
