@@ -1,7 +1,7 @@
 """Add addon stars and reviews tables
 
 Revision ID: 008
-Revises: 006
+Revises: 007
 Create Date: 2025-01-01 00:00:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '008'
-down_revision = '006'
+down_revision = '007'
 branch_labels = None
 depends_on = None
 
