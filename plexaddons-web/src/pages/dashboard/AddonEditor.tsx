@@ -375,12 +375,18 @@ export default function AddonEditor() {
           revenueSplitPercent={addon.revenue_split_percent}
           sponsorUrl={addon.sponsor_url}
         />
+      )}
+
       {/* Premium Analytics (Premium feature) */}
       {!isNew && addon && isPremium && (
         <PremiumAnalytics addonId={addon.id} versions={versions.map(v => ({ version: v.version }))} />
+      )}
+
       {/* Security Suite (Premium feature) */}
       {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
         <SecurityManager addonId={addon.id} versions={versions} />
+      )}
+
       {/* Staged Rollouts (Premium feature) */}
       {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
         <RolloutManager addonId={addon.id} versions={versions} />

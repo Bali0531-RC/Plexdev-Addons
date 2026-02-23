@@ -60,7 +60,6 @@ import {
   StripeConnectStatus,
   RevenueStats,
   OrgAuditLogListResponse,
-  OrgApiKey,
   OrgApiKeyCreateResponse,
   OrgApiKeyListResponse,
   OrgAnalyticsSummary,
@@ -69,6 +68,13 @@ import {
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
   WebhookDelivery,
+  RealtimeStats,
+  RecentCheck,
+  HourlyBreakdown,
+  AnalyticsAlert,
+  CohortAnalysisResponse,
+  PredictiveEstimate,
+  SelfHostedConfig,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -979,18 +985,141 @@ class ApiClient {
     return this.fetch(`/v1/notifications/${id}`, { method: 'DELETE' });
   }
 
-  // Marketplace & Sponsorship (Premium Feature)
+  // ============== Marketplace & Sponsorship (Premium Feature) ==============
+
   async updateAddonPricing(addonId: number, data: { is_paid?: boolean; price_cents?: number; revenue_split_percent?: number }): Promise<Addon> {
-    return this.fetch(`/v1/marketplace/addons/${addonId}/pricing`, {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/pricing`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async purchaseAddon(addonId: number, serverId?: string): Promise<PurchaseAddonResponse> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/purchase`, {
+      method: 'POST',
+      body: JSON.stringify({ server_id: serverId }),
+    });
+  }
+
+  async listAddonLicenses(addonId: number, skip = 0, limit = 50): Promise<LicenseListResponse> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/licenses?skip=${skip}&limit=${limit}`);
+  }
+
+  async listMyLicenses(skip = 0, limit = 50): Promise<LicenseListResponse> {
+    return this.fetch(`/v1/marketplace/my-licenses?skip=${skip}&limit=${limit}`);
+  }
+
+  async revokeLicense(licenseId: number): Promise<AddonLicense> {
+    return this.fetch(`/v1/marketplace/licenses/${licenseId}/revoke`, { method: 'POST' });
+  }
+
+  async verifyLicense(licenseKey: string, serverId?: string): Promise<LicenseVerifyResponse> {
+    return this.fetch('/v1/marketplace/verify-license', {
+      method: 'POST',
+      body: JSON.stringify({ license_key: licenseKey, server_id: serverId }),
+    });
+  }
+
+  async getRevenueStats(addonId: number): Promise<RevenueStats> {
+    return this.fetch(`/v1/marketplace/addons/${addonId}/revenue`);
+  }
+
+  async getStripeConnectStatus(): Promise<StripeConnectStatus> {
+    return this.fetch('/v1/stripe-connect/status');
+  }
+
+  async startStripeConnectOnboarding(returnUrl: string, refreshUrl: string): Promise<{ onboarding_url: string }> {
+    return this.fetch('/v1/stripe-connect/onboard', {
+      method: 'POST',
+      body: JSON.stringify({ return_url: returnUrl, refresh_url: refreshUrl }),
+    });
+  }
+
+  async getSponsorUrl(addonId: number): Promise<{ sponsor_url: string | null }> {
+    return this.fetch(`/v1/addons/${addonId}/sponsorship`);
+  }
+
+  async updateSponsorUrl(addonId: number, sponsorUrl: string | null): Promise<{ sponsor_url: string | null }> {
+    return this.fetch(`/v1/addons/${addonId}/sponsorship`, {
+      method: 'PUT',
+      body: JSON.stringify({ sponsor_url: sponsorUrl }),
+    });
+  }
+
   // ============== Premium Analytics (PREM-15 through 19) ==============
 
   // Self-Hosted Config (PREM-15)
-  async getSelfHostedConfig(addonId: number) {
+  async getSelfHostedConfig(addonId: number): Promise<SelfHostedConfig> {
     return this.fetch(`/v1/addons/${addonId}/self-hosted`);
   }
 
-  async createSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
-    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
+  async createSelfHostedConfig(addonId: number, data: Record<string, unknown>): Promise<SelfHostedConfig> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateSelfHostedConfig(addonId: number, data: Record<string, unknown>): Promise<SelfHostedConfig> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async deleteSelfHostedConfig(addonId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'DELETE' });
+  }
+
+  async verifySelfHostedDomain(addonId: number): Promise<{ verified: boolean; instructions: string }> {
+    return this.fetch(`/v1/addons/${addonId}/self-hosted/verify-domain`, { method: 'POST' });
+  }
+
+  // Analytics Alerts (PREM-17)
+  async listAlerts(addonId: number): Promise<{ alerts: AnalyticsAlert[] }> {
+    return this.fetch(`/v1/addons/${addonId}/alerts`);
+  }
+
+  async createAlert(addonId: number, data: Record<string, unknown>): Promise<AnalyticsAlert> {
+    return this.fetch(`/v1/addons/${addonId}/alerts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAlert(addonId: number, alertId: number, data: Record<string, unknown>): Promise<AnalyticsAlert> {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAlert(addonId: number, alertId: number): Promise<void> {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, { method: 'DELETE' });
+  }
+
+  async testAlert(addonId: number, alertId: number): Promise<{ success: boolean }> {
+    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}/test`, { method: 'POST' });
+  }
+
+  // Cohort Analysis (PREM-18)
+  async getCohortAnalysis(addonId: number, days = 30, fromVersion?: string, toVersion?: string): Promise<CohortAnalysisResponse> {
+    const params = new URLSearchParams({ days: String(days) });
+    if (fromVersion) params.set('from_version', fromVersion);
+    if (toVersion) params.set('to_version', toVersion);
+    return this.fetch(`/v1/addons/${addonId}/cohorts?${params}`);
+  }
+
+  // Predictive Analytics (PREM-19)
+  async getPredictiveAnalytics(addonId: number, targetVersion: string, days = 14): Promise<PredictiveEstimate> {
+    const params = new URLSearchParams({ target_version: targetVersion, days: String(days) });
+    return this.fetch(`/v1/addons/${addonId}/predictive?${params}`);
+  }
+
+  // Real-Time Analytics (PREM-16)
+  async getRealtimeStats(addonId: number): Promise<RealtimeStats> {
+    return this.fetch(`/v1/addons/${addonId}/realtime`);
+  }
+
+  async getRecentChecks(addonId: number, limit = 50): Promise<{ checks: RecentCheck[] }> {
+    return this.fetch(`/v1/addons/${addonId}/realtime/recent?limit=${limit}`);
+  }
+
+  async getHourlyBreakdown(addonId: number, hours = 24): Promise<{ hourly: HourlyBreakdown[] }> {
+    return this.fetch(`/v1/addons/${addonId}/realtime/hourly?hours=${hours}`);
+  }
+
   // ============== Code Signing (PREM-5) ==============
 
   async listSigningKeys(addonId: number): Promise<import('../types').SigningKeyListResponse> {
@@ -1055,6 +1184,8 @@ class ApiClient {
 
   async verify2FAChallenge(challengeId: number, code: string): Promise<import('../types').TwoFactorVerifyResponse> {
     return this.fetch('/v1/security/2fa/verify', { method: 'POST', body: JSON.stringify({ challenge_id: challengeId, code }) });
+  }
+
   // ============== Staged Rollouts ==============
 
   async listRollouts(addonId: number, status?: string): Promise<import('../types').StagedRolloutListResponse> {
@@ -1107,7 +1238,10 @@ class ApiClient {
 
   async deleteFlag(addonId: number, flagId: number): Promise<void> {
     return this.fetch(`/v1/addons/${addonId}/flags/${flagId}`, { method: 'DELETE' });
-  // Webhook Endpoints (Premium)
+  }
+
+  // ============== Webhook Endpoints (Premium) ==============
+
   async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
     return this.fetch('/v1/webhooks/endpoints');
   }
@@ -1119,9 +1253,6 @@ class ApiClient {
     });
   }
 
-  async updateSelfHostedConfig(addonId: number, data: Record<string, unknown>) {
-    return this.fetch(`/v1/addons/${addonId}/self-hosted`, {
-      method: 'PUT',
   async updateWebhookEndpoint(id: number, data: WebhookEndpointUpdate): Promise<WebhookEndpoint> {
     return this.fetch(`/v1/webhooks/endpoints/${id}`, {
       method: 'PATCH',
@@ -1129,116 +1260,6 @@ class ApiClient {
     });
   }
 
-  async deleteSelfHostedConfig(addonId: number): Promise<void> {
-    return this.fetch(`/v1/addons/${addonId}/self-hosted`, { method: 'DELETE' });
-  }
-
-  async verifySelfHostedDomain(addonId: number) {
-    return this.fetch(`/v1/addons/${addonId}/self-hosted/verify-domain`, { method: 'POST' });
-  }
-
-  // Analytics Alerts (PREM-17)
-  async listAlerts(addonId: number) {
-    return this.fetch(`/v1/addons/${addonId}/alerts`);
-  }
-
-  async createAlert(addonId: number, data: Record<string, unknown>) {
-    return this.fetch(`/v1/addons/${addonId}/alerts`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateAlert(addonId: number, alertId: number, data: Record<string, unknown>) {
-    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async purchaseAddon(addonId: number, serverId?: string): Promise<PurchaseAddonResponse> {
-    return this.fetch(`/v1/marketplace/addons/${addonId}/purchase`, {
-      method: 'POST',
-      body: JSON.stringify({ server_id: serverId }),
-    });
-  }
-
-  async listAddonLicenses(addonId: number, skip = 0, limit = 50): Promise<LicenseListResponse> {
-    return this.fetch(`/v1/marketplace/addons/${addonId}/licenses?skip=${skip}&limit=${limit}`);
-  }
-
-  async listMyLicenses(skip = 0, limit = 50): Promise<LicenseListResponse> {
-    return this.fetch(`/v1/marketplace/my-licenses?skip=${skip}&limit=${limit}`);
-  }
-
-  async revokeLicense(licenseId: number): Promise<AddonLicense> {
-    return this.fetch(`/v1/marketplace/licenses/${licenseId}/revoke`, { method: 'POST' });
-  }
-
-  async verifyLicense(licenseKey: string, serverId?: string): Promise<LicenseVerifyResponse> {
-    return this.fetch('/v1/marketplace/verify-license', {
-      method: 'POST',
-      body: JSON.stringify({ license_key: licenseKey, server_id: serverId }),
-    });
-  }
-
-  async getRevenueStats(addonId: number): Promise<RevenueStats> {
-    return this.fetch(`/v1/marketplace/addons/${addonId}/revenue`);
-  }
-
-  async getStripeConnectStatus(): Promise<StripeConnectStatus> {
-    return this.fetch('/v1/stripe-connect/status');
-  }
-
-  async startStripeConnectOnboarding(returnUrl: string, refreshUrl: string): Promise<{ onboarding_url: string }> {
-    return this.fetch('/v1/stripe-connect/onboard', {
-      method: 'POST',
-      body: JSON.stringify({ return_url: returnUrl, refresh_url: refreshUrl }),
-    });
-  }
-
-  async getSponsorUrl(addonId: number): Promise<{ sponsor_url: string | null }> {
-    return this.fetch(`/v1/addons/${addonId}/sponsorship`);
-  }
-
-  async updateSponsorUrl(addonId: number, sponsorUrl: string | null): Promise<{ sponsor_url: string | null }> {
-    return this.fetch(`/v1/addons/${addonId}/sponsorship`, {
-      method: 'PUT',
-      body: JSON.stringify({ sponsor_url: sponsorUrl }),
-    });
-  async deleteAlert(addonId: number, alertId: number): Promise<void> {
-    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}`, { method: 'DELETE' });
-  }
-
-  async testAlert(addonId: number, alertId: number) {
-    return this.fetch(`/v1/addons/${addonId}/alerts/${alertId}/test`, { method: 'POST' });
-  }
-
-  // Cohort Analysis (PREM-18)
-  async getCohortAnalysis(addonId: number, days = 30, fromVersion?: string, toVersion?: string) {
-    const params = new URLSearchParams({ days: String(days) });
-    if (fromVersion) params.set('from_version', fromVersion);
-    if (toVersion) params.set('to_version', toVersion);
-    return this.fetch(`/v1/addons/${addonId}/cohorts?${params}`);
-  }
-
-  // Predictive Analytics (PREM-19)
-  async getPredictiveAnalytics(addonId: number, targetVersion: string, days = 14) {
-    const params = new URLSearchParams({ target_version: targetVersion, days: String(days) });
-    return this.fetch(`/v1/addons/${addonId}/predictive?${params}`);
-  }
-
-  // Real-Time Analytics (PREM-16)
-  async getRealtimeStats(addonId: number) {
-    return this.fetch(`/v1/addons/${addonId}/realtime`);
-  }
-
-  async getRecentChecks(addonId: number, limit = 50) {
-    return this.fetch(`/v1/addons/${addonId}/realtime/recent?limit=${limit}`);
-  }
-
-  async getHourlyBreakdown(addonId: number, hours = 24) {
-    return this.fetch(`/v1/addons/${addonId}/realtime/hourly?hours=${hours}`);
   async deleteWebhookEndpoint(id: number): Promise<void> {
     return this.fetch(`/v1/webhooks/endpoints/${id}`, { method: 'DELETE' });
   }

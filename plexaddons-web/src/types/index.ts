@@ -702,6 +702,8 @@ export interface AnalyticsAlert {
   last_triggered_at: string | null;
   trigger_count: number;
   cooldown_minutes: number;
+}
+
 // ============== Code Signing Types (PREM-5) ==============
 
 export interface SigningKey {
@@ -946,6 +948,32 @@ export interface FeatureFlag {
   enabled: boolean;
   percentage: number;
   targeting: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureFlagCreate {
+  key: string;
+  name: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagUpdate {
+  name?: string;
+  description?: string;
+  enabled?: boolean;
+  percentage?: number;
+  targeting?: Record<string, unknown> | null;
+}
+
+export interface FeatureFlagListResponse {
+  flags: FeatureFlag[];
+  total: number;
+}
+
 // Organization Enhancements (Premium)
 export const ORG_PERMISSIONS = [
   'manage_versions',
@@ -1029,27 +1057,6 @@ export interface WebhookEndpoint {
   updated_at: string;
 }
 
-export interface FeatureFlagCreate {
-  key: string;
-  name: string;
-  description?: string;
-  enabled?: boolean;
-  percentage?: number;
-  targeting?: Record<string, unknown> | null;
-}
-
-export interface FeatureFlagUpdate {
-  name?: string;
-  description?: string;
-  enabled?: boolean;
-  percentage?: number;
-  targeting?: Record<string, unknown> | null;
-}
-
-export interface FeatureFlagListResponse {
-  flags: FeatureFlag[];
-  total: number;
-}
 export interface WebhookEndpointCreate {
   name: string;
   url: string;
