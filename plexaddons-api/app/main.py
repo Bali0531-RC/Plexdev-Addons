@@ -12,6 +12,7 @@ from app.api.v1 import router as v1_router
 from app.api.public import router as public_router
 from app.webhooks import router as webhooks_router
 from app.core.rate_limit import RateLimitMiddleware, set_rate_limiter, set_redis_client
+from app.core.cache import set_cache_client
 from app.core.exceptions import PlexAddonsException
 
 settings = get_settings()
@@ -162,6 +163,7 @@ async def lifespan(app: FastAPI):
         redis_client = redis.from_url(settings.redis_url, decode_responses=True)
         await redis_client.ping()
         set_redis_client(redis_client)  # Store globally for OAuth state storage
+        set_cache_client(redis_client)  # Store globally for caching
         rate_limiter = RateLimitMiddleware(redis_client)
         set_rate_limiter(rate_limiter)
         print("[Startup] Redis connected successfully")
