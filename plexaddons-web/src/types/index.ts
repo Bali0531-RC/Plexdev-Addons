@@ -53,6 +53,7 @@ export interface User {
   banner_url?: string | null;
   accent_color?: string | null;
   has_api_key?: boolean;
+  is_verified_developer?: boolean;
   // Temporary tier fields
   temp_tier?: 'free' | 'pro' | 'premium' | null;
   temp_tier_expires_at?: string | null;
@@ -81,6 +82,9 @@ export interface Addon {
   organization_id: number | null;
   banner_url: string | null;
   screenshots: string[];
+  theme_accent_color: string | null;
+  theme_header_url: string | null;
+  owner_verified_developer: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -243,6 +247,8 @@ export interface AddonUpdate {
   is_public?: boolean;
   verified?: boolean;
   tags?: AddonTag[];
+  theme_accent_color?: string | null;
+  theme_header_url?: string | null;
 }
 
 export interface VersionCreate {
@@ -371,6 +377,7 @@ export interface PublicUser {
   profile_slug: string | null;
   badges: string[];
   bio: string | null;
+  is_verified_developer: boolean;
   addon_count: number;
   created_at: string;
 }
@@ -388,6 +395,7 @@ export interface UserPublicProfile {
   badges: string[] | null;
   banner_url: string | null;
   accent_color: string | null;
+  is_verified_developer: boolean;
   created_at: string;
   addons: Addon[] | null;
 }

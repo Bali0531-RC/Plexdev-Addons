@@ -4,6 +4,60 @@
   padding: 2rem 1rem;
 }
 
+/* Addon theme header */
+.addon-theme-header {
+  margin: -2rem -1rem 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 220px;
+}
+
+.addon-theme-header-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Theme accent color override */
+.addon-detail[style*="--addon-accent"] .addon-latest-version {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .addon-detail-meta a {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .addon-detail-meta .addon-author-link:hover {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .btn-primary {
+  background: var(--addon-accent);
+  border-color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .badge-latest {
+  background: var(--addon-accent);
+}
+
+/* Verified developer badge */
+.verified-dev-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: bold;
+  margin-left: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 .addon-detail-header {
   display: flex;
   justify-content: space-between;

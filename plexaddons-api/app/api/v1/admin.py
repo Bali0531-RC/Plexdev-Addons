@@ -482,6 +482,34 @@ async def remove_user_badge(
     return {"status": "removed", "user_id": user_id, "badge": badge, "badges": badges}
 
 
+@router.patch("/users/{user_id}/verified-developer")
+async def set_verified_developer(
+    user_id: int,
+    verified: bool = Query(..., description="Set verified developer status"),
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Set or unset verified developer status for a user."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    user.is_verified_developer = verified
+    await db.commit()
+    await db.refresh(user)
+    
+    await log_admin_action(
+        db, admin,
+        action="set_verified_developer",
+        target_type="user",
+        target_id=user_id,
+        details={"username": user.discord_username, "verified": verified},
+    )
+    
+    return {"status": "updated", "user_id": user_id, "is_verified_developer": verified}
+
+
 @router.post("/badges/sync-all")
 async def sync_all_user_badges(
     admin: User = Depends(get_admin_user),

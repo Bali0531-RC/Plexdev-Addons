@@ -227,6 +227,9 @@ export default function Addons() {
                     }}
                   >
                     by {addon.owner_username || 'Unknown'}
+                    {addon.owner_verified_developer && (
+                      <span className="verified-dev-badge-sm" title="Verified Developer">✓</span>
+                    )}
                   </span>
                 </div>
               </Link>

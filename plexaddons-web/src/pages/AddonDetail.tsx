@@ -68,7 +68,15 @@ export default function AddonDetail() {
   }
 
   return (
-    <div className="addon-detail">
+    <div
+      className="addon-detail"
+      style={addon.theme_accent_color ? { '--addon-accent': addon.theme_accent_color } as React.CSSProperties : undefined}
+    >
+      {addon.theme_header_url && (
+        <div className="addon-theme-header">
+          <img src={addon.theme_header_url} alt="" className="addon-theme-header-img" />
+        </div>
+      )}
       <div className="addon-detail-header">
         <div className="addon-detail-title">
           {addon.icon_url && (
@@ -104,6 +112,9 @@ export default function AddonDetail() {
           style={{ cursor: addon.owner_discord_id ? 'pointer' : 'default' }}
         >
           by {addon.owner_username || 'Unknown'}
+          {addon.owner_verified_developer && (
+            <span className="verified-dev-badge" title="Verified Developer">✓</span>
+          )}
         </span>
         {addon.homepage && (
           <>

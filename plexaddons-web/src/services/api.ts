@@ -368,6 +368,10 @@ class ApiClient {
     return this.fetch(`/v1/admin/users/${userId}/badges?badge=${encodeURIComponent(badge)}`, { method: 'DELETE' });
   }
 
+  async setVerifiedDeveloper(userId: number, verified: boolean): Promise<{ status: string; is_verified_developer: boolean }> {
+    return this.fetch(`/v1/admin/users/${userId}/verified-developer?verified=${verified}`, { method: 'PATCH' });
+  }
+
   async listAllAddons(page = 1, perPage = 50, search?: string): Promise<AddonListResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.append('search', search);

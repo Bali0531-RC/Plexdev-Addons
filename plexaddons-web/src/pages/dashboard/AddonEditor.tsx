@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
 import './AddonEditor.css';
@@ -9,7 +10,9 @@ import './AddonEditor.css';
 export default function AddonEditor() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew = !slug || slug === 'new';
+  const isPro = user?.effective_tier === 'pro' || user?.effective_tier === 'premium' || user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
 
   const [addon, setAddon] = useState<Addon | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -25,6 +28,8 @@ export default function AddonEditor() {
   const [isActive, setIsActive] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
   const [selectedTags, setSelectedTags] = useState<AddonTag[]>([]);
+  const [themeAccentColor, setThemeAccentColor] = useState('');
+  const [themeHeaderUrl, setThemeHeaderUrl] = useState('');
 
   useEffect(() => {
     if (!isNew && slug) {
@@ -50,6 +55,8 @@ export default function AddonEditor() {
       setIsActive(addonData.is_active);
       setIsPublic(addonData.is_public);
       setSelectedTags(addonData.tags || []);
+      setThemeAccentColor(addonData.theme_accent_color || '');
+      setThemeHeaderUrl(addonData.theme_header_url || '');
     } catch (err) {
       setError('Failed to load addon');
       console.error(err);
@@ -91,6 +98,10 @@ export default function AddonEditor() {
           is_active: isActive,
           is_public: isPublic,
           tags: selectedTags,
+          ...(isPro && {
+            theme_accent_color: themeAccentColor || null,
+            theme_header_url: themeHeaderUrl || null,
+          }),
         };
         await api.updateAddon(slug!, data);
         navigate('/dashboard/addons');
@@ -236,6 +247,51 @@ export default function AddonEditor() {
             </>
           )}
         </div>
+
+        {isPro && !isNew && (
+          <div className="form-section">
+            <h2>Page Theme <span className="pro-badge">PRO</span></h2>
+            <p className="form-help">Customize how your addon page looks to visitors.</p>
+
+            <div className="form-group">
+              <label htmlFor="themeAccentColor">Accent Color</label>
+              <div className="color-input-group">
+                <input
+                  type="color"
+                  id="themeAccentColorPicker"
+                  value={themeAccentColor || '#7c3aed'}
+                  onChange={(e) => setThemeAccentColor(e.target.value)}
+                />
+                <input
+                  type="text"
+                  id="themeAccentColor"
+                  value={themeAccentColor}
+                  onChange={(e) => setThemeAccentColor(e.target.value)}
+                  placeholder="#7c3aed"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                {themeAccentColor && (
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setThemeAccentColor('')}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              <small>Custom accent color for your addon page</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="themeHeaderUrl">Header Image URL</label>
+              <input
+                type="url"
+                id="themeHeaderUrl"
+                value={themeHeaderUrl}
+                onChange={(e) => setThemeHeaderUrl(e.target.value)}
+                placeholder="https://example.com/header.jpg"
+              />
+              <small>Custom header banner displayed at the top of your addon page</small>
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>

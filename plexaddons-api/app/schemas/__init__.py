@@ -63,6 +63,7 @@ class UserResponse(BaseModel):
     accent_color: Optional[str] = None
     # API key (only shows if exists, not the actual key)
     has_api_key: bool = False
+    is_verified_developer: bool = False
     # Temporary tier info
     temp_tier: Optional[SubscriptionTier] = None
     temp_tier_expires_at: Optional[datetime] = None
@@ -122,6 +123,7 @@ class UserPublicProfile(BaseModel):
     badges: Optional[List[str]] = None
     banner_url: Optional[str] = None
     accent_color: Optional[str] = None
+    is_verified_developer: bool = False
     created_at: datetime
     addons: Optional[List["AddonResponse"]] = None  # Only if show_addons=True
     
@@ -241,6 +243,9 @@ class AddonUpdate(BaseModel):
     readme: Optional[str] = None
     banner_url: Optional[str] = Field(None, max_length=500)
     screenshots: Optional[List[str]] = Field(None, max_items=6)
+    # Theme customization (Pro+)
+    theme_accent_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
+    theme_header_url: Optional[str] = Field(None, max_length=500)
 
 
 class AddonResponse(BaseModel):
@@ -260,11 +265,14 @@ class AddonResponse(BaseModel):
     readme: Optional[str] = None
     banner_url: Optional[str] = None
     screenshots: List[str] = Field(default_factory=list)
+    theme_accent_color: Optional[str] = None
+    theme_header_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
     # Denormalized for convenience
     owner_username: Optional[str] = None
+    owner_verified_developer: bool = False
     owner_discord_id: Optional[str] = None
     latest_version: Optional[str] = None
     latest_release_date: Optional[date] = None

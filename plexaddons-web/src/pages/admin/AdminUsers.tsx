@@ -154,6 +154,18 @@ export default function AdminUsers() {
     );
   };
 
+  const handleToggleVerifiedDev = async (user: User) => {
+    const newState = !user.is_verified_developer;
+    toast.promise(
+      api.setVerifiedDeveloper(user.id, newState).then(() => loadUsers()),
+      {
+        loading: newState ? 'Verifying developer...' : 'Removing verification...',
+        success: newState ? 'Developer verified' : 'Verification removed',
+        error: 'Failed to update verified status',
+      }
+    );
+  };
+
   const openBadgeModal = async (user: User) => {
     try {
       const { badges } = await api.getUserBadges(user.id);
@@ -330,6 +342,13 @@ export default function AdminUsers() {
                     title="Manage badges"
                   >
                     🏷️ {user.badges?.length || 0}
+                  </button>
+                  <button
+                    onClick={() => handleToggleVerifiedDev(user)}
+                    className={`btn btn-xs ${user.is_verified_developer ? 'btn-primary' : 'btn-outline'}`}
+                    title={user.is_verified_developer ? 'Remove verified developer' : 'Verify developer'}
+                  >
+                    {user.is_verified_developer ? '✓ Verified Dev' : '○ Verify Dev'}
                   </button>
                 </span>
                 <span className="user-actions">

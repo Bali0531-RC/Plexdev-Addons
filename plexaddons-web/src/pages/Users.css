@@ -97,6 +97,23 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.user-name .verified-dev-badge-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .user-tier {

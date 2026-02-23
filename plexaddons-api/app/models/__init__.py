@@ -128,6 +128,9 @@ class User(Base):
     # Badges (JSON array of badge IDs)
     badges = Column(Text, nullable=True)  # e.g., '["pro", "early_adopter", "addon_creator"]'
     
+    # Verified developer status (admin-set, separate from addon verified)
+    is_verified_developer = Column(Boolean, default=False, index=True)
+    
     # Profile customization (tier-locked)
     banner_url = Column(String(500), nullable=True)  # Pro+ only
     accent_color = Column(String(7), nullable=True)  # Premium only, hex color e.g., "#e9a426"
@@ -221,6 +224,10 @@ class Addon(Base):
     # Media
     banner_url = Column(String(500), nullable=True)  # Hero banner image URL
     screenshots = Column(JSON, default=list)  # List of screenshot URLs (max 6)
+    
+    # Theme customization (Pro+)
+    theme_accent_color = Column(String(7), nullable=True)  # Hex color e.g. "#ff5500"
+    theme_header_url = Column(String(500), nullable=True)  # Custom header image URL
     
     # Status
     is_active = Column(Boolean, default=True)
