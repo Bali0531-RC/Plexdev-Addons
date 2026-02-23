@@ -258,6 +258,8 @@ class Addon(Base):
     __table_args__ = (
         Index("idx_addons_owner_name", "owner_id", "name", unique=True),
         Index("idx_addons_organization", "organization_id"),
+        Index("idx_addons_public_active", "is_public", "is_active"),
+        Index("idx_addons_updated_at", "updated_at"),
     )
 
 
@@ -311,6 +313,7 @@ class Version(Base):
         Index("idx_versions_release_date", "release_date"),
         Index("idx_versions_scheduled_release", "scheduled_release_at"),
         Index("idx_versions_channel", "addon_id", "channel"),
+        Index("idx_versions_addon_created_at", "addon_id", "created_at"),
     )
 
 
