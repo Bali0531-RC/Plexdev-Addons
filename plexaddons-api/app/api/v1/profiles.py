@@ -83,6 +83,9 @@ async def list_public_users(
                 badges = json.loads(user.badges) if isinstance(user.badges, str) else user.badges
             except Exception:
                 badges = []
+        # Ensure admin users always have the staff badge
+        if user.is_admin and 'staff' not in badges:
+            badges = ['staff'] + badges
         
         # Get effective tier (temp_tier if active)
         effective_tier = get_effective_tier(user)
@@ -186,6 +189,9 @@ async def get_public_profile(
     
     # Parse badges JSON if stored as string
     badges = user.badges if user.badges else []
+    # Ensure admin users always have the staff badge
+    if user.is_admin and 'staff' not in (badges or []):
+        badges = ['staff'] + (badges if isinstance(badges, list) else [])
     
     # Get effective tier (temp_tier if active)
     effective_tier = get_effective_tier(user)

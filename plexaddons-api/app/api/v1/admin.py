@@ -258,6 +258,17 @@ async def promote_to_admin(
         raise BadRequestError("User is already an admin")
     
     user.is_admin = True
+    # Add 'staff' badge so profile displays Admin role
+    import json
+    badges = []
+    if user.badges:
+        try:
+            badges = json.loads(user.badges) if isinstance(user.badges, str) else (user.badges or [])
+        except Exception:
+            badges = []
+    if 'staff' not in badges:
+        badges.insert(0, 'staff')
+        user.badges = json.dumps(badges)
     await db.commit()
     
     await log_admin_action(
@@ -290,6 +301,17 @@ async def demote_from_admin(
         raise BadRequestError("User is not an admin")
     
     user.is_admin = False
+    # Remove 'staff' badge
+    import json
+    badges = []
+    if user.badges:
+        try:
+            badges = json.loads(user.badges) if isinstance(user.badges, str) else (user.badges or [])
+        except Exception:
+            badges = []
+    if 'staff' in badges:
+        badges.remove('staff')
+        user.badges = json.dumps(badges)
     await db.commit()
     
     await log_admin_action(
