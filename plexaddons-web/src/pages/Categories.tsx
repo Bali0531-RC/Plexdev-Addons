@@ -100,7 +100,7 @@ export function CategoryAddons() {
       return;
     }
     setLoading(true);
-    api.listAddons(1, 200, undefined, tag as AddonTag).then(res => {
+    api.listAddons(1, 100, undefined, tag as AddonTag).then(res => {
       setAddons(res.addons);
       setLoading(false);
     }).catch(() => setLoading(false));
