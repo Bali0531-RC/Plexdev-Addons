@@ -33,6 +33,7 @@ class AnalyticsService:
         version_id: Optional[int],
         checked_version: str,
         client_ip: str,
+        client_id: Optional[str] = None,
     ) -> VersionCheck:
         """
         Log a version check request.
@@ -42,8 +43,9 @@ class AnalyticsService:
             version_id: The version ID if resolved, None if version not found
             checked_version: The version string provided by the client
             client_ip: Client IP address (will be hashed)
+            client_id: Optional stable client instance ID (preferred over IP hash)
         """
-        ip_hash = AnalyticsService.hash_ip(client_ip)
+        ip_hash = client_id if client_id else AnalyticsService.hash_ip(client_ip)
         
         check = VersionCheck(
             addon_id=addon_id,

@@ -1,0 +1,167 @@
+# PlexAddons CI/CD - Publish Addon Version
+#
+# This workflow automatically publishes a new version of your addon
+# to addons.plexdev.xyz when you create a GitHub release or push a tag.
+#
+# Prerequisites:
+#   1. Create an API key at https://addons.plexdev.xyz/dashboard/api-keys
+#      - Required scope: "versions:write"
+#      - Pro tier: up to 3 keys | Premium tier: up to 10 keys
+#   2. Add the API key as a repository secret named PLEXADDONS_API_KEY
+#      - Go to Settings → Secrets and variables → Actions → New repository secret
+#   3. Your addon must already exist on addons.plexdev.xyz
+#
+# Usage:
+#   Option A: Triggered on GitHub Release
+#     - Create a release in GitHub with a tag like "v1.2.3"
+#     - The workflow extracts the version from the tag and publishes it
+#
+#   Option B: Triggered on tag push
+#     - Push a tag: git tag v1.2.3 && git push origin v1.2.3
+#
+# Customize the env variables below for your addon.
+
+name: Publish to PlexAddons
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'
+
+env:
+  # ─── CONFIGURE THESE ───────────────────────────────────────────
+  ADDON_SLUG: "my-addon"                          # Your addon's slug on addons.plexdev.xyz
+  DOWNLOAD_URL_TEMPLATE: "https://github.com/${{ github.repository }}/releases/download/${TAG}/addon.zip"
+  # Optional:
+  CHANNEL: "stable"                                # stable | beta | alpha | canary (Pro+ feature)
+  ROLLOUT_PERCENTAGE: "100"                        # 0-100, gradual rollout (Premium feature)
+  # ────────────────────────────────────────────────────────────────
+
+jobs:
+  publish:
+    name: Publish Version
+    runs-on: ubuntu-latest
+    # Only run once if both release and tag events fire
+    if: github.event_name == 'release' || !startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 Publishing version: $VERSION"
+
+      - name: Build download URL
+        id: url
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          # Replace ${TAG} placeholder in the template
+          URL=$(echo "$DOWNLOAD_URL_TEMPLATE" | sed "s/\${TAG}/$TAG/g")
+          echo "download_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "🔗 Download URL: $URL"
+
+      - name: Generate changelog from commits
+        id: changelog
+        run: |
+          # Get commits since the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD 2>/dev/null || echo "")
+          else
+            CHANGES=$(git log --pretty=format:"- %s" -20 2>/dev/null || echo "")
+          fi
+
+          # Use release body if available, otherwise use commit log
+          if [ "${{ github.event_name }}" = "release" ] && [ -n "${{ github.event.release.body }}" ]; then
+            CHANGELOG="${{ github.event.release.body }}"
+          else
+            CHANGELOG="$CHANGES"
+          fi
+
+          # Write to file to handle multiline
+          echo "$CHANGELOG" > /tmp/changelog.txt
+          echo "has_changelog=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to PlexAddons
+        env:
+          PLEXADDONS_API_KEY: ${{ secrets.PLEXADDONS_API_KEY }}
+        run: |
+          CHANGELOG=$(cat /tmp/changelog.txt)
+
+          # Check if this is a breaking or urgent release
+          BREAKING=false
+          URGENT=false
+          if echo "${{ steps.version.outputs.tag }}" | grep -qi "breaking"; then
+            BREAKING=true
+          fi
+          # Mark pre-1.0 major bumps or releases labeled "urgent" as urgent
+          if [ "${{ github.event_name }}" = "release" ]; then
+            LABELS='${{ toJson(github.event.release.body) }}'
+            if echo "$LABELS" | grep -qi "urgent"; then
+              URGENT=true
+            fi
+          fi
+
+          # Build the JSON payload
+          PAYLOAD=$(jq -n \
+            --arg version "${{ steps.version.outputs.version }}" \
+            --arg download_url "${{ steps.url.outputs.download_url }}" \
+            --arg description "Release ${{ steps.version.outputs.tag }}" \
+            --arg changelog_content "$CHANGELOG" \
+            --argjson breaking "$BREAKING" \
+            --argjson urgent "$URGENT" \
+            --arg channel "$CHANNEL" \
+            --argjson rollout_percentage "${ROLLOUT_PERCENTAGE}" \
+            '{
+              version: $version,
+              download_url: $download_url,
+              description: $description,
+              changelog_content: $changelog_content,
+              breaking: $breaking,
+              urgent: $urgent,
+              channel: $channel,
+              rollout_percentage: ($rollout_percentage | tonumber)
+            }')
+
+          echo "📤 Publishing to PlexAddons API..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: $PLEXADDONS_API_KEY" \
+            -d "$PAYLOAD" \
+            "https://addons.plexdev.xyz/api/v1/addons/${ADDON_SLUG}/versions")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Successfully published version ${{ steps.version.outputs.version }}"
+            echo "$BODY" | jq .
+          else
+            echo "❌ Failed to publish (HTTP $HTTP_CODE)"
+            echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+            exit 1
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "### ✅ Published to PlexAddons" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Addon** | \`${ADDON_SLUG}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Version** | \`${{ steps.version.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Channel** | \`${CHANNEL}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Rollout** | ${ROLLOUT_PERCENTAGE}% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Download** | ${{ steps.url.outputs.download_url }} |" >> "$GITHUB_STEP_SUMMARY"

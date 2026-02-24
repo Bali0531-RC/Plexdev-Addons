@@ -74,6 +74,7 @@ async def public_addon_latest(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit_check),
     x_current_version: Optional[str] = Header(None, alias="X-Current-Version"),
+    x_client_id: Optional[str] = Header(None, alias="X-Client-Id"),
 ):
     """
     Get latest version info for a specific addon by name or slug.
@@ -106,8 +107,13 @@ async def public_addon_latest(
         # Log version check for analytics if version header provided
         if x_current_version:
             try:
-                # Get client IP
+                # Prefer X-Client-Id (stable per-instance) over IP (can change)
                 client_ip = request.client.host if request.client else "unknown"
+                if x_client_id and len(x_client_id) >= 16:
+                    # Use the client-provided instance ID directly (already opaque)
+                    ip_hash = x_client_id[:64]
+                else:
+                    ip_hash = AnalyticsService.hash_ip(client_ip)
                 
                 # Find addon in database by slug or name
                 addon_result = await db.execute(
@@ -129,17 +135,17 @@ async def public_addon_latest(
                     version = version_result.scalar_one_or_none()
                     version_id = version.id if version else None
                     
-                    # Log the version check
+                    # Log the version check (pass pre-computed hash)
                     await AnalyticsService.log_version_check(
                         db,
                         addon_id=db_addon.id,
                         version_id=version_id,
                         checked_version=x_current_version,
                         client_ip=client_ip,
+                        client_id=ip_hash if x_client_id and len(x_client_id) >= 16 else None,
                     )
                     
                     # Update daily stats
-                    ip_hash = AnalyticsService.hash_ip(client_ip)
                     await AnalyticsService.update_daily_stats(
                         db,
                         addon_id=db_addon.id,
