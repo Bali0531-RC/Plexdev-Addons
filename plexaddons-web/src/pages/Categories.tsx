@@ -26,10 +26,25 @@ export function CategoriesIndex() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.listAddons(1, 500).then(res => {
-      setAddons(res.addons);
+    async function fetchAll() {
+      try {
+        const perPage = 100;
+        const first = await api.listAddons(1, perPage);
+        let all = first.addons;
+        const totalPages = Math.ceil(first.total / perPage);
+        if (totalPages > 1) {
+          const rest = await Promise.all(
+            Array.from({ length: totalPages - 1 }, (_, i) =>
+              api.listAddons(i + 2, perPage)
+            )
+          );
+          for (const r of rest) all = all.concat(r.addons);
+        }
+        setAddons(all);
+      } catch { /* ignore */ }
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }
+    fetchAll();
   }, []);
 
   const countByTag = (tag: AddonTag) =>
