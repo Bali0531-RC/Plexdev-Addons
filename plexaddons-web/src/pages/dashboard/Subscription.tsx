@@ -190,7 +190,43 @@ export default function Subscription() {
               <td className="feature-yes">✓</td>
             </tr>
             <tr>
-              <td>Gradual Rollouts (A/B)</td>
+              <td>Release Channels (Beta/Alpha/Canary)</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Version Management</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>API Key Access</td>
+              <td className="feature-no">✗</td>
+              <td>3 keys</td>
+              <td>10 keys</td>
+            </tr>
+            <tr>
+              <td>Auto-Generated Changelogs</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Gradual Rollouts (A/B Testing)</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Real-Time Analytics Dashboard</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-no">✗</td>
+              <td className="feature-yes">✓</td>
+            </tr>
+            <tr>
+              <td>Staged Rollouts</td>
               <td className="feature-no">✗</td>
               <td className="feature-no">✗</td>
               <td className="feature-yes">✓</td>
@@ -199,12 +235,6 @@ export default function Subscription() {
               <td>Team Organizations</td>
               <td className="feature-no">✗</td>
               <td className="feature-no">✗</td>
-              <td className="feature-yes">✓</td>
-            </tr>
-            <tr>
-              <td>API Key Access</td>
-              <td className="feature-no">✗</td>
-              <td className="feature-yes">✓</td>
               <td className="feature-yes">✓</td>
             </tr>
             <tr>
