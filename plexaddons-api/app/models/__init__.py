@@ -47,6 +47,7 @@ class ReleaseChannel(str, enum.Enum):
     STABLE = "stable"
     BETA = "beta"
     ALPHA = "alpha"
+    CANARY = "canary"
 
 
 # Organization member roles
@@ -199,10 +200,6 @@ class User(Base):
     # Profile customization (tier-locked)
     banner_url = Column(String(500), nullable=True)  # Pro+ only
     accent_color = Column(String(7), nullable=True)  # Premium only, hex color e.g., "#e9a426"
-    
-    # ============== API KEY (Premium only) ==============
-    api_key = Column(String(67), unique=True, nullable=True, index=True)  # pa_ + 64 hex chars
-    api_key_created_at = Column(DateTime(timezone=True), nullable=True)
     
     # ============== WEBHOOK NOTIFICATIONS (Premium only) ==============
     webhook_url = Column(String(500), nullable=True)  # URL to send notifications to
@@ -1342,4 +1339,80 @@ class WebhookDelivery(Base):
         Index("idx_webhook_deliveries_endpoint", "endpoint_id"),
         Index("idx_webhook_deliveries_status", "status"),
         Index("idx_webhook_deliveries_retry", "status", "next_retry_at"),
+    )
+
+
+# ============== A/B TESTING (PREM-2) ==============
+
+class ExperimentStatus(str, enum.Enum):
+    DRAFT = "draft"
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+
+
+class ABExperiment(Base):
+    """An A/B test experiment for an addon version rollout."""
+    __tablename__ = "ab_experiments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    addon_id = Column(Integer, ForeignKey("addons.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(
+        SQLEnum(ExperimentStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=ExperimentStatus.DRAFT,
+    )
+
+    # Targeting rules (JSON: {"server_ids": [...], "user_ids": [...], "metadata_match": {...}})
+    targeting_rules = Column(JSON, nullable=True)
+
+    # Auto-promotion: if no error reports within this window, promote winning variant
+    auto_promote = Column(Boolean, default=False)
+    auto_promote_after_hours = Column(Integer, default=24)
+
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    addon = relationship("Addon", backref="experiments")
+    created_by = relationship("User")
+    variants = relationship("ABVariant", back_populates="experiment", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_ab_experiments_addon", "addon_id"),
+        Index("idx_ab_experiments_status", "addon_id", "status"),
+    )
+
+
+class ABVariant(Base):
+    """A variant (group) within an A/B experiment."""
+    __tablename__ = "ab_variants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    experiment_id = Column(Integer, ForeignKey("ab_experiments.id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(Integer, ForeignKey("versions.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(100), nullable=False)  # e.g. "Control", "Variant A"
+    percentage = Column(Integer, nullable=False)  # Traffic allocation 0-100
+    is_control = Column(Boolean, default=False)
+
+    # Metrics
+    total_checks = Column(Integer, default=0)
+    error_reports = Column(Integer, default=0)
+    unique_users = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    experiment = relationship("ABExperiment", back_populates="variants")
+    version = relationship("Version")
+
+    __table_args__ = (
+        Index("idx_ab_variants_experiment", "experiment_id"),
     )

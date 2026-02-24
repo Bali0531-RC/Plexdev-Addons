@@ -663,3 +663,95 @@ async def get_hourly_breakdown(
     ]
     
     return {"hourly": hourly, "period_hours": hours}
+
+
+@realtime_router.websocket("/ws")
+async def realtime_websocket(
+    websocket: WebSocket,
+    addon_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    WebSocket endpoint for live version-check streaming.
+
+    Connect with a valid JWT token as query param: ?token=<jwt>
+    Sends JSON events every 5 seconds with latest check stats.
+    """
+    from app.core.security import decode_access_token
+    import asyncio
+
+    # Authenticate via query param (WebSocket doesn't support Authorization header easily)
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    user_id = int(payload["sub"])
+
+    # Verify user owns the addon and is premium
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        await websocket.close(code=4001, reason="User not found")
+        return
+
+    try:
+        await _verify_premium_addon_owner(addon_id, user, db)
+    except HTTPException:
+        await websocket.close(code=4003, reason="Forbidden")
+        return
+
+    await websocket.accept()
+
+    try:
+        while True:
+            now = datetime.now(timezone.utc)
+            one_hour_ago = now - timedelta(hours=1)
+
+            hour_result = await db.execute(
+                select(
+                    func.count(VersionCheck.id).label("count"),
+                    func.count(func.distinct(VersionCheck.client_ip_hash)).label("unique"),
+                ).where(
+                    VersionCheck.addon_id == addon_id,
+                    VersionCheck.timestamp >= one_hour_ago,
+                )
+            )
+            row = hour_result.one()
+
+            # Recent checks (last 10)
+            recent_result = await db.execute(
+                select(
+                    VersionCheck.id,
+                    VersionCheck.checked_version,
+                    VersionCheck.timestamp,
+                ).where(VersionCheck.addon_id == addon_id)
+                .order_by(VersionCheck.timestamp.desc())
+                .limit(10)
+            )
+            recent = [
+                {
+                    "id": r.id,
+                    "checked_version": r.checked_version,
+                    "timestamp": r.timestamp.isoformat() if r.timestamp else None,
+                }
+                for r in recent_result.all()
+            ]
+
+            await websocket.send_json({
+                "type": "stats",
+                "addon_id": addon_id,
+                "checks_last_hour": row.count or 0,
+                "unique_users_last_hour": row.unique or 0,
+                "recent_checks": recent,
+                "timestamp": now.isoformat(),
+            })
+
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass

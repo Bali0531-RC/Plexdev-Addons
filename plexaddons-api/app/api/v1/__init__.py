@@ -3,7 +3,7 @@ from app.api.v1 import (
     auth, users, addons, versions, payments, admin, tickets, profiles,
     analytics, tags, organizations, automation, api_keys, stars, reviews,
     notifications, collaborators, marketplace, premium_analytics, security,
-    rollouts, feature_flags, webhooks,
+    rollouts, feature_flags, webhooks, experiments,
 )
 
 router = APIRouter(prefix="/v1")
@@ -44,3 +44,4 @@ router.include_router(security.twofa_router)
 router.include_router(rollouts.router)
 router.include_router(feature_flags.router)
 router.include_router(webhooks.router)
+router.include_router(experiments.router)

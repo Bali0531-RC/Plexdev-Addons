@@ -1472,6 +1472,68 @@ class WebhookDeliveryResponse(BaseModel):
         from_attributes = True
 
 
+# ============== A/B TESTING (PREM-2) ==============
+
+class ABVariantCreate(BaseModel):
+    name: str = Field(..., max_length=100)
+    version_id: Optional[int] = None
+    percentage: int = Field(..., ge=0, le=100)
+    is_control: bool = False
+
+class ABExperimentCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    description: Optional[str] = None
+    targeting_rules: Optional[dict] = None
+    auto_promote: bool = False
+    auto_promote_after_hours: int = Field(24, ge=1, le=720)
+    variants: list[ABVariantCreate] = Field(..., min_length=2, max_length=10)
+
+class ABExperimentUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=200)
+    description: Optional[str] = None
+    targeting_rules: Optional[dict] = None
+    auto_promote: Optional[bool] = None
+    auto_promote_after_hours: Optional[int] = Field(None, ge=1, le=720)
+
+class ABVariantResponse(BaseModel):
+    id: int
+    experiment_id: int
+    version_id: Optional[int] = None
+    name: str
+    percentage: int
+    is_control: bool
+    total_checks: int
+    error_reports: int
+    unique_users: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ABExperimentResponse(BaseModel):
+    id: int
+    addon_id: int
+    created_by_id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+    status: str
+    targeting_rules: Optional[dict] = None
+    auto_promote: bool
+    auto_promote_after_hours: int
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    variants: list[ABVariantResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class ABExperimentListResponse(BaseModel):
+    experiments: list[ABExperimentResponse]
+    total: int
+
+
 # Forward reference resolution
 StagedRolloutResponse.model_rebuild()
 AuthResponse.model_rebuild()

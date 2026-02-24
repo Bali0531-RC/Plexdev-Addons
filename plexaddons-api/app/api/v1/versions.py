@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from app.database import get_db
@@ -11,6 +12,7 @@ from app.schemas import (
     VersionDeprecate,
 )
 from app.services import AddonService, VersionService
+from app.services.changelog_service import ChangelogService
 from app.api.deps import get_current_user, get_current_user_optional, rate_limit_check, rate_limit_check_authenticated, get_effective_tier, check_paid_addon_access
 from app.core.exceptions import NotFoundError, ForbiddenError
 
@@ -257,3 +259,31 @@ async def get_latest_version_by_channel(
         raise NotFoundError(f"No {channel.value} version found for this addon")
     
     return VersionResponse.model_validate(version)
+
+
+@router.get("/addons/{slug}/changelog", response_class=PlainTextResponse)
+async def get_addon_changelog(
+    slug: str,
+    from_version: Optional[str] = Query(None, description="Start version (inclusive)"),
+    to_version: Optional[str] = Query(None, description="End version (inclusive)"),
+    limit: int = Query(20, ge=1, le=100, description="Max versions to include"),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check),
+):
+    """
+    Generate a Markdown changelog for an addon from its version history.
+
+    Pro+ feature: auto-generated from version descriptions and changelog content.
+    """
+    addon = await AddonService.get_addon_by_slug(db, slug)
+    if not addon:
+        raise NotFoundError("Addon not found")
+
+    changelog = await ChangelogService.generate_changelog(
+        db,
+        addon.id,
+        from_version=from_version,
+        to_version=to_version,
+        limit=limit,
+    )
+    return PlainTextResponse(content=changelog, media_type="text/markdown")
