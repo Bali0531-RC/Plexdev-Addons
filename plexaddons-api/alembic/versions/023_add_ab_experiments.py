@@ -17,9 +17,13 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create experimentstatus enum
-    experimentstatus = sa.Enum("draft", "running", "paused", "completed", name="experimentstatus")
-    experimentstatus.create(op.get_bind(), checkfirst=True)
+    # Create experimentstatus enum (IF NOT EXISTS to handle create_all preemption)
+    op.execute(
+        "DO $$ BEGIN "
+        "CREATE TYPE experimentstatus AS ENUM ('draft', 'running', 'paused', 'completed'); "
+        "EXCEPTION WHEN duplicate_object THEN NULL; "
+        "END $$"
+    )
 
     op.create_table(
         "ab_experiments",
@@ -28,7 +32,7 @@ def upgrade() -> None:
         sa.Column("created_by_id", sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("name", sa.String(200), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
-        sa.Column("status", experimentstatus, nullable=False, server_default="draft"),
+        sa.Column("status", sa.Enum("draft", "running", "paused", "completed", name="experimentstatus", create_type=False), nullable=False, server_default="draft"),
         sa.Column("targeting_rules", JSON, nullable=True),
         sa.Column("auto_promote", sa.Boolean, default=False),
         sa.Column("auto_promote_after_hours", sa.Integer, default=24),
