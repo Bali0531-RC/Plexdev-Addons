@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, OAUTH_STATE_KEY } from '../context/AuthContext';
 import { api } from '../services/api';
 import './AuthCallback.css';
 
@@ -17,9 +17,20 @@ export default function AuthCallback() {
   const handleCallback = async () => {
     const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
+    const stateParam = searchParams.get('state');
 
     if (errorParam) {
+      sessionStorage.removeItem(OAUTH_STATE_KEY);
       setError(`Authentication failed: ${errorParam}`);
+      return;
+    }
+
+    // Validate OAuth CSRF state: compare URL state with what we stored before redirect
+    const storedState = sessionStorage.getItem(OAUTH_STATE_KEY);
+    sessionStorage.removeItem(OAUTH_STATE_KEY);
+
+    if (storedState && stateParam && storedState !== stateParam) {
+      setError('Authentication failed: state mismatch. Please try again.');
       return;
     }
 

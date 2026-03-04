@@ -1,8 +1,9 @@
 from typing import Optional, List
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from app.models import Addon, Version, User
+from sqlalchemy import select, func, and_, literal_column, cast, String
+from sqlalchemy.orm import aliased
+from app.models import Addon, Version, User, AddonUsageStats
 from app.schemas import AddonCreate, AddonUpdate
 from app.utils import slugify
 from app.core.exceptions import NotFoundError, ConflictError, ForbiddenError
@@ -124,14 +125,13 @@ class AddonService:
         limit: int = 20,
         owner_id: Optional[int] = None,
         search: Optional[str] = None,
+        tag: Optional[str] = None,
+        sort_by: str = "updated",
         public_only: bool = True,
+        addon_ids: Optional[List[int]] = None,
     ) -> tuple[List[dict], int]:
-        """List addons with latest version info."""
-        # Base query
-        query = select(Addon)
-        count_query = select(func.count(Addon.id))
-        
-        # Filters
+        """List addons with latest version info, server-side search, tag filter, and sorting."""
+        # Base filters
         filters = []
         if public_only:
             filters.append(Addon.is_public == True)
@@ -140,43 +140,111 @@ class AddonService:
             filters.append(Addon.owner_id == owner_id)
         if search:
             safe_search = sanitize_ilike_pattern(search)
-            filters.append(Addon.name.ilike(f"%{safe_search}%"))
-        
-        if filters:
-            query = query.where(and_(*filters))
-            count_query = count_query.where(and_(*filters))
+            # Search across name and description
+            filters.append(
+                func.concat(Addon.name, ' ', func.coalesce(Addon.description, '')).ilike(f"%{safe_search}%")
+            )
+        if tag:
+            # Filter by tag - tags is stored as a PostgreSQL JSON column, cast to text for LIKE
+            safe_tag = sanitize_ilike_pattern(tag)
+            filters.append(cast(Addon.tags, String).ilike(f'%"{safe_tag}"%'))
+        if addon_ids is not None:
+            filters.append(Addon.id.in_(addon_ids))
         
         # Get total count
+        count_query = select(func.count(Addon.id))
+        if filters:
+            count_query = count_query.where(and_(*filters))
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
         
-        # Get addons
-        query = query.order_by(Addon.updated_at.desc()).offset(skip).limit(limit)
-        result = await db.execute(query)
-        addons = result.scalars().all()
+        # Subquery for latest version per addon
+        latest_version_sq = (
+            select(
+                Version.addon_id,
+                Version.version.label("latest_version"),
+                Version.release_date.label("latest_release_date"),
+                func.row_number().over(
+                    partition_by=Version.addon_id,
+                    order_by=[Version.release_date.desc(), Version.created_at.desc()]
+                ).label("rn")
+            )
+            .subquery("latest_v")
+        )
         
-        # Enrich with latest version and owner info
+        # Subquery for version count per addon
+        version_count_sq = (
+            select(
+                Version.addon_id,
+                func.count(Version.id).label("version_count")
+            )
+            .group_by(Version.addon_id)
+            .subquery("v_count")
+        )
+        
+        # Subquery for download count per addon (sum of check_count from usage stats)
+        download_count_sq = (
+            select(
+                AddonUsageStats.addon_id,
+                func.coalesce(func.sum(AddonUsageStats.check_count), 0).label("download_count")
+            )
+            .group_by(AddonUsageStats.addon_id)
+            .subquery("dl_count")
+        )
+        
+        # Main query with JOINs
+        query = (
+            select(
+                Addon,
+                User.discord_username.label("owner_username"),
+                User.discord_id.label("owner_discord_id"),
+                User.is_verified_developer.label("owner_verified_developer"),
+                latest_version_sq.c.latest_version,
+                latest_version_sq.c.latest_release_date,
+                func.coalesce(version_count_sq.c.version_count, 0).label("version_count"),
+                func.coalesce(download_count_sq.c.download_count, 0).label("download_count"),
+            )
+            .join(User, User.id == Addon.owner_id, isouter=True)
+            .join(
+                latest_version_sq,
+                and_(
+                    latest_version_sq.c.addon_id == Addon.id,
+                    latest_version_sq.c.rn == 1,
+                ),
+                isouter=True,
+            )
+            .join(
+                version_count_sq,
+                version_count_sq.c.addon_id == Addon.id,
+                isouter=True,
+            )
+            .join(
+                download_count_sq,
+                download_count_sq.c.addon_id == Addon.id,
+                isouter=True,
+            )
+        )
+        
+        if filters:
+            query = query.where(and_(*filters))
+        
+        # Sorting
+        sort_options = {
+            "newest": Addon.created_at.desc(),
+            "oldest": Addon.created_at.asc(),
+            "name_asc": Addon.name.asc(),
+            "name_desc": Addon.name.desc(),
+            "updated": Addon.updated_at.desc(),
+        }
+        order = sort_options.get(sort_by, Addon.updated_at.desc())
+        
+        query = query.order_by(order).offset(skip).limit(limit)
+        result = await db.execute(query)
+        rows = result.all()
+        
         enriched_addons = []
-        for addon in addons:
-            # Get owner
-            owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
-            owner = owner_result.scalar_one_or_none()
-            
-            # Get latest version
-            latest_version_result = await db.execute(
-                select(Version)
-                .where(Version.addon_id == addon.id)
-                .order_by(Version.release_date.desc(), Version.created_at.desc())
-                .limit(1)
-            )
-            latest_version = latest_version_result.scalar_one_or_none()
-            
-            # Get version count
-            version_count_result = await db.execute(
-                select(func.count(Version.id)).where(Version.addon_id == addon.id)
-            )
-            version_count = version_count_result.scalar() or 0
-            
+        for row in rows:
+            addon = row[0]
             enriched_addons.append({
                 "id": addon.id,
                 "slug": addon.slug,
@@ -185,15 +253,28 @@ class AddonService:
                 "homepage": addon.homepage,
                 "external": addon.external,
                 "tags": addon.tags or [],
+                "icon_url": addon.icon_url,
+                "readme": addon.readme,
+                "banner_url": addon.banner_url,
+                "screenshots": addon.screenshots or [],
+                "theme_accent_color": addon.theme_accent_color,
+                "theme_header_url": addon.theme_header_url,
+                "is_paid": addon.is_paid,
+                "price_cents": addon.price_cents,
+                "revenue_split_percent": addon.revenue_split_percent,
+                "sponsor_url": addon.sponsor_url,
                 "is_active": addon.is_active,
                 "is_public": addon.is_public,
                 "verified": addon.verified,
                 "owner_id": addon.owner_id,
-                "owner_username": owner.discord_username if owner else None,
-                "owner_discord_id": owner.discord_id if owner else None,
-                "latest_version": latest_version.version if latest_version else None,
-                "latest_release_date": latest_version.release_date if latest_version else None,
-                "version_count": version_count,
+                "organization_id": addon.organization_id,
+                "owner_username": row.owner_username,
+                "owner_discord_id": row.owner_discord_id,
+                "owner_verified_developer": row.owner_verified_developer or False,
+                "latest_version": row.latest_version,
+                "latest_release_date": row.latest_release_date,
+                "version_count": row.version_count,
+                "download_count": row.download_count,
                 "created_at": addon.created_at,
                 "updated_at": addon.updated_at,
             })
@@ -204,32 +285,49 @@ class AddonService:
     async def get_all_public_addons_for_json(db: AsyncSession, client_ip_hash: str = None) -> List[dict]:
         """
         Get all public addons with latest version for versions.json format.
+        Uses optimized JOINs instead of per-addon queries.
         
         Args:
             client_ip_hash: Optional hashed IP for A/B rollout consistency.
                            If provided, respects rollout_percentage.
         """
-        result = await db.execute(
-            select(Addon)
+        # Fetch all public, non-paid addons with owner info in a single query
+        addons_query = (
+            select(Addon, User.discord_username.label("owner_username"))
+            .join(User, User.id == Addon.owner_id, isouter=True)
             .where(Addon.is_public == True)
             .where(Addon.is_active == True)
+            .where(Addon.is_paid == False)
         )
-        addons = result.scalars().all()
+        addons_result = await db.execute(addons_query)
+        addon_rows = addons_result.all()
+        
+        if not addon_rows:
+            return []
+        
+        # Collect addon IDs
+        addon_ids = [row[0].id for row in addon_rows]
+        
+        # Fetch all published, non-deprecated versions for these addons in a single query
+        versions_result = await db.execute(
+            select(Version)
+            .where(Version.addon_id.in_(addon_ids))
+            .where(Version.is_published == True)
+            .where(Version.is_deprecated == False)
+            .order_by(Version.addon_id, Version.release_date.desc(), Version.created_at.desc())
+        )
+        all_versions = versions_result.scalars().all()
+        
+        # Group versions by addon_id
+        versions_by_addon: dict[int, list] = {}
+        for v in all_versions:
+            versions_by_addon.setdefault(v.addon_id, []).append(v)
         
         addon_data = []
-        for addon in addons:
-            # Get owner
-            owner_result = await db.execute(select(User).where(User.id == addon.owner_id))
-            owner = owner_result.scalar_one_or_none()
-            
-            # Get latest PUBLISHED version that user is eligible for
-            latest_version_result = await db.execute(
-                select(Version)
-                .where(Version.addon_id == addon.id)
-                .where(Version.is_published == True)  # Only published versions
-                .order_by(Version.release_date.desc(), Version.created_at.desc())
-            )
-            versions = latest_version_result.scalars().all()
+        for row in addon_rows:
+            addon = row[0]
+            owner_username = row.owner_username
+            versions = versions_by_addon.get(addon.id, [])
             
             # Find the latest version this user is eligible for (based on rollout)
             latest_version = None
@@ -243,12 +341,9 @@ class AddonService:
                     if hash_value < version.rollout_percentage:
                         latest_version = version
                         break
-                elif version.rollout_percentage >= 100:
-                    latest_version = version
-                    break
             
-            # Fallback to first published version if no rollout match
-            if not latest_version and versions:
+            # Fallback to first fully-rolled-out published version
+            if not latest_version:
                 for v in versions:
                     if v.rollout_percentage >= 100:
                         latest_version = v
@@ -265,7 +360,7 @@ class AddonService:
                     "breaking": latest_version.breaking,
                     "urgent": latest_version.urgent,
                     "external": addon.external,
-                    "author": owner.discord_username if owner else None,
+                    "author": owner_username,
                     "homepage": addon.homepage,
                     "changelog": latest_version.changelog_url,
                     "tags": addon.tags or [],

@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from typing import Optional
-import secrets
 from datetime import datetime, timezone
 from app.database import get_db
 from app.models import User, Subscription, SubscriptionStatus, PaymentProvider, SubscriptionTier, Addon
@@ -13,8 +12,6 @@ from app.schemas import (
     SubscriptionResponse,
     UserProfileUpdate,
     UserPublicProfile,
-    ApiKeyCreate,
-    ApiKeyResponse,
     AddonResponse,
     WebhookConfigUpdate,
     WebhookConfigResponse,
@@ -264,80 +261,6 @@ async def update_my_profile(
     return user
 
 
-@router.get("/me/api-key", response_model=ApiKeyResponse)
-async def get_my_api_key(
-    user: User = Depends(get_current_user),
-    _: None = Depends(rate_limit_check_authenticated),
-):
-    """Get current user's API key status."""
-    masked_key = None
-    if user.api_key:
-        # Show first 6 and last 4 characters: pa_xxxx...xxxx
-        masked_key = f"{user.api_key[:6]}...{user.api_key[-4:]}"
-    
-    return ApiKeyResponse(
-        has_api_key=user.api_key is not None,
-        created_at=user.api_key_created_at,
-        masked_key=masked_key
-    )
-
-
-@router.post("/me/api-key", response_model=ApiKeyCreate)
-async def create_my_api_key(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    _: None = Depends(rate_limit_check_authenticated),
-):
-    """
-    Generate a new API key for the current user.
-    
-    Requirements:
-    - Premium subscription required
-    - Replaces any existing API key
-    
-    The full API key is only shown once!
-    """
-    effective_tier = get_effective_tier(user)
-    if effective_tier != SubscriptionTier.PREMIUM:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="API keys require Premium subscription"
-        )
-    
-    # Generate new API key with pa_ prefix
-    api_key = f"pa_{secrets.token_hex(32)}"
-    now = datetime.now(timezone.utc)
-    
-    user.api_key = api_key
-    user.api_key_created_at = now
-    
-    await db.commit()
-    
-    return ApiKeyCreate(
-        api_key=api_key,
-        created_at=now
-    )
-
-
-@router.delete("/me/api-key", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_my_api_key(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    _: None = Depends(rate_limit_check_authenticated),
-):
-    """Revoke the current user's API key."""
-    if not user.api_key:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No API key to revoke"
-        )
-    
-    user.api_key = None
-    user.api_key_created_at = None
-    
-    await db.commit()
-    
-    return None
 
 
 # ============== Webhook Endpoints ==============

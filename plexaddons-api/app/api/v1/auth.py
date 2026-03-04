@@ -76,8 +76,8 @@ async def discord_callback(
     # Create JWT
     jwt_token = AuthService.create_jwt_token(user)
     
-    # Redirect to frontend with token
-    frontend_callback = f"{settings.frontend_url}/auth/callback?token={jwt_token}"
+    # Redirect to frontend with token and state for client-side CSRF verification
+    frontend_callback = f"{settings.frontend_url}/auth/callback?token={jwt_token}&state={state}"
     return RedirectResponse(url=frontend_callback)
 
 

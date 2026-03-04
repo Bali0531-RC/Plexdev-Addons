@@ -1,10 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './Layout.css';
 
 export default function Layout() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const getDiscordAvatar = () => {
     if (!user?.discord_avatar) {
@@ -29,9 +37,22 @@ export default function Layout() {
             <span className="logo-text">PlexAddons</span>
           </Link>
 
-          <nav className="nav">
+          <button 
+            className={`hamburger ${menuOpen ? 'open' : ''}`} 
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <nav className={`nav ${menuOpen ? 'nav-open' : ''}`}>
             <Link to="/addons" className={location.pathname === '/addons' ? 'active' : ''}>
               Addons
+            </Link>
+            <Link to="/categories" className={location.pathname === '/categories' || location.pathname.startsWith('/addons/category/') ? 'active' : ''}>
+              Categories
             </Link>
             <Link to="/users" className={location.pathname === '/users' ? 'active' : ''}>
               Users
@@ -55,6 +76,7 @@ export default function Layout() {
           </nav>
 
           <div className="header-actions">
+            {isAuthenticated && <NotificationBell />}
             {isAuthenticated ? (
               <div className="user-menu">
                 <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
@@ -87,11 +109,11 @@ export default function Layout() {
       <footer className="footer">
         <div className="container footer-content">
           <div className="footer-left">
-            <span>© 2025 PlexAddons</span>
+            <span>© {new Date().getFullYear()} PlexAddons</span>
             <span className="separator">•</span>
             <span className="version-badge alpha">Alpha</span>
             <span className="separator">•</span>
-            <span className="build-info">v0.2.1 · Build {__BUILD_TIME__}</span>
+            <span className="build-info">v0.3.0 · Build {__BUILD_TIME__}</span>
           </div>
           <div className="footer-right">
             <Link to="/terms">Terms</Link>

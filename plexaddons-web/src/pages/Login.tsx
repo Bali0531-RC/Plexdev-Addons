@@ -1,28 +1,14 @@
 import { useEffect } from 'react';
-import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const OAUTH_STATE_KEY = 'plexaddons_oauth_state';
-
 export default function Login() {
-  useEffect(() => {
-    // Redirect to Discord OAuth
-    redirectToDiscord();
-  }, []);
+  const { login } = useAuth();
 
-  const redirectToDiscord = async () => {
-    try {
-      const { url, state } = await api.getAuthUrl();
-      sessionStorage.setItem(OAUTH_STATE_KEY, state);
-      if (!/^https:\/\/(discord\.com|discordapp\.com)\//i.test(url)) {
-        console.error('Blocked redirect to untrusted OAuth URL');
-        return;
-      }
-      window.location.href = url;
-    } catch (err) {
-      console.error('Failed to get auth URL:', err);
-    }
-  };
+  useEffect(() => {
+    // Delegate to AuthContext.login() which handles OAuth URL, CSRF state, and redirect
+    login();
+  }, []);
 
   return (
     <div className="login-page">

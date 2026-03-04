@@ -258,6 +258,17 @@ async def promote_to_admin(
         raise BadRequestError("User is already an admin")
     
     user.is_admin = True
+    # Add 'staff' badge so profile displays Admin role
+    import json
+    badges = []
+    if user.badges:
+        try:
+            badges = json.loads(user.badges) if isinstance(user.badges, str) else (user.badges or [])
+        except Exception:
+            badges = []
+    if 'staff' not in badges:
+        badges.insert(0, 'staff')
+        user.badges = json.dumps(badges)
     await db.commit()
     
     await log_admin_action(
@@ -290,6 +301,17 @@ async def demote_from_admin(
         raise BadRequestError("User is not an admin")
     
     user.is_admin = False
+    # Remove 'staff' badge
+    import json
+    badges = []
+    if user.badges:
+        try:
+            badges = json.loads(user.badges) if isinstance(user.badges, str) else (user.badges or [])
+        except Exception:
+            badges = []
+    if 'staff' in badges:
+        badges.remove('staff')
+        user.badges = json.dumps(badges)
     await db.commit()
     
     await log_admin_action(
@@ -480,6 +502,34 @@ async def remove_user_badge(
     )
     
     return {"status": "removed", "user_id": user_id, "badge": badge, "badges": badges}
+
+
+@router.patch("/users/{user_id}/verified-developer")
+async def set_verified_developer(
+    user_id: int,
+    verified: bool = Query(..., description="Set verified developer status"),
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit_check_authenticated),
+):
+    """Set or unset verified developer status for a user."""
+    user = await UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundError("User not found")
+    
+    user.is_verified_developer = verified
+    await db.commit()
+    await db.refresh(user)
+    
+    await log_admin_action(
+        db, admin,
+        action="set_verified_developer",
+        target_type="user",
+        target_id=user_id,
+        details={"username": user.discord_username, "verified": verified},
+    )
+    
+    return {"status": "updated", "user_id": user_id, "is_verified_developer": verified}
 
 
 @router.post("/badges/sync-all")

@@ -12,9 +12,18 @@ from app.api.v1 import router as v1_router
 from app.api.public import router as public_router
 from app.webhooks import router as webhooks_router
 from app.core.rate_limit import RateLimitMiddleware, set_rate_limiter, set_redis_client
+from app.core.cache import set_cache_client
 from app.core.exceptions import PlexAddonsException
+from app.core.logging import setup_logging, get_logger, CorrelationIdMiddleware
 
 settings = get_settings()
+
+# Initialize structured logging
+setup_logging(
+    json_output=settings.environment == "production",
+    log_level="DEBUG" if settings.debug else "INFO",
+)
+logger = get_logger("plexaddons")
 
 # Scheduler for periodic tasks
 scheduler = AsyncIOScheduler()
@@ -31,7 +40,7 @@ async def cleanup_audit_logs():
             delete(AdminAuditLog).where(AdminAuditLog.created_at < cutoff)
         )
         await db.commit()
-        print(f"[Scheduler] Cleaned up audit logs older than {cutoff}")
+        logger.info("Cleaned up audit logs", cutoff=str(cutoff))
 
 
 async def cleanup_api_request_logs():
@@ -45,7 +54,7 @@ async def cleanup_api_request_logs():
             delete(ApiRequestLog).where(ApiRequestLog.timestamp < cutoff)
         )
         await db.commit()
-        print(f"[Scheduler] Cleaned up API request logs older than {cutoff}")
+        logger.info("Cleaned up API request logs", cutoff=str(cutoff))
 
 
 async def send_weekly_summary():
@@ -55,9 +64,9 @@ async def send_weekly_summary():
     async with AsyncSessionLocal() as db:
         result = await email_service.send_admin_weekly_summary(db)
         if result:
-            print("[Scheduler] Weekly summary email sent")
+            logger.info("Weekly summary email sent")
         else:
-            print("[Scheduler] Weekly summary email skipped (no admin email configured)")
+            logger.info("Weekly summary email skipped", reason="no admin email configured")
 
 
 async def compress_ticket_attachments():
@@ -66,7 +75,7 @@ async def compress_ticket_attachments():
     
     async with AsyncSessionLocal() as db:
         compressed_count = await ticket_service.compress_old_attachments(db)
-        print(f"[Scheduler] Compressed {compressed_count} ticket attachments")
+        logger.info("Compressed ticket attachments", count=compressed_count)
 
 
 async def cleanup_ticket_attachments():
@@ -76,7 +85,7 @@ async def cleanup_ticket_attachments():
     async with AsyncSessionLocal() as db:
         deleted_count = await ticket_service.delete_old_attachments(db)
         removed_dirs = await ticket_service.cleanup_empty_directories()
-        print(f"[Scheduler] Deleted {deleted_count} old ticket attachments, removed {removed_dirs} empty directories")
+        logger.info("Cleaned up ticket attachments", deleted=deleted_count, dirs_removed=removed_dirs)
 
 
 async def publish_scheduled_versions():
@@ -100,11 +109,29 @@ async def publish_scheduled_versions():
         
         for version in versions:
             version.is_published = True
-            print(f"[Scheduler] Published scheduled version {version.version} for addon {version.addon_id}")
+            logger.info("Published scheduled version", version=version.version, addon_id=version.addon_id)
         
         if versions:
             await db.commit()
-            print(f"[Scheduler] Published {len(versions)} scheduled versions")
+            logger.info("Published scheduled versions", count=len(versions))
+
+
+async def cleanup_analytics_data():
+    """Scheduled task to clean up old analytics data beyond retention period."""
+    from app.services.analytics_service import AnalyticsService
+    
+    async with AsyncSessionLocal() as db:
+        await AnalyticsService.cleanup_old_data(db, retention_days=settings.analytics_retention_premium)
+        logger.info("Cleaned up analytics data", retention_days=settings.analytics_retention_premium)
+
+
+async def recalculate_analytics_unique_users():
+    """Scheduled task to recalculate unique user counts from version check logs."""
+    from app.services.analytics_service import AnalyticsService
+    
+    async with AsyncSessionLocal() as db:
+        await AnalyticsService.recalculate_unique_users(db)
+        logger.info("Recalculated unique user counts")
 
 
 async def bootstrap_initial_admin():
@@ -124,32 +151,31 @@ async def bootstrap_initial_admin():
         if user and not user.is_admin:
             user.is_admin = True
             await db.commit()
-            print(f"[Bootstrap] Promoted existing user {user.discord_username} to admin")
+            logger.info("Promoted user to admin", username=user.discord_username)
         elif not user:
-            print(f"[Bootstrap] Initial admin Discord ID configured: {settings.initial_admin_discord_id}")
-            print("[Bootstrap] User will be promoted to admin on first login")
+            logger.info("Initial admin configured, will promote on first login", discord_id=settings.initial_admin_discord_id)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
-    print("[Startup] Initializing database...")
+    logger.info("Initializing database")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     # Initialize Redis for rate limiting
-    print("[Startup] Connecting to Redis...")
+    logger.info("Connecting to Redis")
     try:
         redis_client = redis.from_url(settings.redis_url, decode_responses=True)
         await redis_client.ping()
         set_redis_client(redis_client)  # Store globally for OAuth state storage
+        set_cache_client(redis_client)  # Store globally for caching
         rate_limiter = RateLimitMiddleware(redis_client)
         set_rate_limiter(rate_limiter)
-        print("[Startup] Redis connected successfully")
+        logger.info("Redis connected")
     except Exception as e:
-        print(f"[Startup] Redis connection failed: {e}")
-        print("[Startup] Rate limiting will be disabled")
+        logger.warning("Redis connection failed, rate limiting disabled", error=str(e))
     
     # Bootstrap initial admin
     await bootstrap_initial_admin()
@@ -191,15 +217,27 @@ async def lifespan(app: FastAPI):
         "interval",
         minutes=5,  # Check every 5 minutes for scheduled versions
     )
+    scheduler.add_job(
+        cleanup_analytics_data,
+        "cron",
+        hour=5,  # Run at 5 AM daily
+        minute=0,
+    )
+    scheduler.add_job(
+        recalculate_analytics_unique_users,
+        "cron",
+        hour=5,  # Run at 5 AM daily
+        minute=30,
+    )
     scheduler.start()
-    print("[Startup] Scheduler started")
+    logger.info("Scheduler started")
     
     yield
     
     # Shutdown
-    print("[Shutdown] Stopping scheduler...")
+    logger.info("Stopping scheduler")
     scheduler.shutdown()
-    print("[Shutdown] Closing database connections...")
+    logger.info("Closing database connections")
     await engine.dispose()
 
 
@@ -229,6 +267,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add correlation ID middleware for request tracing
+app.add_middleware(CorrelationIdMiddleware)
 
 
 # Exception handlers
@@ -271,6 +312,10 @@ async def add_security_headers(request: Request, call_next):
     # Referrer policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
+    # Prevent browser caching of API responses (dynamic JSON data)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+
     # Permissions policy (disable unnecessary browser features)
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
@@ -290,11 +335,38 @@ app.include_router(webhooks_router, prefix="/api")  # Webhooks at /api/webhooks
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {
+    health = {
         "status": "healthy",
         "version": settings.app_version,
         "environment": settings.environment,
+        "checks": {},
     }
+    
+    # Check database connectivity
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text
+            await db.execute(text("SELECT 1"))
+        health["checks"]["database"] = "ok"
+    except Exception as e:
+        health["checks"]["database"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    # Check Redis connectivity
+    try:
+        from app.core.rate_limit import get_redis_client
+        rc = get_redis_client()
+        if rc:
+            await rc.ping()
+            health["checks"]["redis"] = "ok"
+        else:
+            health["checks"]["redis"] = "not configured"
+    except Exception as e:
+        health["checks"]["redis"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    status_code = 200 if health["status"] == "healthy" else 503
+    return JSONResponse(content=health, status_code=status_code)
 
 
 @app.get("/")

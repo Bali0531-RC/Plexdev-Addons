@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Addons from './pages/Addons'
 import AddonDetail from './pages/AddonDetail'
+import { CategoriesIndex, CategoryAddons } from './pages/Categories'
 import Users from './pages/Users'
 import Pricing from './pages/Pricing'
 import Docs from './pages/Docs'
@@ -28,6 +29,7 @@ import Support from './pages/dashboard/Support'
 import NewTicket from './pages/dashboard/NewTicket'
 import TicketDetail from './pages/dashboard/TicketDetail'
 import Organizations from './pages/dashboard/Organizations'
+import OrgPublicPage from './pages/OrgPublicPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAddons from './pages/admin/AdminAddons'
@@ -36,6 +38,7 @@ import AdminAuditLog from './pages/admin/AdminAuditLog'
 import AdminTickets from './pages/admin/AdminTickets'
 import AdminTicketDetail from './pages/admin/AdminTicketDetail'
 import AdminCannedResponses from './pages/admin/AdminCannedResponses'
+import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 
@@ -60,7 +63,9 @@ export default function App() {
         {/* Public routes */}
         <Route index element={<Home />} />
         <Route path="addons" element={<Addons />} />
+        <Route path="addons/category/:tag" element={<CategoryAddons />} />
         <Route path="addons/:slug" element={<AddonDetail />} />
+        <Route path="categories" element={<CategoriesIndex />} />
         <Route path="users" element={<Users />} />
         <Route path="u/:identifier" element={<Profile />} />
         <Route path="pricing" element={<Pricing />} />
@@ -78,6 +83,7 @@ export default function App() {
         <Route path="impressum" element={<Navigate to="/legal" replace />} />
         <Route path="login" element={<Login />} />
         <Route path="auth/callback" element={<AuthCallback />} />
+        <Route path="org/:orgSlug" element={<OrgPublicPage />} />
 
         {/* Protected routes */}
         <Route path="dashboard" element={<ProtectedRoute />}>
@@ -107,6 +113,9 @@ export default function App() {
           <Route path="tickets/:ticketId" element={<AdminTicketDetail />} />
           <Route path="canned-responses" element={<AdminCannedResponses />} />
         </Route>
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
     </>

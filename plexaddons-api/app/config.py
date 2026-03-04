@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     paypal_webhook_id: str
     paypal_pro_plan_id: str
     paypal_premium_plan_id: str
-    paypal_api_base: str = "https://api-m.sandbox.paypal.com"  # Use api-m.paypal.com for production
+    paypal_api_base: str = "https://api-m.paypal.com"  # Override in .env for sandbox: https://api-m.sandbox.paypal.com
     
     # Admin
     initial_admin_discord_id: Optional[str] = None

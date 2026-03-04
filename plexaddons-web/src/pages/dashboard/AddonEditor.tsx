@@ -2,14 +2,24 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import type { Addon, Version, AddonCreate, AddonUpdate, AddonTag } from '../../types';
 import { ADDON_TAGS } from '../../types';
+import CollaboratorsManager from '../../components/CollaboratorsManager';
+import MarketplaceManager from '../../components/MarketplaceManager';
+import PremiumAnalytics from '../../components/PremiumAnalytics';
+import SecurityManager from '../../components/SecurityManager';
+import RolloutManager from '../../components/RolloutManager';
+import FeatureFlagManager from '../../components/FeatureFlagManager';
 import './AddonEditor.css';
 
 export default function AddonEditor() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew = !slug || slug === 'new';
+  const isPro = user?.effective_tier === 'pro' || user?.effective_tier === 'premium' || user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const isPremium = user?.effective_tier === 'premium' || user?.subscription_tier === 'premium';
 
   const [addon, setAddon] = useState<Addon | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -25,6 +35,8 @@ export default function AddonEditor() {
   const [isActive, setIsActive] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
   const [selectedTags, setSelectedTags] = useState<AddonTag[]>([]);
+  const [themeAccentColor, setThemeAccentColor] = useState('');
+  const [themeHeaderUrl, setThemeHeaderUrl] = useState('');
 
   useEffect(() => {
     if (!isNew && slug) {
@@ -50,6 +62,8 @@ export default function AddonEditor() {
       setIsActive(addonData.is_active);
       setIsPublic(addonData.is_public);
       setSelectedTags(addonData.tags || []);
+      setThemeAccentColor(addonData.theme_accent_color || '');
+      setThemeHeaderUrl(addonData.theme_header_url || '');
     } catch (err) {
       setError('Failed to load addon');
       console.error(err);
@@ -91,6 +105,10 @@ export default function AddonEditor() {
           is_active: isActive,
           is_public: isPublic,
           tags: selectedTags,
+          ...(isPro && {
+            theme_accent_color: themeAccentColor || null,
+            theme_header_url: themeHeaderUrl || null,
+          }),
         };
         await api.updateAddon(slug!, data);
         navigate('/dashboard/addons');
@@ -237,6 +255,51 @@ export default function AddonEditor() {
           )}
         </div>
 
+        {isPro && !isNew && (
+          <div className="form-section">
+            <h2>Page Theme <span className="pro-badge">PRO</span></h2>
+            <p className="form-help">Customize how your addon page looks to visitors.</p>
+
+            <div className="form-group">
+              <label htmlFor="themeAccentColor">Accent Color</label>
+              <div className="color-input-group">
+                <input
+                  type="color"
+                  id="themeAccentColorPicker"
+                  value={themeAccentColor || '#7c3aed'}
+                  onChange={(e) => setThemeAccentColor(e.target.value)}
+                />
+                <input
+                  type="text"
+                  id="themeAccentColor"
+                  value={themeAccentColor}
+                  onChange={(e) => setThemeAccentColor(e.target.value)}
+                  placeholder="#7c3aed"
+                  pattern="^#[0-9A-Fa-f]{6}$"
+                />
+                {themeAccentColor && (
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setThemeAccentColor('')}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              <small>Custom accent color for your addon page</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="themeHeaderUrl">Header Image URL</label>
+              <input
+                type="url"
+                id="themeHeaderUrl"
+                value={themeHeaderUrl}
+                onChange={(e) => setThemeHeaderUrl(e.target.value)}
+                placeholder="https://example.com/header.jpg"
+              />
+              <small>Custom header banner displayed at the top of your addon page</small>
+            </div>
+          </div>
+        )}
+
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Saving...' : isNew ? 'Create Addon' : 'Save Changes'}
@@ -272,6 +335,10 @@ export default function AddonEditor() {
                     {index === 0 && version.is_published && <span className="badge badge-latest">Latest</span>}
                     {!version.is_published && <span className="badge badge-scheduled">Scheduled</span>}
                     {version.breaking && <span className="badge badge-breaking">Breaking</span>}
+                    {version.channel && version.channel !== 'stable' && (
+                      <span className={`badge badge-channel-${version.channel}`}>{version.channel}</span>
+                    )}
+                    {version.is_deprecated && <span className="badge badge-deprecated">Deprecated</span>}
                     {version.rollout_percentage !== null && version.rollout_percentage < 100 && (
                       <span className="badge badge-rollout">{version.rollout_percentage}%</span>
                     )}
@@ -293,6 +360,95 @@ export default function AddonEditor() {
           )}
         </div>
       )}
+
+      {/* Collaborators (Pro+ feature) */}
+      {!isNew && addon && (
+        <CollaboratorsManager addonId={addon.id} isOwner={addon.owner_id === user?.id} />
+      )}
+
+      {/* Marketplace & Sponsorship (Premium feature) */}
+      {isPremium && !isNew && addon && (
+        <MarketplaceManager
+          addonId={addon.id}
+          isPaid={addon.is_paid}
+          priceCents={addon.price_cents}
+          revenueSplitPercent={addon.revenue_split_percent}
+          sponsorUrl={addon.sponsor_url}
+        />
+      )}
+
+      {/* Premium Analytics (Premium feature) */}
+      {!isNew && addon && isPremium && (
+        <PremiumAnalytics addonId={addon.id} versions={versions.map(v => ({ version: v.version }))} />
+      )}
+
+      {/* Security Suite (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <SecurityManager addonId={addon.id} versions={versions} />
+      )}
+
+      {/* Staged Rollouts (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <RolloutManager addonId={addon.id} versions={versions} />
+      )}
+
+      {/* Feature Flags (Premium feature) */}
+      {!isNew && addon && (user?.effective_tier === 'premium' || user?.subscription_tier === 'premium') && (
+        <FeatureFlagManager addonId={addon.id} />
+      )}
+
+      {/* Transfer Ownership (Pro+ feature) */}
+      {!isNew && addon && addon.owner_id === user?.id && (user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium') && (
+        <TransferOwnership addonId={addon.id} />
+      )}
+    </div>
+  );
+}
+
+function TransferOwnership({ addonId }: { addonId: number }) {
+  const [newOwnerId, setNewOwnerId] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const navigate = useNavigate();
+
+  const handleTransfer = async () => {
+    const id = parseInt(newOwnerId);
+    if (!id || isNaN(id)) {
+      toast.error('Please enter a valid user ID');
+      return;
+    }
+    if (!confirm('Are you sure you want to transfer ownership? This action cannot be undone.')) return;
+    try {
+      setTransferring(true);
+      await api.transferOwnership(addonId, id);
+      toast.success('Ownership transferred successfully');
+      navigate('/dashboard/addons');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Transfer failed');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  return (
+    <div className="transfer-section">
+      <h3>Transfer Ownership</h3>
+      <p className="transfer-warning">Transfer this addon to another user. You will become an admin collaborator.</p>
+      <div className="transfer-form">
+        <input
+          type="number"
+          placeholder="New owner User ID"
+          value={newOwnerId}
+          onChange={(e) => setNewOwnerId(e.target.value)}
+          className="transfer-input"
+        />
+        <button
+          onClick={handleTransfer}
+          disabled={transferring || !newOwnerId}
+          className="btn btn-sm btn-danger"
+        >
+          {transferring ? 'Transferring...' : 'Transfer Ownership'}
+        </button>
+      </div>
     </div>
   );
 }

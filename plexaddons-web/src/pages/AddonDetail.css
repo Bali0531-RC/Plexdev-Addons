@@ -4,6 +4,60 @@
   padding: 2rem 1rem;
 }
 
+/* Addon theme header */
+.addon-theme-header {
+  margin: -2rem -1rem 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 220px;
+}
+
+.addon-theme-header-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Theme accent color override */
+.addon-detail[style*="--addon-accent"] .addon-latest-version {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .addon-detail-meta a {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .addon-detail-meta .addon-author-link:hover {
+  color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .btn-primary {
+  background: var(--addon-accent);
+  border-color: var(--addon-accent);
+}
+
+.addon-detail[style*="--addon-accent"] .badge-latest {
+  background: var(--addon-accent);
+}
+
+/* Verified developer badge */
+.verified-dev-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: bold;
+  margin-left: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 .addon-detail-header {
   display: flex;
   justify-content: space-between;
@@ -19,12 +73,21 @@
   gap: 0.75rem;
 }
 
+.addon-detail-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .addon-detail-title h1 {
   font-size: 2rem;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  line-height: 1;
 }
 
 .verified-badge-large {
@@ -39,6 +102,9 @@
   font-size: 0.9rem;
   font-weight: bold;
   flex-shrink: 0;
+  line-height: 1;
+  vertical-align: middle;
+  padding-top: 1px;
 }
 
 .addon-latest-version {
@@ -61,6 +127,7 @@
   color: var(--text-muted);
   font-size: 0.9rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .addon-detail-meta .addon-author-link {
@@ -160,6 +227,21 @@
   color: #f59e0b;
 }
 
+.badge-channel-beta {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.badge-channel-alpha {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.badge-deprecated {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
 .version-description {
   color: var(--text-secondary);
   font-size: 0.95rem;
@@ -200,6 +282,23 @@
   font-size: 0.9rem;
 }
 
+/* README Section */
+.addon-readme-section {
+  margin-bottom: 2rem;
+}
+
+.addon-readme-section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.addon-readme {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .addon-detail-header {
@@ -210,4 +309,64 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .addon-purchase-section {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* Paid Badge */
+.addon-detail .badge-paid {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  font-weight: 600;
+}
+
+/* Purchase Section */
+.addon-purchase-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.addon-price-display {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #eab308;
+}
+
+.addon-purchase-btn {
+  font-size: 1rem;
+  padding: 0.6rem 1.5rem;
+}
+
+.addon-purchased-btn {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.addon-purchase-message {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.addon-purchase-message.success {
+  background: rgba(46, 204, 113, 0.15);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  color: #2ecc71;
+}
+
+.addon-purchase-message.info {
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  color: #f1c40f;
 }

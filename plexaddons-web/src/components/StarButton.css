@@ -1,0 +1,47 @@
+.star-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.star-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.star-button.starred {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.star-button.starred:hover {
+  border-color: #d97706;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.star-button .star-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.star-button .star-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.star-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

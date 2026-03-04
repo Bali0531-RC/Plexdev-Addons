@@ -1,9 +1,17 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
+import type { TrendingAddon } from '../types';
 import './Home.css';
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
+  const [trending, setTrending] = useState<TrendingAddon[]>([]);
+
+  useEffect(() => {
+    api.getTrendingAddons(6).then(r => setTrending(r.trending)).catch(() => {});
+  }, []);
 
   return (
     <div className="home">
@@ -29,6 +37,45 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {trending.length > 0 && (
+        <section className="trending">
+          <h2>Trending Addons</h2>
+          <div className="trending-grid">
+            {trending.map((addon) => (
+              <Link key={addon.id} to={`/addons/${addon.slug}`} className="trending-card">
+                <div className="trending-card-header">
+                  <span className="trending-name">
+                    {addon.name}
+                    {addon.verified && <span className="verified-badge" title="Verified">✓</span>}
+                  </span>
+                  {addon.latest_version && (
+                    <span className="trending-version">v{addon.latest_version}</span>
+                  )}
+                </div>
+                {addon.description && (
+                  <p className="trending-description">{addon.description}</p>
+                )}
+                <div className="trending-meta">
+                  <span className="trending-author">by {addon.owner_username || 'Unknown'}</span>
+                  <div className="trending-stats">
+                    {addon.star_count > 0 && <span>★ {addon.star_count}</span>}
+                    {addon.avg_rating !== null && <span>⭐ {addon.avg_rating}</span>}
+                    {addon.review_count > 0 && (
+                      <span>{addon.review_count} review{addon.review_count !== 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <Link to="/addons" className="btn btn-secondary">
+              View All Addons
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="features">
         <h2>Why PlexAddons?</h2>
