@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { CannedResponse, TicketCategory } from '../../types';
 import Spinner from '../../components/Spinner';
+import { SearchIcon, FileTextIcon } from '../../components/Icons';
 import './AdminCannedResponses.css';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -202,7 +203,7 @@ export default function AdminCannedResponses() {
 
       {filteredResponses.length === 0 && hasFiltersApplied && responses.length > 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
+          <div className="empty-icon"><SearchIcon size={48} /></div>
           <h2>No matching responses</h2>
           <p>Try adjusting your filters or search query.</p>
           <button className="btn btn-secondary" onClick={() => {
@@ -215,7 +216,7 @@ export default function AdminCannedResponses() {
         </div>
       ) : filteredResponses.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📝</div>
+          <div className="empty-icon"><FileTextIcon size={48} /></div>
           <h2>No canned responses found</h2>
           <p>Create your first canned response to speed up ticket replies.</p>
           <button className="btn btn-primary" onClick={handleCreate}>

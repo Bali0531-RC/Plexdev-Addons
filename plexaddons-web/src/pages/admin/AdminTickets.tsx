@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { Ticket, TicketStatus, TicketStats } from '../../types';
 import Spinner from '../../components/Spinner';
+import { InboxIcon } from '../../components/Icons';
 import './AdminTickets.css';
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
@@ -171,7 +172,7 @@ export default function AdminTickets() {
         </div>
       ) : tickets.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📭</div>
+          <div className="empty-icon"><InboxIcon size={48} /></div>
           <h2>No Tickets Found</h2>
           <p>No tickets match your current filters.</p>
         </div>

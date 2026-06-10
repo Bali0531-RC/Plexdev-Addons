@@ -36,6 +36,32 @@ async def create_version(
     return VersionResponse.model_validate(version)
 
 
+# NOTE: This route MUST be registered before /addons/{slug}/versions/{version_str},
+# otherwise "latest" is captured as a version string and this endpoint is unreachable.
+@router.get("/addons/{slug}/versions/latest", response_model=VersionResponse)
+async def get_latest_version(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user_optional),
+    _: None = Depends(rate_limit_check),
+):
+    """Get the latest version of an addon."""
+    addon = await AddonService.get_addon_by_slug(db, slug)
+    if not addon:
+        raise NotFoundError("Addon not found")
+    
+    # Check access
+    if not addon.is_public:
+        if not user or (addon.owner_id != user.id and not user.is_admin):
+            raise NotFoundError("Addon not found")
+    
+    version = await VersionService.get_latest_version(db, addon.id)
+    if not version:
+        raise NotFoundError("No versions found for this addon")
+    
+    return VersionResponse.model_validate(version)
+
+
 @router.get("/addons/{slug}/versions/{version_str}", response_model=VersionResponse)
 async def get_version(
     slug: str,
@@ -57,30 +83,6 @@ async def get_version(
     version = await VersionService.get_version_by_addon_and_version(db, addon.id, version_str)
     if not version:
         raise NotFoundError("Version not found")
-    
-    return VersionResponse.model_validate(version)
-
-
-@router.get("/addons/{slug}/versions/latest", response_model=VersionResponse)
-async def get_latest_version(
-    slug: str,
-    db: AsyncSession = Depends(get_db),
-    user: Optional[User] = Depends(get_current_user_optional),
-    _: None = Depends(rate_limit_check),
-):
-    """Get the latest version of an addon."""
-    addon = await AddonService.get_addon_by_slug(db, slug)
-    if not addon:
-        raise NotFoundError("Addon not found")
-    
-    # Check access
-    if not addon.is_public:
-        if not user or (addon.owner_id != user.id and not user.is_admin):
-            raise NotFoundError("Addon not found")
-    
-    version = await VersionService.get_latest_version(db, addon.id)
-    if not version:
-        raise NotFoundError("No versions found for this addon")
     
     return VersionResponse.model_validate(version)
 

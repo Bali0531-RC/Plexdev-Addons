@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { StorageInfo, Addon } from '../../types';
+import { PackageIcon, TicketIcon, ChartIcon, SettingsIcon, CreditCardIcon, UsersIcon, ShieldCheckIcon } from '../../components/Icons';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -155,32 +156,32 @@ export default function Dashboard() {
           <h2>Quick Actions</h2>
           <div className="actions-list">
             <Link to="/dashboard/addons/new" className="action-item">
-              <span className="action-icon">📦</span>
+              <span className="action-icon"><PackageIcon /></span>
               <span>Create Addon</span>
             </Link>
             <Link to="/dashboard/support" className="action-item">
-              <span className="action-icon">🎫</span>
+              <span className="action-icon"><TicketIcon /></span>
               <span>Support</span>
             </Link>
             <Link to="/dashboard/analytics" className="action-item">
-              <span className="action-icon">📊</span>
+              <span className="action-icon"><ChartIcon /></span>
               <span>Analytics</span>
             </Link>
             <Link to="/dashboard/settings" className="action-item">
-              <span className="action-icon">⚙️</span>
+              <span className="action-icon"><SettingsIcon /></span>
               <span>Settings</span>
             </Link>
             <Link to="/dashboard/subscription" className="action-item">
-              <span className="action-icon">💳</span>
+              <span className="action-icon"><CreditCardIcon /></span>
               <span>Subscription</span>
             </Link>
             <Link to="/dashboard/organizations" className="action-item">
-              <span className="action-icon">👥</span>
+              <span className="action-icon"><UsersIcon /></span>
               <span>Organizations</span>
             </Link>
             {user?.is_admin && (
               <Link to="/admin" className="action-item">
-                <span className="action-icon">🛡️</span>
+                <span className="action-icon"><ShieldCheckIcon /></span>
                 <span>Admin Panel</span>
               </Link>
             )}

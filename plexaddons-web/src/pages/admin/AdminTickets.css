@@ -5,12 +5,12 @@
 }
 
 .admin-tickets-header h1 {
-  color: #fff;
+  color: var(--text);
   margin: 0;
 }
 
 .admin-tickets-header p {
-  color: #888;
+  color: var(--text-muted);
   margin: 0.25rem 0 0;
 }
 
@@ -23,38 +23,38 @@
 }
 
 .stat-card {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
-  border-left: 4px solid #333;
+  border-left: 4px solid var(--border);
 }
 
 .stat-card.stat-open {
-  border-left-color: #28a745;
+  border-left-color: var(--success);
 }
 
 .stat-card.stat-progress {
-  border-left-color: #17a2b8;
+  border-left-color: var(--accent);
 }
 
 .stat-card.stat-resolved {
-  border-left-color: #6c757d;
+  border-left-color: var(--text-muted);
 }
 
 .stat-card.stat-total {
-  border-left-color: #e9a426;
+  border-left-color: var(--accent);
 }
 
 .stat-number {
   display: block;
   font-size: 2rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
 }
 
 .stat-label {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -69,7 +69,7 @@
 /* Tickets Table */
 .tickets-table-container {
   overflow-x: auto;
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
 }
 
@@ -82,15 +82,15 @@
 .tickets-table td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--bg-hover);
 }
 
 .tickets-table th {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.8rem;
   text-transform: uppercase;
   font-weight: 600;
-  background: #0d0d0d;
+  background: var(--bg);
 }
 
 .tickets-table th:first-child {
@@ -102,11 +102,11 @@
 }
 
 .tickets-table tr:hover {
-  background: #222;
+  background: var(--bg-hover);
 }
 
 .ticket-link {
-  color: #e9a426;
+  color: var(--accent);
   font-family: monospace;
   text-decoration: none;
 }
@@ -116,12 +116,12 @@
 }
 
 .ticket-subject-link {
-  color: #fff;
+  color: var(--text);
   text-decoration: none;
 }
 
 .ticket-subject-link:hover {
-  color: #e9a426;
+  color: var(--accent);
 }
 
 .user-cell {
@@ -131,15 +131,15 @@
 }
 
 .user-name {
-  color: #fff;
+  color: var(--text);
 }
 
 .user-tier {
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  background: #e9a426;
-  color: #000;
+  background: var(--accent);
+  color: var(--bg);
   font-weight: 600;
   width: fit-content;
   text-transform: capitalize;
@@ -150,7 +150,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text);
   text-transform: capitalize;
   border: none;
 }
@@ -163,24 +163,24 @@
 }
 
 .category-badge {
-  background: #2a2a2a;
+  background: var(--bg-hover);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   text-transform: capitalize;
-  color: #ccc;
+  color: var(--text);
   font-size: 0.85rem;
 }
 
 .assigned-name {
-  color: #fff;
+  color: var(--text);
 }
 
 .unassigned {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .date-cell {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -192,7 +192,7 @@
 }
 
 .admin-ticket-header {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -208,14 +208,14 @@
 }
 
 .admin-ticket-title .ticket-id {
-  color: #888;
+  color: var(--text-muted);
   font-family: monospace;
   display: block;
   margin-bottom: 0.25rem;
 }
 
 .admin-ticket-title h1 {
-  color: #fff;
+  color: var(--text);
   font-size: 1.5rem;
   margin: 0;
 }
@@ -230,7 +230,7 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border);
 }
 
 .meta-item {
@@ -240,13 +240,13 @@
 
 .meta-label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 0.25rem;
 }
 
 .meta-value {
-  color: #fff;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -254,8 +254,8 @@
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  background: #e9a426;
-  color: #000;
+  background: var(--accent);
+  color: var(--bg);
   font-weight: 600;
   margin-left: 0.5rem;
   text-transform: capitalize;
@@ -270,8 +270,8 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.5rem 0;
   min-width: 150px;
@@ -287,19 +287,19 @@
   padding: 0.5rem 1rem;
   background: none;
   border: none;
-  color: #ccc;
+  color: var(--text);
   cursor: pointer;
   text-align: left;
   font-size: 0.9rem;
 }
 
 .dropdown-item:hover {
-  background: #2a2a2a;
-  color: #fff;
+  background: var(--bg-hover);
+  color: var(--text);
 }
 
 .dropdown-item.active {
-  color: #e9a426;
+  color: var(--accent);
 }
 
 .status-dot,
@@ -315,20 +315,20 @@
 }
 
 .admin-messages-section h2 {
-  color: #fff;
+  color: var(--text);
   font-size: 1.25rem;
   margin-bottom: 1rem;
 }
 
 /* Admin Reply Form */
 .admin-reply-form {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1.5rem;
 }
 
 .admin-reply-form h3 {
-  color: #fff;
+  color: var(--text);
   margin: 0 0 1rem;
 }
 
@@ -341,8 +341,8 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background: #0d0d0d;
-  border: 1px solid #333;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.5rem;
   min-width: 400px;
@@ -360,7 +360,7 @@
   padding: 0.75rem;
   background: none;
   border: none;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--bg-hover);
   cursor: pointer;
   text-align: left;
 }
@@ -370,16 +370,16 @@
 }
 
 .canned-response-item:hover {
-  background: #1a1a1a;
+  background: var(--bg-card);
 }
 
 .canned-response-item strong {
-  color: #fff;
+  color: var(--text);
   font-size: 0.9rem;
 }
 
 .canned-response-item span {
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
@@ -387,10 +387,10 @@
   width: 100%;
   min-height: 150px;
   padding: 1rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0d0d0d;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   font-size: 0.95rem;
   resize: vertical;
   margin-bottom: 1rem;
@@ -398,7 +398,7 @@
 
 .reply-textarea:focus {
   outline: none;
-  border-color: #e9a426;
+  border-color: var(--accent);
 }
 
 .reply-actions {
@@ -434,10 +434,10 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: #2a2a2a;
+  background: var(--bg-hover);
   border-radius: 6px;
   font-size: 0.85rem;
-  color: #ccc;
+  color: var(--text);
 }
 
 .selected-file button {
@@ -447,45 +447,45 @@
   width: 20px;
   height: 20px;
   padding: 0;
-  background: #444;
+  background: var(--border);
   border: none;
   border-radius: 50%;
-  color: #fff;
+  color: var(--text);
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .selected-file button:hover {
-  background: #dc3545;
+  background: var(--danger);
 }
 
 .closed-ticket-notice {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
 }
 
 .closed-ticket-notice p {
-  color: #888;
+  color: var(--text-muted);
   margin: 0 0 1rem;
 }
 
 .error-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
 }
 
 .error-state h2 {
-  color: #dc3545;
+  color: var(--danger);
   margin: 0 0 0.5rem;
 }
 
 .error-state p {
-  color: #888;
+  color: var(--text-muted);
   margin: 0 0 1.5rem;
 }
 
@@ -498,8 +498,8 @@
 .compressed-badge {
   font-size: 0.65rem;
   padding: 0.1rem 0.3rem;
-  background: #17a2b8;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text);
   border-radius: 3px;
   margin-left: 0.5rem;
 }

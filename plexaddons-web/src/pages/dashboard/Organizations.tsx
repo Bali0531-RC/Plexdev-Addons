@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Organization, OrganizationDetail, OrganizationRole } from '../../types';
+import { UsersIcon } from '../../components/Icons';
 import './Organizations.css';
 
 export default function Organizations() {
@@ -141,7 +142,7 @@ export default function Organizations() {
       <div className="organizations-page">
         <h1>Team Organizations</h1>
         <div className="premium-gate">
-          <div className="gate-icon">👥</div>
+          <div className="gate-icon"><UsersIcon size={48} /></div>
           <h2>Premium Feature</h2>
           <p>
             Team organizations allow you to collaborate with others on addons.

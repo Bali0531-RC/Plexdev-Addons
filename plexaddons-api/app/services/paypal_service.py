@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
+# Monthly prices used in notification emails (must match api/v1/payments.py plans)
+TIER_PRICES = {
+    SubscriptionTier.PRO: 1.0,
+    SubscriptionTier.PREMIUM: 5.0,
+}
+
 
 class PayPalService:
     """Service for PayPal payment operations."""
@@ -300,7 +306,8 @@ class PayPalService:
         
         # Send subscription confirmation emails
         if background_tasks:
-            amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
+            # Must match the plans in api/v1/payments.py
+            amount = TIER_PRICES.get(tier, 0.0)
             plan_name = tier.value.capitalize()
             
             background_tasks.add_task(

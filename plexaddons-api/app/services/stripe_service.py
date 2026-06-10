@@ -17,6 +17,12 @@ logger = logging.getLogger(__name__)
 # Initialize Stripe
 stripe.api_key = settings.stripe_secret_key
 
+# Monthly prices used in notification emails (must match api/v1/payments.py plans)
+TIER_PRICES = {
+    SubscriptionTier.PRO: 1.0,
+    SubscriptionTier.PREMIUM: 5.0,
+}
+
 
 class StripeService:
     """Service for Stripe payment operations."""
@@ -191,8 +197,8 @@ class StripeService:
             provider_customer_id=customer_id,
             tier=tier,
             status=status,
-            current_period_start=datetime.fromtimestamp(period_start) if period_start else datetime.now(timezone.utc),
-            current_period_end=datetime.fromtimestamp(period_end) if period_end else None,
+            current_period_start=datetime.fromtimestamp(period_start, tz=timezone.utc) if period_start else datetime.now(timezone.utc),
+            current_period_end=datetime.fromtimestamp(period_end, tz=timezone.utc) if period_end else None,
         )
         db.add(sub)
         
@@ -204,10 +210,10 @@ class StripeService:
         
         # Send subscription confirmation emails
         if background_tasks and status == SubscriptionStatus.ACTIVE:
-            # Map tier to price (you may want to make this configurable)
-            amount = 5.0 if tier == SubscriptionTier.PRO else 10.0
+            # Map tier to price (must match the plans in api/v1/payments.py)
+            amount = TIER_PRICES.get(tier, 0.0)
             plan_name = tier.value.capitalize()
-            next_billing = datetime.fromtimestamp(period_end) if period_end else datetime.now(timezone.utc)
+            next_billing = datetime.fromtimestamp(period_end, tz=timezone.utc) if period_end else datetime.now(timezone.utc)
             
             background_tasks.add_task(
                 email_service.send_subscription_confirmation,
@@ -246,12 +252,12 @@ class StripeService:
         sub.tier = StripeService._get_tier_from_subscription(subscription_data)
         sub.status = StripeService._map_stripe_status(subscription_data.get("status", "incomplete"))
         if period_start:
-            sub.current_period_start = datetime.fromtimestamp(period_start)
+            sub.current_period_start = datetime.fromtimestamp(period_start, tz=timezone.utc)
         if period_end:
-            sub.current_period_end = datetime.fromtimestamp(period_end)
+            sub.current_period_end = datetime.fromtimestamp(period_end, tz=timezone.utc)
         
         if subscription_data.get("canceled_at"):
-            sub.canceled_at = datetime.fromtimestamp(subscription_data["canceled_at"])
+            sub.canceled_at = datetime.fromtimestamp(subscription_data["canceled_at"], tz=timezone.utc)
         
         # Get user and update tier
         result = await db.execute(select(User).where(User.id == sub.user_id))

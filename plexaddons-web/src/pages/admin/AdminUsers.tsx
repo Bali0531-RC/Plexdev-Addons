@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { User } from '../../types';
+import { TagIcon } from '../../components/Icons';
 import './AdminUsers.css';
 
 interface TempTierModal {
@@ -329,7 +330,7 @@ export default function AdminUsers() {
                     className="btn btn-xs btn-outline"
                     title="Manage badges"
                   >
-                    🏷️ {user.badges?.length || 0}
+                    <TagIcon size={12} /> {user.badges?.length || 0}
                   </button>
                 </span>
                 <span className="user-actions">

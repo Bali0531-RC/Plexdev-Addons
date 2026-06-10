@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, Request, Response, BackgroundTasks, HTTP
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models import User
 from app.services import AuthService
 from app.schemas import AuthResponse, UserResponse
-from app.api.deps import rate_limit_check
+from app.api.deps import rate_limit_check, get_current_user
 from app.config import get_settings
 from app.core.rate_limit import get_redis_client
 import secrets
@@ -106,13 +107,10 @@ async def discord_callback_api(
 
 @router.post("/refresh")
 async def refresh_token(
-    request: Request,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Refresh JWT token."""
-    from app.api.deps import get_current_user
-    user = await get_current_user(request, db=db)
-    
     # Optionally refresh Discord token
     user = await AuthService.maybe_refresh_discord_token(db, user)
     

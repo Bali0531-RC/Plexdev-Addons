@@ -13,6 +13,14 @@ from app.core.rate_limit import get_rate_limiter
 security = HTTPBearer(auto_error=False)
 
 
+def _parse_user_id(value) -> Optional[int]:
+    """Safely parse the JWT 'sub' claim to an int (None if malformed)."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -26,11 +34,11 @@ async def get_current_user(
     if not payload:
         raise UnauthorizedError("Invalid or expired token")
     
-    user_id = payload.get("sub")
-    if not user_id:
+    user_id = _parse_user_id(payload.get("sub"))
+    if user_id is None:
         raise UnauthorizedError("Invalid token payload")
     
-    result = await db.execute(select(User).where(User.id == int(user_id)))
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:
@@ -52,11 +60,11 @@ async def get_current_user_optional(
     if not payload:
         return None
     
-    user_id = payload.get("sub")
-    if not user_id:
+    user_id = _parse_user_id(payload.get("sub"))
+    if user_id is None:
         return None
     
-    result = await db.execute(select(User).where(User.id == int(user_id)))
+    result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
 
 
@@ -200,9 +208,9 @@ async def get_current_user_or_api_key(
     if credentials:
         payload = decode_access_token(credentials.credentials)
         if payload:
-            user_id = payload.get("sub")
-            if user_id:
-                result = await db.execute(select(User).where(User.id == int(user_id)))
+            user_id = _parse_user_id(payload.get("sub"))
+            if user_id is not None:
+                result = await db.execute(select(User).where(User.id == user_id))
                 user = result.scalar_one_or_none()
                 if user:
                     # Store that this is JWT auth, not API key
@@ -246,9 +254,9 @@ async def get_user_and_api_key(
     if credentials:
         payload = decode_access_token(credentials.credentials)
         if payload:
-            user_id = payload.get("sub")
-            if user_id:
-                result = await db.execute(select(User).where(User.id == int(user_id)))
+            user_id = _parse_user_id(payload.get("sub"))
+            if user_id is not None:
+                result = await db.execute(select(User).where(User.id == user_id))
                 user = result.scalar_one_or_none()
                 if user:
                     return user, None

@@ -3,15 +3,25 @@
   --bg: #05070d;
   --bg-card: #0a0d14;
   --bg-hover: #111520;
+  --bg-secondary: #0a0d14;
+  --bg-tertiary: #111520;
   --text: #f0f0f0;
   --text-muted: #a0a0a0;
   --text-secondary: var(--text-muted);
   --accent: #53b9ff;
   --accent-hover: #7accff;
+  --accent-secondary: #21a1ff;
+  --accent-rgb: 83, 185, 255;
+  --primary: var(--accent);
+  --primary-muted: rgba(83, 185, 255, 0.15);
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
   --border: #1e2533;
+
+  /* Surfaces (aliases used across page styles) */
+  --surface: var(--bg-card);
+  --surface-hover: var(--bg-hover);
   
   /* Spacing */
   --space-xs: 4px;
@@ -25,6 +35,10 @@
   --radius-s: 8px;
   --radius-m: 12px;
   --radius-l: 20px;
+  --radius: var(--radius-m);
+  
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   
   /* Transitions */
   --transition: 0.2s ease;
@@ -62,6 +76,17 @@ button {
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Inline SVG icons align with text by default */
+svg {
+  flex-shrink: 0;
+  vertical-align: -0.125em;
 }
 
 input, textarea, select {

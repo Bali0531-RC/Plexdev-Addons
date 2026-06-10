@@ -53,7 +53,7 @@ async def get_versions_json(
         addons=addons_dict,
         lastUpdated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         repository="https://github.com/Bali0531-RC/PlexAddons",
-        supportContact="https://discord.com/users/yourDiscordId",
+        supportContact="https://discord.gg/plexdev",
     )
 
 

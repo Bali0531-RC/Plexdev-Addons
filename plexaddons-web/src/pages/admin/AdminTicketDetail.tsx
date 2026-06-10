@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { TicketDetail as TicketDetailType, TicketStatus, CannedResponse } from '../../types';
 import Spinner from '../../components/Spinner';
+import { PaperclipIcon, FileTextIcon } from '../../components/Icons';
 import './AdminTickets.css';
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
@@ -357,7 +358,7 @@ export default function AdminTicketDetail() {
                         className="attachment-item"
                         onClick={() => handleDownloadAttachment(attachment.id, attachment.original_filename)}
                       >
-                        📎 {attachment.original_filename}
+                        <PaperclipIcon size={14} /> {attachment.original_filename}
                         <span className="attachment-size">{formatBytes(attachment.file_size)}</span>
                         {attachment.is_compressed && <span className="compressed-badge">Compressed</span>}
                       </div>
@@ -381,7 +382,7 @@ export default function AdminTicketDetail() {
               className="btn btn-secondary btn-sm"
               onClick={() => setShowCannedResponses(!showCannedResponses)}
             >
-              📝 Canned Responses
+              <FileTextIcon size={14} /> Canned Responses
             </button>
             {showCannedResponses && cannedResponses.length > 0 && (
               <div className="canned-responses-list">
@@ -412,7 +413,7 @@ export default function AdminTicketDetail() {
             <div className="selected-files">
               {selectedFiles.map((file, index) => (
                 <div key={index} className="selected-file">
-                  📎 {file.name} ({formatBytes(file.size)})
+                  <PaperclipIcon size={14} /> {file.name} ({formatBytes(file.size)})
                   <button type="button" onClick={() => removeFile(index)}>×</button>
                 </div>
               ))}
@@ -422,7 +423,7 @@ export default function AdminTicketDetail() {
           <div className="reply-actions">
             <div className="quick-actions">
               <label className="btn btn-secondary btn-sm file-upload-btn">
-                📎 Attach Files (no size limit)
+                <PaperclipIcon size={14} /> Attach Files (no size limit)
                 <input
                   type="file"
                   multiple

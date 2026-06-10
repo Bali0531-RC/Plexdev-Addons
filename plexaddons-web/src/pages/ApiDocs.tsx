@@ -86,10 +86,10 @@ export default function ApiDocs() {
             rel="noopener noreferrer"
             className="btn btn-secondary"
           >
-            📄 OpenAPI Spec
+            OpenAPI Spec
           </a>
           <a href="/docs" className="btn btn-secondary">
-            📖 Developer Guide
+            Developer Guide
           </a>
         </div>
       </div>

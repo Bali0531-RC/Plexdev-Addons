@@ -51,7 +51,7 @@ export default function Docs() {
               npm package to easily integrate update notifications into your projects.
             </p>
             <div className="docs-info-box">
-              <strong>📦 pavc</strong> - The official version checker for PlexAddons
+              <strong>pavc</strong> - The official version checker for PlexAddons
               <br />
               <a href="https://www.npmjs.com/package/pavc" target="_blank" rel="noopener noreferrer">
                 View on npm →
@@ -305,7 +305,7 @@ console.log(versions.versions);`}</code></pre>
               <li>The <strong>slug</strong> is auto-generated from your addon name (e.g., "My Addon" → "my-addon")</li>
             </ol>
             <div className="docs-info-box">
-              <strong>💡 Tip:</strong> You can use either the addon name or slug when initializing VersionChecker. The API supports both!
+              <strong>Tip:</strong> You can use either the addon name or slug when initializing VersionChecker. The API supports both!
             </div>
           </section>
 
@@ -343,7 +343,7 @@ console.log(versions.versions);`}</code></pre>
               View your analytics in the <a href="/dashboard/analytics">Dashboard → Analytics</a> (requires Pro or Premium).
             </p>
             <div className="docs-info-box">
-              <strong>🔒 Privacy:</strong> Only version information and a hashed IP are collected. 
+              <strong>Privacy:</strong> Only version information and a hashed IP are collected. 
               No personal data is stored.
             </div>
           </section>
@@ -441,7 +441,7 @@ Response:
               Create API keys with specific permissions to safely automate your workflows.
             </p>
             <div className="docs-info-box">
-              <strong>🔑 API Keys:</strong> Available for Pro (read-only) and Premium (full access) subscribers.
+              <strong>API Keys:</strong> Available for Pro (read-only) and Premium (full access) subscribers.
               <br />
               <a href="/dashboard/settings">Manage your API keys →</a>
             </div>
@@ -632,7 +632,7 @@ jobs:
 `}</code></pre>
 
             <div className="docs-info-box">
-              <strong>💡 Tip:</strong> Make sure your addon slug matches your GitHub repository name, 
+              <strong>Tip:</strong> Make sure your addon slug matches your GitHub repository name, 
               or replace <code>YOUR-ADDON-SLUG</code> with your actual addon slug.
             </div>
           </section>

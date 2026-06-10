@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import type { TicketDetail, TicketAttachment } from '../../types';
+import { PaperclipIcon } from '../../components/Icons';
 import './Support.css';
 
 const statusLabels: Record<string, string> = {
@@ -295,7 +296,7 @@ export default function TicketDetailPage() {
                         className="attachment-item"
                         onClick={() => handleDownloadAttachment(att)}
                       >
-                        📎 {att.original_filename}
+                        <PaperclipIcon size={14} /> {att.original_filename}
                         <span className="attachment-size">
                           ({formatFileSize(att.file_size)})
                         </span>
@@ -334,7 +335,7 @@ export default function TicketDetailPage() {
 
           <div className="reply-actions">
             <label className="file-upload-btn">
-              📎 Attach Files
+              <PaperclipIcon size={14} /> Attach Files
               <input
                 type="file"
                 multiple
