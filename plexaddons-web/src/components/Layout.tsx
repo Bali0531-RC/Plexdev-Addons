@@ -1,18 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
+import { PackageIcon, RefreshIcon, ChevronDownIcon } from './Icons';
 import './Layout.css';
 
 export default function Layout() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
+    setUserMenuOpen(false);
   }, [location.pathname]);
+
+  // Close the user menu on outside click or Escape
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [userMenuOpen]);
 
   const getDiscordAvatar = () => {
     if (!user?.discord_avatar) {
@@ -24,16 +47,16 @@ export default function Layout() {
   return (
     <div className="layout">
       <div className="migration-banner">
-        <span>🔄</span>
+        <RefreshIcon className="banner-icon" />
         <span>
-          <strong>Domain Migration:</strong> We've moved from plexdev.live to plexdev.xyz! 
-          Update your bookmarks. The old domain will redirect here until it expires (~60 days).
+          <strong>Domain migration:</strong> We've moved from plexdev.live to plexdev.xyz.
+          Update your bookmarks — the old domain will redirect here until it expires (~60 days).
         </span>
       </div>
       <header className="header">
         <div className="container header-content">
           <Link to="/" className="logo">
-            <span className="logo-icon">📦</span>
+            <PackageIcon className="logo-icon" />
             <span className="logo-text">PlexAddons</span>
           </Link>
 
@@ -78,13 +101,19 @@ export default function Layout() {
           <div className="header-actions">
             {isAuthenticated && <NotificationBell />}
             {isAuthenticated ? (
-              <div className="user-menu">
-                <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
-                <span className="username">{user?.discord_username}</span>
-                <svg className="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-                <div className="dropdown">
+              <div className={`user-menu${userMenuOpen ? ' open' : ''}`} ref={userMenuRef}>
+                <button
+                  type="button"
+                  className="user-menu-trigger"
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                  onClick={() => setUserMenuOpen((open) => !open)}
+                >
+                  <img src={getDiscordAvatar()} alt={user?.discord_username} className="avatar" />
+                  <span className="username">{user?.discord_username}</span>
+                  <ChevronDownIcon className="arrow" />
+                </button>
+                <div className="dropdown" role="menu">
                   <Link to="/dashboard">Dashboard</Link>
                   <Link to="/dashboard/analytics">Analytics</Link>
                   <Link to="/dashboard/support">Support</Link>

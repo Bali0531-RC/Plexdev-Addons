@@ -125,7 +125,7 @@ export function CategoryAddons() {
         <Link to="/categories" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'inline-block' }}>
           ← All Categories
         </Link>
-        <h1>{TAG_ICONS[tag as AddonTag] || '📦'} {tagInfo?.label || tag}</h1>
+        <h1>{TAG_ICONS[tag as AddonTag] || ''} {tagInfo?.label || tag}</h1>
         <p>{tagInfo?.description}</p>
       </div>
 

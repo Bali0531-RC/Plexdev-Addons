@@ -65,8 +65,15 @@
 }
 
 .feature-icon {
-  font-size: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
   margin-bottom: 1rem;
+  border-radius: var(--radius-s);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
 }
 
 .feature-card h3 {

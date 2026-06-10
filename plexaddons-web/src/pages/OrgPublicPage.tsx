@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import type { OrgPublicPage as OrgPublicPageType } from '../types';
+import { PackageIcon } from '../components/Icons';
 import './OrgPublicPage.css';
 
 export default function OrgPublicPage() {
@@ -66,7 +67,7 @@ export default function OrgPublicPage() {
                   {addon.icon_url ? (
                     <img src={addon.icon_url} alt={addon.name} />
                   ) : (
-                    <span>📦</span>
+                    <PackageIcon size={24} />
                   )}
                 </div>
                 <div className="addon-card-info">

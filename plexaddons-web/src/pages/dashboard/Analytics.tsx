@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { AnalyticsSummary, AddonAnalytics, ApiUsageAnalytics } from '../../types'
+import { ChartIcon } from '../../components/Icons'
 import './Analytics.css'
 
 const DATE_RANGE_OPTIONS = [7, 14, 30, 90] as const;
@@ -84,7 +85,7 @@ export default function Analytics() {
           <h1>Analytics</h1>
         </div>
         <div className="upgrade-prompt">
-          <div className="upgrade-icon">📊</div>
+          <div className="upgrade-icon"><ChartIcon size={48} /></div>
           <h2>Unlock Analytics</h2>
           <p>Upgrade to Pro or Premium to see detailed usage statistics for your addons.</p>
           <ul className="features-list">

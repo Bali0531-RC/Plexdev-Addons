@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { PublicUser } from '../types';
+import { PackageIcon } from '../components/Icons';
 import './Users.css';
 
 const TIER_COLORS: Record<string, string> = {
@@ -160,7 +161,7 @@ export default function Users() {
                   
                   <div className="user-stats">
                     <span className="user-stat">
-                      📦 {user.addon_count} addon{user.addon_count !== 1 ? 's' : ''}
+                      <PackageIcon size={14} /> {user.addon_count} addon{user.addon_count !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>

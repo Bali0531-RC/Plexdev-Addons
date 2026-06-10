@@ -8,6 +8,7 @@ import { ORG_PERMISSIONS } from '../../types';
 import OrgAuditLogViewer from '../../components/OrgAuditLogViewer';
 import OrgApiKeyManager from '../../components/OrgApiKeyManager';
 import OrgAnalytics from '../../components/OrgAnalytics';
+import { UsersIcon } from '../../components/Icons';
 import './Organizations.css';
 
 type OrgTab = 'members' | 'analytics' | 'api-keys' | 'audit-log' | 'settings';
@@ -161,7 +162,7 @@ export default function Organizations() {
       <div className="organizations-page">
         <h1>Team Organizations</h1>
         <div className="premium-gate">
-          <div className="gate-icon">👥</div>
+          <div className="gate-icon"><UsersIcon size={48} /></div>
           <h2>Premium Feature</h2>
           <p>
             Team organizations allow you to collaborate with others on addons.

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import type { TrendingAddon } from '../types';
+import { PackageIcon, RefreshIcon, ShieldCheckIcon, ChartIcon, GlobeIcon, HistoryIcon } from '../components/Icons';
 import './Home.css';
 
 export default function Home() {
@@ -81,32 +82,32 @@ export default function Home() {
         <h2>Why PlexAddons?</h2>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">📦</div>
+            <div className="feature-icon"><PackageIcon size={28} /></div>
             <h3>Version Management</h3>
             <p>Track all your addon versions with semantic versioning support and detailed changelogs.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🔄</div>
+            <div className="feature-icon"><RefreshIcon size={28} /></div>
             <h3>Auto Updates</h3>
             <p>Compatible with PlexInstaller for automatic version checking and updates.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🔐</div>
+            <div className="feature-icon"><ShieldCheckIcon size={28} /></div>
             <h3>Discord Auth</h3>
             <p>Simple login with your Discord account. No new passwords to remember.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">📊</div>
+            <div className="feature-icon"><ChartIcon size={28} /></div>
             <h3>Storage Quotas</h3>
             <p>Free tier included. Upgrade to Pro or Premium for more storage and features.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🌐</div>
+            <div className="feature-icon"><GlobeIcon size={28} /></div>
             <h3>API Access</h3>
             <p>RESTful API for integration with your tools and CI/CD pipelines.</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">📜</div>
+            <div className="feature-icon"><HistoryIcon size={28} /></div>
             <h3>Changelog History</h3>
             <p>Keep track of changes across versions. Free users get 5 versions, Pro 10, Premium unlimited.</p>
           </div>
