@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { AdminStats } from '../../types';
+import { UsersIcon, PackageIcon, TicketIcon, FileTextIcon, ClipboardIcon } from '../../components/Icons';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -76,23 +77,23 @@ export default function AdminDashboard() {
         <h2>Quick Actions</h2>
         <div className="admin-nav-grid">
           <Link to="/admin/users" className="admin-nav-item">
-            <span className="nav-icon">👥</span>
+            <span className="nav-icon"><UsersIcon /></span>
             <span className="nav-label">Manage Users</span>
           </Link>
           <Link to="/admin/addons" className="admin-nav-item">
-            <span className="nav-icon">📦</span>
+            <span className="nav-icon"><PackageIcon /></span>
             <span className="nav-label">Manage Addons</span>
           </Link>
           <Link to="/admin/tickets" className="admin-nav-item">
-            <span className="nav-icon">🎫</span>
+            <span className="nav-icon"><TicketIcon /></span>
             <span className="nav-label">Support Tickets</span>
           </Link>
           <Link to="/admin/canned-responses" className="admin-nav-item">
-            <span className="nav-icon">📝</span>
+            <span className="nav-icon"><FileTextIcon /></span>
             <span className="nav-label">Canned Responses</span>
           </Link>
           <Link to="/admin/audit-log" className="admin-nav-item">
-            <span className="nav-icon">📋</span>
+            <span className="nav-icon"><ClipboardIcon /></span>
             <span className="nav-label">Audit Log</span>
           </Link>
         </div>

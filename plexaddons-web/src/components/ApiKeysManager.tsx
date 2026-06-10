@@ -239,11 +239,11 @@ export default function ApiKeysManager() {
                   </div>
                 </div>
                 <div className="key-meta">
-                  <span title="Last used">🕐 {formatLastUsed(key.last_used_at)}</span>
-                  <span title="Usage count">📊 {key.usage_count} requests</span>
-                  <span title="Created">📅 {formatDate(key.created_at)}</span>
+                  <span title="Last used">Last used {formatLastUsed(key.last_used_at)}</span>
+                  <span title="Usage count">{key.usage_count} requests</span>
+                  <span title="Created">Created {formatDate(key.created_at)}</span>
                   {key.expires_at && (
-                    <span title="Expires">⏰ Expires {formatDate(key.expires_at)}</span>
+                    <span title="Expires">Expires {formatDate(key.expires_at)}</span>
                   )}
                 </div>
               </div>

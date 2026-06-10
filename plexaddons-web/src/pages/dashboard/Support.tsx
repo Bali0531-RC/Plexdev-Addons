@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { Ticket, TicketStatus } from '../../types';
+import { TicketIcon } from '../../components/Icons';
 import './Support.css';
 
 const statusLabels: Record<TicketStatus, string> = {
@@ -109,7 +110,7 @@ export default function Support() {
         </div>
       ) : tickets.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🎫</div>
+          <div className="empty-icon"><TicketIcon size={48} /></div>
           <h2>No tickets yet</h2>
           <p>Need help? Create a support ticket and we'll get back to you.</p>
           <Link to="/dashboard/support/new" className="btn btn-primary">
