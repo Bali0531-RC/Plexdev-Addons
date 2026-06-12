@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
-import { PackageIcon, RefreshIcon, ChevronDownIcon } from './Icons';
+import { PackageIcon, ChevronDownIcon } from './Icons';
 import './Layout.css';
 
 export default function Layout() {
@@ -46,13 +46,6 @@ export default function Layout() {
 
   return (
     <div className="layout">
-      <div className="migration-banner">
-        <RefreshIcon className="banner-icon" />
-        <span>
-          <strong>Domain migration:</strong> We've moved from plexdev.live to plexdev.xyz.
-          Update your bookmarks — the old domain will redirect here until it expires (~60 days).
-        </span>
-      </div>
       <header className="header">
         <div className="container header-content">
           <Link to="/" className="logo">

@@ -4,29 +4,6 @@
   flex-direction: column;
 }
 
-/* Migration Banner */
-.migration-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  text-align: center;
-  font-size: 0.875rem;
-  color: #fbd38d;
-  background: rgba(245, 158, 11, 0.1);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
-}
-
-.migration-banner strong {
-  font-weight: 600;
-  color: #fcd34d;
-}
-
-.banner-icon {
-  flex-shrink: 0;
-}
-
 /* Header */
 .header {
   background: var(--bg-card);

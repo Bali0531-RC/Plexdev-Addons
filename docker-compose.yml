@@ -24,7 +24,7 @@ services:
       - PAYPAL_PRO_PLAN_ID=${PAYPAL_PRO_PLAN_ID}
       - PAYPAL_PREMIUM_PLAN_ID=${PAYPAL_PREMIUM_PLAN_ID}
       - INITIAL_ADMIN_DISCORD_ID=${INITIAL_ADMIN_DISCORD_ID}
-      - FRONTEND_URL=${FRONTEND_URL:-https://addons.plexdev.live}
+      - FRONTEND_URL=${FRONTEND_URL:-https://addons.plexdev.xyz}
       - ENVIRONMENT=${ENVIRONMENT:-production}
       # Email (SMTP)
       - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
@@ -33,7 +33,7 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
-      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-no-reply@m.plexdev.live}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-no-reply@m.plexdev.xyz}
       - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-PlexAddons}
       - ADMIN_NOTIFICATION_EMAIL=${ADMIN_NOTIFICATION_EMAIL}
       # Discord Bot (for DM notifications)
@@ -65,7 +65,7 @@ services:
     ports:
       - "3310:80"
     environment:
-      - VITE_API_URL=${API_URL:-https://addons.plexdev.live/api}
+      - VITE_API_URL=${API_URL:-https://addons.plexdev.xyz/api}
       - VITE_DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
       - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - VITE_PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
